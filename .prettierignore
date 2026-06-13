@@ -1,0 +1,6 @@
+.next
+dist
+node_modules
+packages/api-client/src/types/api.d.ts
+packages/api-client/openapi.json
+.planning/contracts/

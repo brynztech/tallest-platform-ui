@@ -1,0 +1,17 @@
+{
+  "name": "@brynzit/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/client.ts",
+  "exports": {
+    ".": "./src/client.ts",
+    "./types": "./src/types/api.d.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "catalog:"
+  },
+  "devDependencies": {
+    "openapi-typescript": "catalog:",
+    "typescript": "catalog:"
+  }
+}
