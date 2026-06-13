@@ -119,13 +119,57 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| BD-01 | Phase 2 | Pending |
+| BD-02 | Phase 2 | Pending |
+| BD-03 | Phase 2 | Pending |
+| BD-04 | Phase 2 | Pending |
+| BD-05 | Phase 2 | Pending |
+| BD-06 | Phase 2 | Pending |
+| BD-07 | Phase 2 | Pending |
+| BD-08 | Phase 2 | Pending |
+| CUX-01 | Phase 2 | Pending |
+| CUX-02 | Phase 2 | Pending |
+| CUX-03 | Phase 2 | Pending |
+| OPS-01 | Phase 3 | Pending |
+| OPS-02 | Phase 3 | Pending |
+| OPS-03 | Phase 3 | Pending |
+| OPS-04 | Phase 3 | Pending |
+| OPS-05 | Phase 3 | Pending |
+| OPS-06 | Phase 3 | Pending |
+| SUP-01 | Phase 4 | Pending |
+| SUP-02 | Phase 4 | Pending |
+| SUP-03 | Phase 4 | Pending |
+| SUP-04 | Phase 4 | Pending |
+| SUP-05 | Phase 4 | Pending |
+| ADM-01 | Phase 4 | Pending |
+| ADM-02 | Phase 4 | Pending |
+| ADM-03 | Phase 4 | Pending |
+| ADM-04 | Phase 4 | Pending |
+| ADM-05 | Phase 4 | Pending |
+| PUB-01 | Phase 5 | Pending |
+| PUB-02 | Phase 5 | Pending |
+| PUB-03 | Phase 5 | Pending |
+| PUB-04 | Phase 5 | Pending |
+| PUB-05 | Phase 5 | Pending |
+| PUB-06 | Phase 5 | Pending |
+| JOB-01 | Phase 5 | Pending |
+| JOB-02 | Phase 5 | Pending |
+| JOB-03 | Phase 5 | Pending |
+| JOB-04 | Phase 5 | Pending |
+| JOB-05 | Phase 5 | Pending |
+| DASH-01 | Phase 6 | Pending |
+| DASH-02 | Phase 6 | Pending |
+| PUB-07 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 38 total
-- Mapped to phases: 0
-- Unmapped: 38 ⚠️
+- v1 requirements: 45 total (note: planning_context stated 38; actual count from requirements list is 45 — no orphans, all mapped)
+- Mapped to phases: 45
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-13*
-*Last updated: 2026-06-13 after initial definition*
+*Last updated: 2026-06-13 after roadmap creation*
