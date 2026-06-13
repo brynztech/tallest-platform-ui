@@ -20,6 +20,9 @@
     "@brynzit/mocks": "workspace:*",
     "@brynzit/hooks": "workspace:*"
   },
+  "msw": {
+    "workerDirectory": ["public"]
+  },
   "devDependencies": {
     "@brynzit/config": "workspace:*",
     "typescript": "catalog:",
