@@ -1192,7 +1192,7 @@ This one screen exercises: Turborepo build pipeline → `packages/ui` → `packa
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`use cache` directive exact config key for Next.js 16.2**
    - What we know: Next.js 16 introduces the `use cache` directive as a stable feature
