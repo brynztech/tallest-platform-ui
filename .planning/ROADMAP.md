@@ -31,7 +31,12 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
   4. `useAsyncJob` polling primitive exists in a shared location, covers all 202-style terminal states, and has a passing unit test
   5. OpenAPI contract proposal files exist in `.planning/contracts/` for every candidate-facing endpoint (`/public/jobs`, `/candidate/auth/*`, `/candidate/profile`, `/candidate/applications`) before any mock handler is written against them
   6. Generated types are smoke-tested against the **live backend** for all four existing domains: at least one representative endpoint from `/api/v1/bd`, `/api/v1/ops`, `/api/v1/supply`, and `/api/v1/monitoring` is called and the response shape is asserted against the generated TypeScript types — catching any drift between the OpenAPI schema and the actual running API before any feature phase begins
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-01-PLAN.md — Monorepo scaffold: turbo.json, pnpm catalog, shared tsconfigs, packages/ui tokens, packages/api-client client, packages/mocks domain handlers, packages/hooks useAsyncJob
+- [ ] 01-02-PLAN.md — API codegen + useAsyncJob tests + OpenAPI contract YAML files for candidate endpoints
+- [ ] 01-03-PLAN.md — Both Next.js 16 app shells (apps/web + apps/console) with MSW provider, globals.css, App Router structure
+- [ ] 01-04-PLAN.md — Walking skeleton: shadcn init, rejection-reasons MSW handler, verification page, turbo run build green
 **UI hint**: yes
 
 ### Phase 2: Console BD
@@ -110,7 +115,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/4 | Not started | - |
 | 2. Console BD | 0/TBD | Not started | - |
 | 3. Console Ops | 0/TBD | Not started | - |
 | 4. Console Supply + Admin | 0/TBD | Not started | - |
