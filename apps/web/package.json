@@ -20,8 +20,12 @@
     "@brynzit/hooks": "workspace:*"
   },
   "devDependencies": {
+    "@brynzit/config": "workspace:*",
     "typescript": "catalog:",
     "eslint": "catalog:",
-    "@playwright/test": "catalog:"
+    "@playwright/test": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/node": "catalog:"
   }
 }
