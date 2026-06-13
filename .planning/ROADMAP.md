@@ -10,7 +10,7 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation** - Monorepo, shared packages, typed API client, MSW contract architecture, and candidate-facing OpenAPI contracts
+- [x] **Phase 1: Foundation** - Monorepo, shared packages, typed API client, MSW contract architecture, and candidate-facing OpenAPI contracts *(completed 2026-06-13)*
 - [ ] **Phase 2: Console BD** - Full BD review loop — lead queue, outreach, pipeline kanban, CSV import, reply triage, and cross-cutting console UX patterns
 - [ ] **Phase 3: Console Ops** - CRM backbone — clients, requisitions with async JD parse, match + shortlist, interviews, and placements
 - [ ] **Phase 4: Console Supply + Admin** - Talent pool search, candidate profiles, ingestion, shortlist review, engagement sequences, and all Admin monitoring screens
@@ -31,12 +31,12 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
   4. `useAsyncJob` polling primitive exists in a shared location, covers all 202-style terminal states, and has a passing unit test
   5. OpenAPI contract proposal files exist in `.planning/contracts/` for every candidate-facing endpoint (`/public/jobs`, `/candidate/auth/*`, `/candidate/profile`, `/candidate/applications`) before any mock handler is written against them
   6. Generated types are smoke-tested against the **live backend** for all four existing domains: at least one representative endpoint from `/api/v1/bd`, `/api/v1/ops`, `/api/v1/supply`, and `/api/v1/monitoring` is called and the response shape is asserted against the generated TypeScript types — catching any drift between the OpenAPI schema and the actual running API before any feature phase begins
-**Plans**: 4 plans in 3 waves
+**Plans**: 4/4 complete
 Plans:
-- Wave 1: 01-01-PLAN.md — Monorepo scaffold: turbo.json, pnpm catalog, shared tsconfigs, packages/ui tokens, packages/api-client client, packages/mocks domain handlers, packages/hooks useAsyncJob
-- Wave 2 *(blocked on Wave 1)*: 01-02-PLAN.md — API codegen + useAsyncJob tests + OpenAPI contract YAML files for candidate endpoints
-- Wave 2 *(blocked on Wave 1)*: 01-03-PLAN.md — Both Next.js 16 app shells (apps/web + apps/console) with MSW provider, globals.css, App Router structure
-- Wave 3 *(blocked on Wave 2)*: 01-04-PLAN.md — Walking skeleton: shadcn init, rejection-reasons MSW handler, 4-domain live smoke test, human verify
+- Wave 1: 01-01-PLAN.md ✓ — Monorepo scaffold: turbo.json, pnpm catalog, shared tsconfigs, packages/ui tokens, packages/api-client client, packages/mocks domain handlers, packages/hooks useAsyncJob
+- Wave 2 *(blocked on Wave 1)*: 01-02-PLAN.md ✓ — API codegen + useAsyncJob tests + OpenAPI contract YAML files for candidate endpoints
+- Wave 2 *(blocked on Wave 1)*: 01-03-PLAN.md ✓ — Both Next.js 16 app shells (apps/web + apps/console) with MSW provider, globals.css, App Router structure
+- Wave 3 *(blocked on Wave 2)*: 01-04-PLAN.md ✓ — Walking skeleton: shadcn init, rejection-reasons MSW handler, 4-domain live smoke test, human verify
 **Cross-cutting constraints:** MSW only initialized with `NEXT_PUBLIC_API_MOCKING=enabled`; `@theme` owned exclusively by `packages/ui`; all packages use `@brynzit/*` scope and `catalog:` version references
 **UI hint**: yes
 

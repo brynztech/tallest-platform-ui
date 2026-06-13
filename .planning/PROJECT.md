@@ -15,13 +15,12 @@ Every human gate in the recruiting pipeline — lead review, outreach approval, 
 
 ### Validated
 
-(None yet — ship to validate)
+*Validated in Phase 1: Foundation (2026-06-13)*
+
+- [x] Turborepo + pnpm monorepo: `apps/web` (public), `apps/console` (internal), `packages/ui` (shared components/design tokens), typed API client generated from the FastAPI OpenAPI schema
+- [x] TanStack Query data layer against `/api/v1`; MSW mocks for endpoints the backend doesn't have yet
 
 ### Active
-
-**Foundation**
-- [ ] Turborepo + pnpm monorepo: `apps/web` (public), `apps/console` (internal), `packages/ui` (shared components/design tokens), typed API client generated from the FastAPI OpenAPI schema
-- [ ] TanStack Query data layer against `/api/v1`; MSW mocks for endpoints the backend doesn't have yet
 
 **Console — BD section**
 - [ ] LeadQueue: paginated lead review (fat cards: ICP score, open roles, decision-maker, suggested angle) with approve/reject(+reason)/snooze and bulk actions — under-30-second review loop
