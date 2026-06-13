@@ -7,29 +7,40 @@
     "dev": "next dev --turbopack",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@brynzit/api-client": "workspace:*",
+    "@brynzit/hooks": "workspace:*",
+    "@brynzit/mocks": "workspace:*",
+    "@brynzit/ui": "workspace:*",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^7.0.2",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "@tanstack/react-query": "catalog:",
-    "@tanstack/react-table": "catalog:",
-    "@brynzit/ui": "workspace:*",
-    "@brynzit/api-client": "workspace:*",
-    "@brynzit/mocks": "workspace:*",
-    "@brynzit/hooks": "workspace:*"
+    "react-dropzone": "^15.0.0"
   },
   "msw": {
-    "workerDirectory": ["public"]
+    "workerDirectory": [
+      "public"
+    ]
   },
   "devDependencies": {
     "@brynzit/config": "workspace:*",
-    "typescript": "catalog:",
-    "eslint": "catalog:",
     "@playwright/test": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/node": "catalog:"
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
