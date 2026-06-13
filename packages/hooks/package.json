@@ -15,6 +15,7 @@
     "@tanstack/react-query": "catalog:",
     "@testing-library/react": "catalog:",
     "vitest": "catalog:",
+    "jsdom": "^26.1.0",
     "typescript": "catalog:"
   }
 }
