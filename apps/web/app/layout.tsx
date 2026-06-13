@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
-import { MSWProvider } from './_components/msw-provider'
+import { WebProviders } from './_components/web-providers'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={geist.variable}>
       <body className="bg-background text-foreground font-sans antialiased">
-        <MSWProvider>{children}</MSWProvider>
+        <WebProviders>{children}</WebProviders>
       </body>
     </html>
   )

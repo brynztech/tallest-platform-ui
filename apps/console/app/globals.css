@@ -1,5 +1,5 @@
 @import '@brynzit/ui/styles/globals.css';
-@source '../../packages/ui/src/**/*.{ts,tsx}';
+@source '../../../packages/ui/src/**/*.{ts,tsx}';
 
 /* apps/console overrides: dark mode default, compact density */
 /* @theme is NOT defined here — only in packages/ui/src/styles/globals.css */
