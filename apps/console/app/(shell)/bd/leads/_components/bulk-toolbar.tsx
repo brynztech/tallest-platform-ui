@@ -1,0 +1,127 @@
+'use client'
+
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient } from '@brynzit/api-client'
+import type { components } from '@brynzit/api-client'
+import { Button } from '@brynzit/ui/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@brynzit/ui/components/ui/select'
+import { toast } from 'sonner'
+
+type BulkActionRequest = components['schemas']['BulkActionRequest']
+
+const REASON_LABELS: Record<string, string> = {
+  NOT_ICP_FIT: 'Not a fit',
+  WRONG_SENIORITY: 'Wrong seniority',
+  NO_OPEN_ROLES: 'No open roles',
+  COMPETITOR: 'Competitor',
+  BAD_TIMING: 'Bad timing',
+  ALREADY_A_CLIENT: 'Already a client',
+  OTHER: 'Other',
+}
+
+const REJECTION_REASONS = Object.keys(REASON_LABELS)
+
+interface BulkToolbarProps {
+  selectedIds: string[]
+  onClearSelection: () => void
+  onBulkStart: (ids: string[]) => void // Sets cards to pending state
+  onBulkSettled: () => void // Clears pending + selection
+}
+
+export function BulkToolbar({
+  selectedIds,
+  onClearSelection,
+  onBulkStart,
+  onBulkSettled,
+}: BulkToolbarProps) {
+  const queryClient = useQueryClient()
+  const [bulkRejectReason, setBulkRejectReason] = useState<string>('')
+
+  const bulkMutation = useMutation({
+    mutationFn: (payload: BulkActionRequest) =>
+      apiClient.POST('/api/v1/bd/leads/bulk-action', { body: payload }),
+    onSettled: async () => {
+      // D-10: reset to page 1 (not invalidate) to avoid cursor corruption
+      await queryClient.resetQueries({ queryKey: ['leads'] })
+      onBulkSettled()
+    },
+    onError: () => {
+      toast.error('Bulk action failed. Please try again.')
+      onBulkSettled()
+    },
+  })
+
+  function handleBulkAction(action: 'approve' | 'reject' | 'snooze') {
+    if (action === 'reject' && !bulkRejectReason) {
+      toast.error('Select a rejection reason for all leads.')
+      return
+    }
+    onBulkStart(selectedIds)
+    const payload: BulkActionRequest = {
+      action,
+      lead_ids: selectedIds,
+      ...(action === 'reject' ? { rejection_reason: bulkRejectReason } : {}),
+      ...(action === 'snooze'
+        ? { due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }
+        : {}),
+    }
+    bulkMutation.mutate(payload)
+    toast(`Bulk action: ${action} ${selectedIds.length} leads`, {
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          // Compensating reset — restore from server
+          queryClient.resetQueries({ queryKey: ['leads'] })
+        },
+      },
+      duration: 5000,
+    })
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2">
+      <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
+      <Button size="sm" onClick={() => handleBulkAction('approve')}>
+        Approve All
+      </Button>
+      <div className="flex items-center gap-2">
+        <Select value={bulkRejectReason} onValueChange={setBulkRejectReason}>
+          <SelectTrigger className="h-8 w-40 text-sm">
+            <SelectValue placeholder="Rejection reason…" />
+          </SelectTrigger>
+          <SelectContent>
+            {REJECTION_REASONS.map((r) => (
+              <SelectItem key={r} value={r}>
+                {REASON_LABELS[r]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleBulkAction('reject')}
+          disabled={!bulkRejectReason}
+        >
+          Reject All
+        </Button>
+      </div>
+      <Button size="sm" variant="ghost" onClick={() => handleBulkAction('snooze')}>
+        Snooze All (1 week)
+      </Button>
+      <button
+        className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+        onClick={onClearSelection}
+      >
+        Clear selection
+      </button>
+    </div>
+  )
+}
