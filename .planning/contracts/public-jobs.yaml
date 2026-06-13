@@ -1,0 +1,71 @@
+openapi: "3.1.0"
+info:
+  title: "Public Jobs Contract Proposal"
+  description: "Proposed contract for GET /api/v1/public/jobs. Not yet implemented in backend. Delete this file and remove the MSW handler in packages/mocks/src/handlers/candidate.ts when the real endpoint ships."
+  version: "0.1.0"
+paths:
+  /api/v1/public/jobs:
+    get:
+      summary: List open job roles
+      description: Cursor-paginated list of open roles for the public job board
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: role_type
+          in: query
+          schema: { type: string, enum: [full_time, part_time, contract] }
+        - name: location
+          in: query
+          schema: { type: string }
+        - name: remote
+          in: query
+          schema: { type: boolean }
+        - name: seniority
+          in: query
+          schema: { type: string }
+        - name: skills
+          in: query
+          schema: { type: array, items: { type: string } }
+          style: form
+          explode: true
+      responses:
+        "200":
+          description: Paginated list of open roles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicJobsResponse"
+components:
+  schemas:
+    PublicJobsResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/PublicJobItem" }
+        next_cursor:
+          anyOf: [{ type: string }, { type: "null" }]
+    PublicJobItem:
+      type: object
+      required: [id, title, employment_type, date_posted]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        company_name: { anyOf: [{ type: string }, { type: "null" }] }
+        employment_type: { type: string, enum: [full_time, part_time, contract] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        remote: { type: boolean }
+        seniority: { anyOf: [{ type: string }, { type: "null" }] }
+        skills:
+          type: array
+          items: { type: string }
+        date_posted: { type: string, format: date-time }
+        description_summary: { anyOf: [{ type: string }, { type: "null" }] }
+        compensation_min: { anyOf: [{ type: integer }, { type: "null" }] }
+        compensation_max: { anyOf: [{ type: integer }, { type: "null" }] }
+        match_strength: { anyOf: [{ type: string, enum: [strong, partial, none] }, { type: "null" }] }

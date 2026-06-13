@@ -1,0 +1,54 @@
+openapi: "3.1.0"
+info:
+  title: "Candidate Applications Contract Proposal"
+  description: "Proposed contract for GET /api/v1/candidate/applications. Not yet implemented in backend."
+  version: "0.1.0"
+paths:
+  /api/v1/candidate/applications:
+    get:
+      summary: List the authenticated candidate's applications
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Paginated list of applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateApplicationsResponse"
+        "401":
+          description: Not authenticated
+components:
+  schemas:
+    CandidateApplicationsResponse:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CandidateApplication" }
+        next_cursor:
+          anyOf: [{ type: string }, { type: "null" }]
+    CandidateApplication:
+      type: object
+      required: [id, job_title, status, submitted_at]
+      properties:
+        id: { type: string, format: uuid }
+        job_id: { anyOf: [{ type: string, format: uuid }, { type: "null" }] }
+        job_title: { type: string }
+        company_name: { anyOf: [{ type: string }, { type: "null" }] }
+        status:
+          type: string
+          enum: [submitted, under_review, shortlisted, interview_scheduled, offer, not_proceeding]
+        substep_label:
+          anyOf:
+            - { type: string }
+            - { type: "null" }
+          description: "Specific substep microcopy e.g. 'Matching to open roles', 'Recruiter notified'"
+        submitted_at: { type: string, format: date-time }
+        updated_at: { anyOf: [{ type: string, format: date-time }, { type: "null" }] }
