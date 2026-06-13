@@ -1,0 +1,22 @@
+{
+  "name": "talent-platform-ui",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "generate:api": "openapi-typescript packages/api-client/openapi.json -o packages/api-client/src/types/api.d.ts",
+    "generate:api:live": "bash packages/api-client/scripts/generate-live.sh",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.18",
+    "typescript": "catalog:",
+    "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "openapi-typescript": "catalog:"
+  },
+  "packageManager": "pnpm@11.6.0"
+}
