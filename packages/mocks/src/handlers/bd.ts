@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { HttpHandler } from 'msw'
+import { API_BASE } from '../base-url'
 
 // BD domain MSW handlers for Phase 1.
 // Phase 1 ships one handler for the walking skeleton smoke test (rejection-reasons).
@@ -11,7 +12,7 @@ export const bdHandlers: HttpHandler[] = [
   // When MSW is disabled, request goes to real backend.
   // T-04-01 mitigation: handler only active when env var is set (MSW guard).
   // Values verified against live backend at http://localhost:8000 on 2026-06-13.
-  http.get('/api/v1/bd/rejection-reasons', () => {
+  http.get(`${API_BASE}/api/v1/bd/rejection-reasons`, () => {
     return HttpResponse.json({
       reasons: [
         'NOT_ICP_FIT',
