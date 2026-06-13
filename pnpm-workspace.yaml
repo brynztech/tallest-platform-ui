@@ -2,6 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
+allowBuilds:
+  msw: true
+
 catalog:
   # Framework
   next: "^16.2.9"
@@ -33,3 +36,6 @@ catalog:
   prettier: "^3.0.0"
   prettier-plugin-tailwindcss: "^0.6.0"
   openapi-typescript: "^7.13.0"
+
+minimumReleaseAgeExclude:
+  - lucide-react@1.18.0
