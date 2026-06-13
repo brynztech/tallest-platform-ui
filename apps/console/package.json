@@ -1,0 +1,28 @@
+{
+  "name": "@brynzit/console",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --turbopack",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
+    "@brynzit/ui": "workspace:*",
+    "@brynzit/api-client": "workspace:*",
+    "@brynzit/mocks": "workspace:*",
+    "@brynzit/hooks": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "eslint": "catalog:",
+    "@playwright/test": "catalog:"
+  }
+}
