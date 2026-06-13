@@ -76,8 +76,8 @@ decisions:
 metrics:
   duration: "~37 minutes (11:12 to 14:52 UTC)"
   completed: "2026-06-13"
-  tasks_completed: 3
-  tasks_total: 3
+  tasks_completed: 4
+  tasks_total: 4
   files_created: 14
   files_modified: 5
 ---
@@ -91,7 +91,7 @@ metrics:
 - **Duration:** ~37 minutes
 - **Started:** 2026-06-13T11:12:58Z
 - **Completed:** 2026-06-13T14:52:40Z
-- **Tasks:** 3 (all auto tasks completed; checkpoint reached)
+- **Tasks:** 4 (3 auto tasks + 1 checkpoint; all complete)
 - **Files modified:** 19 total (14 created, 5 modified)
 
 ## Accomplishments
@@ -191,6 +191,23 @@ No new threat surface introduced beyond what the plan's threat model covers:
 - T-04-01 (MSW only active when `NEXT_PUBLIC_API_MOCKING=enabled`) — implemented and documented in bd.ts comment
 - T-04-02 (walking skeleton reveals mock vs live source) — accepted per plan, Phase 2 replaces this page
 
+## Task 4: Human visual verification checkpoint
+
+**Status:** APPROVED (auto-approved by orchestrator — auto mode active)
+
+**Verification result:** All automated checks passed:
+- 6/6 hooks unit tests pass (`pnpm --filter @brynzit/hooks test -- --run`)
+- All apps typecheck clean (`turbo run typecheck`)
+- `turbo run build` exits 0
+- 4/4 domain live smoke tests pass against localhost:8000
+
+**Walking skeleton code confirmed correct:**
+- Typed `apiClient.GET('/api/v1/bd/rejection-reasons')` call in leads page
+- 7 rejection reasons in MSW handler (SCREAMING_SNAKE_CASE matching live backend)
+- `QueryClientProvider` at console app root
+
+**Plan complete** — all 4 tasks done (3 auto + 1 checkpoint).
+
 ## Self-Check: PASSED
 
 Files verified:
@@ -213,3 +230,5 @@ Commits verified:
 - 01fc004: feat(01-04): shadcn/ui init into packages/ui + 9 Phase 1 components
 - afc23b7: feat(01-04): MSW rejection-reasons handler + walking skeleton page
 - 7f4ff46: feat(01-04): 4-domain live smoke test + turbo build green
+
+Checkpoint Task 4: auto-approved by orchestrator (auto mode active) — all automated checks confirmed passing.
