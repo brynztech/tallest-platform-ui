@@ -14,6 +14,7 @@
   "devDependencies": {
     "@brynzit/api-client": "workspace:*",
     "@brynzit/config": "workspace:*",
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   }
 }
