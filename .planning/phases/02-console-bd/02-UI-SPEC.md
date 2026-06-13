@@ -72,7 +72,7 @@ Font: Geist, sans-serif. All sizes in rem mapped to px at 16px root.
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Body | 14px (0.875rem) | 400 (regular) | 1.5 | Card body text, slide-over prose, form labels, table cells |
+| Body | 14px (0.875rem) | 400 (regular) | 1.5 | Card body text, slide-over prose, form labels, table cells, sidebar nav labels |
 | Label / Meta | 12px (0.75rem) | 400 (regular) | 1.4 | Muted metadata (domain, contact title, open roles count), badge text, sidebar badge counts |
 | Subheading | 16px (1rem) | 600 (semibold) | 1.4 | Company name on card (primary scannable label), slide-over section headings |
 | Heading | 20px (1.25rem) | 600 (semibold) | 1.2 | Slide-over company name header, empty state heading, shortcut overlay title |
@@ -82,7 +82,7 @@ Font: Geist, sans-serif. All sizes in rem mapped to px at 16px root.
 **Notes:**
 - Suggested angle text on card: 14px/400, line-clamp-2, muted-foreground color.
 - ICP score badge uses 12px/600 — the only label-size semibold exception, justified by its role as primary decision signal.
-- Sidebar nav labels: 13px/400 — between body and label; achieved with `text-[13px]`.
+- Sidebar nav labels: 14px/400 (Body role) — use `text-sm` Tailwind class, consistent with all other body-size text.
 
 **Source:** apps/console dark-mode-first convention; CONTEXT.md "Linear/Attio feel — dense, keyboard-first, no wasted vertical space."
 
@@ -177,9 +177,9 @@ LeadCard (bg-card, border border-border, rounded-xl, p-4, cursor-pointer)
 │   ├── Open roles count (if > 0): "{N} open roles"
 │   └── Last activity timestamp (relative: "3 days ago")
 └── Row 5 — action bar (flex, gap-2, mt-3, justify-end)
-    ├── Approve button (variant="default" size="sm", "Approve")
-    ├── Reject button (variant="outline" size="sm", "Reject") — triggers popover
-    └── Snooze button (variant="ghost" size="sm", icon only: Clock icon) — triggers popover
+    ├── Approve button (variant="default" size="sm", "Approve Lead")
+    ├── Reject button (variant="outline" size="sm", "Reject Lead") — triggers popover
+    └── Snooze button (variant="ghost" size="sm", icon only: Clock icon, aria-label="Snooze lead") — triggers popover
 ```
 
 **Focused card state (keyboard):** `ring-2 ring-primary ring-offset-2 ring-offset-background`
@@ -316,7 +316,7 @@ Columns: Discovered → ICP Scored → In Review → Outreach Approved → Outre
             ├── Subject line (Input, text-sm)
             └── Body textarea (textarea-like, min-h-[120px], text-sm, monospace off)
     ├── Approve button (variant="default", "Approve Sequence")
-    └── Reject button (variant="outline" destructive hover, "Reject")
+    └── Reject button (variant="outline" destructive hover, "Reject Sequence")
 ```
 
 ### Reply Triage (BD-07)
@@ -356,7 +356,7 @@ Exceptions: sidebar nav item height 36px; card action buttons h-8 (32px); shortc
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Body | 14px | 400 | 1.5 | Card body, slide-over prose, table cells, form labels |
+| Body | 14px | 400 | 1.5 | Card body, slide-over prose, table cells, form labels, sidebar nav labels |
 | Label / Meta | 12px | 400 | 1.4 | Domain, contact title, badge text, timestamp, sidebar badge counts |
 | Subheading | 16px | 600 | 1.4 | Company name on card, slide-over section headings |
 | Heading | 20px | 600 | 1.2 | Slide-over company header, empty state headings |
@@ -388,11 +388,12 @@ Accent reserved for: (1) keyboard-focused card ring, (2) approve button bg, (3) 
 
 | Element | Copy |
 |---------|------|
-| Primary CTA (queue) | "Approve" |
-| Secondary CTA (detail) | "Approve Lead" |
+| Primary CTA (queue card) | "Approve Lead" |
+| Secondary CTA (detail panel) | "Approve Lead" |
 | Empty state heading | "Queue is clear" |
 | Empty state body | "No leads waiting for review. New leads appear here when the ICP scoring agent processes them." |
 | Error state (queue load fail) | "Couldn't load leads. Check your connection or refresh the page." |
+| Reject card CTA | "Reject Lead" |
 | Reject popover label | "Rejection reason" |
 | Snooze popover label | "Snooze until…" |
 | Bulk reject shared reason label | "Rejection reason (applies to all selected)" |
@@ -406,7 +407,7 @@ Accent reserved for: (1) keyboard-focused card ring, (2) approve button bg, (3) 
 | Import failed | "Import failed — [error summary]. Try again or contact support." |
 | CSV upload CTA | "Import CSV" |
 | Outreach approve CTA | "Approve Sequence" |
-| Outreach reject CTA | "Reject" |
+| Outreach reject CTA | "Reject Sequence" |
 | Unsubscribe quick-action | "Unsubscribe" (destructive — no undo, confirmed via popover "Remove from all sequences? This cannot be undone." → "Unsubscribe" / "Cancel") |
 | Sidebar stubs tooltip | "Coming in a future phase" |
 | ? overlay title | "Keyboard shortcuts" |
@@ -498,3 +499,4 @@ No third-party registries declared for this phase. Registry vetting gate: not ap
 
 *Phase: 2 — Console BD*
 *UI-SPEC created: 2026-06-13*
+*UI-SPEC revised: 2026-06-13 — checker revision 1: typography reduced to 4 sizes, copywriting verb+noun fixes, snooze aria-label added*
