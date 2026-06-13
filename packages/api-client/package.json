@@ -8,7 +8,8 @@
     "./types": "./src/types/api.d.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:live": "vitest run --reporter=verbose"
   },
   "dependencies": {
     "openapi-fetch": "catalog:"
@@ -17,6 +18,7 @@
     "@brynzit/config": "workspace:*",
     "@types/node": "catalog:",
     "openapi-typescript": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
