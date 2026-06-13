@@ -877,7 +877,7 @@ shadcn components (popover, sheet, checkbox, etc.): NOT installed — add via CL
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **BD-07 Reply Triage: No Dedicated Backend Endpoint**
    - What we know: The API has no `GET /api/v1/bd/tasks` or `/bd/replies` endpoint. Reply task data (`BDTaskSummary`) is embedded inside `LeadFatCardResponse.tasks[]` — accessible only per-lead, not as a list. [VERIFIED: api.d.ts — no /bd/tasks path]
