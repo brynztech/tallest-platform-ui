@@ -10,16 +10,17 @@ export const bdHandlers: HttpHandler[] = [
   // MSW intercepts this in dev (NEXT_PUBLIC_API_MOCKING=enabled).
   // When MSW is disabled, request goes to real backend.
   // T-04-01 mitigation: handler only active when env var is set (MSW guard).
+  // Values verified against live backend at http://localhost:8000 on 2026-06-13.
   http.get('/api/v1/bd/rejection-reasons', () => {
     return HttpResponse.json({
       reasons: [
-        'not_icp',
-        'no_open_roles',
-        'recently_contacted',
-        'competitor',
-        'funding_stage',
-        'geography',
-        'other',
+        'NOT_ICP_FIT',
+        'WRONG_SENIORITY',
+        'NO_OPEN_ROLES',
+        'COMPETITOR',
+        'BAD_TIMING',
+        'ALREADY_A_CLIENT',
+        'OTHER',
       ],
     })
   }),
