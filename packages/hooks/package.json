@@ -11,6 +11,7 @@
     "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {
+    "@brynzit/config": "workspace:*",
     "react": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@testing-library/react": "catalog:",

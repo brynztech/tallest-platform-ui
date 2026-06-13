@@ -1,0 +1,82 @@
+openapi: "3.1.0"
+info:
+  title: "Candidate Profile Contract Proposal"
+  description: "Proposed contracts for candidate profile CRUD. Not yet implemented in backend."
+  version: "0.1.0"
+paths:
+  /api/v1/candidate/profile:
+    get:
+      summary: Get the authenticated candidate's profile
+      responses:
+        "200":
+          description: Candidate profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateProfile"
+        "401":
+          description: Not authenticated
+    put:
+      summary: Update the authenticated candidate's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateProfile"
+components:
+  schemas:
+    CandidateProfile:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, format: uuid }
+        email: { anyOf: [{ type: string }, { type: "null" }] }
+        first_name: { anyOf: [{ type: string }, { type: "null" }] }
+        last_name: { anyOf: [{ type: string }, { type: "null" }] }
+        headline: { anyOf: [{ type: string }, { type: "null" }] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        remote_preference: { anyOf: [{ type: string, enum: [remote_only, hybrid, onsite, flexible] }, { type: "null" }] }
+        seniority: { anyOf: [{ type: string, enum: [junior, mid, senior, staff, principal] }, { type: "null" }] }
+        skills:
+          type: array
+          items: { type: string }
+        github_url: { anyOf: [{ type: string, format: uri }, { type: "null" }] }
+        linkedin_url: { anyOf: [{ type: string, format: uri }, { type: "null" }] }
+        resume_url: { anyOf: [{ type: string, format: uri }, { type: "null" }] }
+        completeness_score: { anyOf: [{ type: integer, minimum: 0, maximum: 100 }, { type: "null" }] }
+        enrichment_status: { anyOf: [{ type: string, enum: [pending, enriched, failed] }, { type: "null" }] }
+        github_signals:
+          anyOf:
+            - $ref: "#/components/schemas/GitHubSignals"
+            - { type: "null" }
+    GitHubSignals:
+      type: object
+      properties:
+        stars_total: { anyOf: [{ type: integer }, { type: "null" }] }
+        top_languages:
+          type: array
+          items: { type: string }
+        contribution_count: { anyOf: [{ type: integer }, { type: "null" }] }
+    CandidateProfileUpdate:
+      type: object
+      properties:
+        first_name: { anyOf: [{ type: string }, { type: "null" }] }
+        last_name: { anyOf: [{ type: string }, { type: "null" }] }
+        headline: { anyOf: [{ type: string }, { type: "null" }] }
+        location: { anyOf: [{ type: string }, { type: "null" }] }
+        remote_preference: { anyOf: [{ type: string, enum: [remote_only, hybrid, onsite, flexible] }, { type: "null" }] }
+        seniority: { anyOf: [{ type: string, enum: [junior, mid, senior, staff, principal] }, { type: "null" }] }
+        skills:
+          anyOf:
+            - { type: array, items: { type: string } }
+            - { type: "null" }
+        github_url: { anyOf: [{ type: string, format: uri }, { type: "null" }] }
+        linkedin_url: { anyOf: [{ type: string, format: uri }, { type: "null" }] }

@@ -1,0 +1,71 @@
+openapi: "3.1.0"
+info:
+  title: "Candidate Auth Contract Proposal"
+  description: "Proposed contracts for candidate authentication. Not yet implemented in backend. Mock-first — swap when real auth ships."
+  version: "0.1.0"
+paths:
+  /api/v1/candidate/auth/signup:
+    post:
+      summary: Create a candidate account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateSignupRequest"
+      responses:
+        "201":
+          description: Candidate account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateSignupResponse"
+        "409":
+          description: Email already registered
+  /api/v1/candidate/auth/login:
+    post:
+      summary: Authenticate a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateLoginRequest"
+      responses:
+        "200":
+          description: Authentication token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateLoginResponse"
+        "401":
+          description: Invalid credentials
+components:
+  schemas:
+    CandidateSignupRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        first_name: { anyOf: [{ type: string }, { type: "null" }] }
+        last_name: { anyOf: [{ type: string }, { type: "null" }] }
+    CandidateSignupResponse:
+      type: object
+      required: [id, email]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+    CandidateLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    CandidateLoginResponse:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, default: bearer }
+        expires_in: { anyOf: [{ type: integer }, { type: "null" }] }

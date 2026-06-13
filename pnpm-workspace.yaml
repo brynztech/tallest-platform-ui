@@ -36,6 +36,7 @@ catalog:
   prettier: "^3.0.0"
   prettier-plugin-tailwindcss: "^0.6.0"
   openapi-typescript: "^7.13.0"
+  "@types/node": "^22.0.0"
 
 minimumReleaseAgeExclude:
   - lucide-react@1.18.0
