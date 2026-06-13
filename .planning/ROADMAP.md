@@ -52,7 +52,13 @@ Plans:
   4. BD rep can review a 3-email outreach sequence, edit any step inline, and approve or reject it before delivery
   5. BD rep can see a live pipeline kanban (discovered → converted status columns with counts), triage reply tasks (interested replies surfaced with AI briefing, OOO/not-now/unsubscribe with quick-actions), and see a nav badge when snoozed leads have woken
   6. Every review queue supports J/K navigation, A approve, R reject, S snooze, and ? shortcut overlay; every destructive action shows a 5-second undo toast before committing
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] Wave 1: 02-01-PLAN.md — Shell sidebar + shadcn components + all BD MSW handlers + Vitest infra + ThemeProvider dark-mode fix
+- [ ] Wave 2 *(blocked on Wave 1)*: 02-02-PLAN.md — Lead queue: fat cards, slide-over, approve/reject/snooze optimistic undo, bulk actions, keyboard shortcuts (BD-01, BD-02, BD-03, CUX-01, CUX-02, CUX-03)
+- [ ] Wave 2 *(blocked on Wave 1)*: 02-03-PLAN.md — Async flows: CSV import with useAsyncJob polling + outreach sequence review/edit/approve (BD-04, BD-05)
+- [ ] Wave 3 *(blocked on Wave 2)*: 02-04-PLAN.md — Pipeline kanban (dnd-kit v6) + reply triage + human verify (BD-06, BD-07, BD-08)
+**Cross-cutting constraints:** Keyboard shortcuts disabled when Sheet/Dialog/Popover is open; @dnd-kit/sortable v10 (not @dnd-kit/react 0.5.x); native fetch for multipart CSV upload (not apiClient); queryClient.resetQueries (not invalidate) after bulk actions
 **UI hint**: yes
 
 ### Phase 3: Console Ops
@@ -116,8 +122,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Not started | - |
-| 2. Console BD | 0/TBD | Not started | - |
+| 1. Foundation | 4/4 | Complete | 2026-06-13 |
+| 2. Console BD | 0/4 | In progress | - |
 | 3. Console Ops | 0/TBD | Not started | - |
 | 4. Console Supply + Admin | 0/TBD | Not started | - |
 | 5. Public Site | 0/TBD | Not started | - |
