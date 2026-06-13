@@ -81,7 +81,7 @@ export function useAsyncJob<TData, TRawStatus extends string = string>(
     refetchInterval: intervalOverride = 2000,
   } = options
 
-  const mergedMap = { ...DEFAULT_STATUS_MAP, ...statusMap }
+  const mergedMap: Record<string, AsyncJobPhase> = { ...DEFAULT_STATUS_MAP, ...statusMap }
   const isEnabled = !!jobId && enabled
 
   // Build poll URL: replace {id} placeholder or append jobId as path segment
