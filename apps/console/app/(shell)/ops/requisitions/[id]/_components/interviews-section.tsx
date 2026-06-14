@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import type { components } from '@brynzit/api-client'
@@ -13,6 +14,8 @@ import {
 } from '@brynzit/ui/components/ui/select'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
+import { Input } from '@brynzit/ui/components/ui/input'
+import { Label } from '@brynzit/ui/components/ui/label'
 import { CalendarPlus } from 'lucide-react'
 
 // Valid transitions per D-13 from CONTEXT.md
@@ -30,6 +33,8 @@ interface InterviewsSectionProps {
 
 export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSectionProps) {
   const queryClient = useQueryClient()
+  // Date input for scheduling interviews — avoids creating date-less records
+  const [scheduledDate, setScheduledDate] = useState('')
 
   // NOTE: MSW-only — no live GET /api/v1/ops/interviews endpoint (api.d.ts get?: never line 548)
   const { data: interviews = [] } = useQuery({
@@ -124,21 +129,41 @@ export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSect
       )}
 
       {approvedCandidateId && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-3"
-          disabled={createMutation.isPending}
-          onClick={() =>
-            createMutation.mutate({
-              requisition_id: reqId,
-              candidate_id: approvedCandidateId,
-            })
-          }
-        >
-          <CalendarPlus className="mr-1 size-4" />
-          Schedule Interview
-        </Button>
+        <div className="mt-3 flex items-end gap-2">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="interview_date" className="text-xs text-muted-foreground">
+              Date *
+            </Label>
+            <Input
+              id="interview_date"
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              className="w-[160px]"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={createMutation.isPending || !scheduledDate}
+            onClick={() => {
+              createMutation.mutate(
+                {
+                  requisition_id: reqId,
+                  candidate_id: approvedCandidateId,
+                  // Convert local date string (YYYY-MM-DD) to ISO datetime
+                  scheduled_at: new Date(scheduledDate).toISOString(),
+                },
+                {
+                  onSuccess: () => setScheduledDate(''),
+                },
+              )
+            }}
+          >
+            <CalendarPlus className="mr-1 size-4" />
+            Schedule Interview
+          </Button>
+        </div>
       )}
     </div>
   )
