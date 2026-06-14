@@ -1,7 +1,9 @@
 'use client'
 
+import { useCallback, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@brynzit/ui/components/ui/tabs'
+import { toast } from 'sonner'
 import { AdminOverviewTab } from './admin-overview-tab'
 import { AdminCostsTab } from './admin-costs-tab'
 import { AdminEventsTab } from './admin-events-tab'
@@ -9,13 +11,36 @@ import { AdminQuotasTab } from './admin-quotas-tab'
 import { AdminPipelineTab } from './admin-pipeline-tab'
 import { AdminPromptsTab } from './admin-prompts-tab'
 
+const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts'] as const
+
 export function AdminContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  const activeTab = searchParams.get('tab') ?? 'overview'
+  const rawTab = searchParams.get('tab') ?? 'overview'
+  // WR-06: whitelist tab values so arbitrary URL params can't be injected
+  const activeTab = (VALID_TABS as readonly string[]).includes(rawTab) ? rawTab : 'overview'
+
+  const isPromptsDirtyRef = useRef(false)
+  const handlePromptsDirtyChange = useCallback((dirty: boolean) => {
+    isPromptsDirtyRef.current = dirty
+  }, [])
 
   function handleTabChange(value: string) {
+    // CR-03: guard in-app tab navigation when prompt editor has unsaved changes
+    if (isPromptsDirtyRef.current && activeTab === 'prompts') {
+      toast('Unsaved prompt changes — save or discard before switching tabs.', {
+        duration: 5000,
+        action: {
+          label: 'Discard & switch',
+          onClick: () => {
+            isPromptsDirtyRef.current = false
+            router.push(`${pathname}?tab=${value}`)
+          },
+        },
+      })
+      return
+    }
     router.push(`${pathname}?tab=${value}`)
   }
 
@@ -49,7 +74,7 @@ export function AdminContent() {
           <AdminPipelineTab />
         </TabsContent>
         <TabsContent value="prompts">
-          <AdminPromptsTab />
+          <AdminPromptsTab onDirtyChange={handlePromptsDirtyChange} />
         </TabsContent>
       </Tabs>
     </div>

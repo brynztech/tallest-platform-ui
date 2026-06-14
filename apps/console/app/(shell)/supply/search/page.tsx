@@ -30,7 +30,10 @@ export default function SupplySearchPage() {
             q: submittedFilters?.q ?? '',
             skills: submittedFilters?.skills || undefined,
             location: submittedFilters?.location || undefined,
-            seniority: submittedFilters?.seniority || undefined,
+            seniority:
+              submittedFilters?.seniority && submittedFilters.seniority !== '__any__'
+                ? submittedFilters.seniority
+                : undefined,
             top_k: submittedFilters?.limit ?? 10,
           },
         },

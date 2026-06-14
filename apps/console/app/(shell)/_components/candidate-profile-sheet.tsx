@@ -27,6 +27,19 @@ interface CandidateProfileSheetProps {
   requisitionId?: string
 }
 
+// CR-04: Reject javascript: / data: URLs from API-supplied href values
+function safeHref(url: string | null | undefined): string | undefined {
+  if (!url) return undefined
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') return url
+  } catch {
+    // relative paths — allow
+    if (url.startsWith('/')) return url
+  }
+  return undefined
+}
+
 function availabilityBadgeClass(status: string | null | undefined) {
   if (status === 'available') {
     return 'border text-xs px-1.5 py-0.5 bg-[oklch(0.45_0.15_145_/_0.15)] text-[oklch(0.45_0.15_145)] border-[oklch(0.45_0.15_145_/_0.4)]'
@@ -80,7 +93,10 @@ export function CandidateProfileSheet({
     if (!isEnriching || !candidateId) return
     setEnrichError(false)
     const interval = setInterval(async () => {
-      await queryClient.invalidateQueries({ queryKey: ['supply-candidate', candidateId] })
+      // refetchQueries awaits the actual network response; invalidateQueries only
+      // marks stale and triggers a background refetch — getQueryData after it returns
+      // the old value, causing the success path to never fire (CR-01).
+      await queryClient.refetchQueries({ queryKey: ['supply-candidate', candidateId] })
       const cached = queryClient.getQueryData(['supply-candidate', candidateId]) as
         | components['schemas']['CandidateProfileResponse']
         | undefined
@@ -423,7 +439,7 @@ export function CandidateProfileSheet({
                         )}
                         {talentPool?.github_url && (
                           <a
-                            href={talentPool.github_url}
+                            href={safeHref(talentPool.github_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1.5 text-primary hover:underline text-xs"
@@ -465,7 +481,7 @@ export function CandidateProfileSheet({
                     )}
                     {candidate.linkedin_url && (
                       <a
-                        href={candidate.linkedin_url}
+                        href={safeHref(candidate.linkedin_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 text-primary hover:underline text-xs"
@@ -491,7 +507,7 @@ export function CandidateProfileSheet({
                     ) : (
                       talentPool?.resume_file_path && (
                         <a
-                          href={talentPool.resume_file_path}
+                          href={safeHref(talentPool.resume_file_path)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1.5 text-primary hover:underline text-xs"

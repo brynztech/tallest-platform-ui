@@ -19,7 +19,11 @@ const KNOWN_PROMPTS = [
   'engagement_generation',
 ]
 
-export function AdminPromptsTab() {
+interface AdminPromptsTabProps {
+  onDirtyChange?: (dirty: boolean) => void
+}
+
+export function AdminPromptsTab({ onDirtyChange }: AdminPromptsTabProps = {}) {
   const [selectedPromptName, setSelectedPromptName] = useState<string | null>(null)
   const [editedContent, setEditedContent] = useState('')
   const queryClient = useQueryClient()
@@ -48,6 +52,21 @@ export function AdminPromptsTab() {
   }, [promptData?.content, selectedPromptName])
 
   const isDirty = editedContent !== (promptData?.content ?? '')
+
+  // Notify parent of dirty state changes (CR-03: lets AdminContent gate tab switches)
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  // Guard browser-level navigation (refresh, back, tab close) when dirty (CR-03)
+  useEffect(() => {
+    if (!isDirty) return
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
 
   const saveMutation = useMutation({
     mutationFn: ({ name, content }: { name: string; content: string }) =>
