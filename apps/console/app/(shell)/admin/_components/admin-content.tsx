@@ -7,6 +7,7 @@ import { AdminCostsTab } from './admin-costs-tab'
 import { AdminEventsTab } from './admin-events-tab'
 import { AdminQuotasTab } from './admin-quotas-tab'
 import { AdminPipelineTab } from './admin-pipeline-tab'
+import { AdminPromptsTab } from './admin-prompts-tab'
 
 export function AdminContent() {
   const searchParams = useSearchParams()
@@ -48,9 +49,7 @@ export function AdminContent() {
           <AdminPipelineTab />
         </TabsContent>
         <TabsContent value="prompts">
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            Prompts editor — coming in Plan 04-05.
-          </div>
+          <AdminPromptsTab />
         </TabsContent>
       </Tabs>
     </div>
