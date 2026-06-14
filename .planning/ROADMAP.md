@@ -71,12 +71,13 @@ Plans:
   2. Ops rep can create a requisition, paste a full JD, and watch async parsing populate structured fields (role, seniority, skills, comp, dates) via polling — with a manual fallback if parsing fails
   3. Ops rep can trigger candidate matching on a requisition and review a ranked shortlist of candidates with their fit indicators
   4. Ops rep can create interviews and update them through scheduled → accepted / declined → completed states, and log placements with fee, billing terms, and a 90-day retention flag
-**Plans**: 4 plans
+**Plans**: 5 plans
 Plans:
 - [ ] Wave 1: 03-01-PLAN.md — textarea shadcn component + all Ops MSW handlers (19 handlers) + sidebar Ops section unlock + 5 Wave-0 test stubs
 - [ ] Wave 2 *(blocked on Wave 1)*: 03-02-PLAN.md — Client CRM vertical: client list, create dialog, two-panel detail layout, editable fields, append-only notes log (OPS-01)
 - [ ] Wave 2 *(blocked on Wave 1)*: 03-03-PLAN.md — Requisition + JD Parse vertical: global req list (MSW-only), create dialog with async parse polling, req detail hub page, fields card (OPS-02, OPS-03)
-- [ ] Wave 3 *(blocked on Wave 2)*: 03-04-PLAN.md — Shortlist + Interview + Placement vertical: TanStack Table v8 shortlist, candidate slide-over, interview state machine, placement slide-over form, global interviews page (OPS-04, OPS-05, OPS-06)
+- [ ] Wave 3 *(blocked on Wave 2)*: 03-04a-PLAN.md — ShortlistTable + CandidateDetailPanel vertical: TanStack Table v8 shortlist, candidate slide-over, approvedCandidateId state (OPS-04)
+- [ ] Wave 3 *(blocked on Wave 2, 03-04a)*: 03-04b-PLAN.md — Interviews + Placement vertical: interview state machine, placement slide-over form, global interviews page (OPS-05, OPS-06)
 **Cross-cutting constraints:** GET /api/v1/ops/requisitions and GET /api/v1/ops/interviews are MSW-only (get?: never in api.d.ts); shortlist Approve/Hold/Pass use PATCH /api/v1/supply/shortlists/{submission_id}; useAsyncJob statusMap override required for JD parse (open/filled/closed → complete); note text rendered as JSX text nodes (never dangerouslySetInnerHTML)
 **UI hint**: yes
 
@@ -130,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-06-13 |
 | 2. Console BD | 0/4 | In progress | - |
-| 3. Console Ops | 0/4 | Not started | - |
+| 3. Console Ops | 0/5 | Not started | - |
 | 4. Console Supply + Admin | 0/TBD | Not started | - |
 | 5. Public Site | 0/TBD | Not started | - |
 | 6. Candidate Dashboard | 0/TBD | Not started | - |

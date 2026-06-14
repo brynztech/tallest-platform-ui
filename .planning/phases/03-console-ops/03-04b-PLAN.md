@@ -1,44 +1,32 @@
 ---
 phase: 03-console-ops
-plan: "04"
+plan: "04b"
 type: execute
 wave: 3
 depends_on:
   - "03-02"
   - "03-03"
+  - "03-04a"
 files_modified:
-  - apps/console/app/(shell)/ops/requisitions/[id]/page.tsx
-  - apps/console/app/(shell)/ops/requisitions/[id]/_components/shortlist-table.tsx
-  - apps/console/app/(shell)/ops/requisitions/[id]/_components/candidate-detail-panel.tsx
   - apps/console/app/(shell)/ops/requisitions/[id]/_components/interviews-section.tsx
   - apps/console/app/(shell)/ops/requisitions/[id]/_components/placement-panel.tsx
   - apps/console/app/(shell)/ops/requisitions/[id]/_components/placements-section.tsx
   - apps/console/app/(shell)/ops/interviews/page.tsx
-  - apps/console/src/__tests__/ops-shortlist.test.tsx
+  - apps/console/app/(shell)/ops/requisitions/[id]/page.tsx
   - apps/console/src/__tests__/ops-interviews.test.tsx
   - apps/console/src/__tests__/ops-placements.test.tsx
 autonomous: true
 requirements:
-  - OPS-04
   - OPS-05
   - OPS-06
 
 must_haves:
   truths:
-    - "Shortlist table renders on /ops/requisitions/{id} with columns: rank, candidate name, current title, fit score, status badge, actions"
-    - "Approve/Hold/Pass buttons fire PATCH /api/v1/supply/shortlists/{submission_id} (supply domain — NOT ops endpoint)"
-    - "Clicking a shortlist row opens the candidate detail Sheet slide-over on the right"
     - "Interviews section renders on requisition detail with inline status Select per row; PATCH fires on change; 409 toast shows 'Invalid status transition.'"
     - "Placement slide-over opens from 'Log Placement' button; fields pre-filled; POST on submit; toast 'Placement logged for [name].'"
-    - "Global /ops/interviews page renders with status/client/req filter dropdowns (MSW-only fetch)"
+    - "Global /ops/interviews page renders with status filter dropdown (MSW-only fetch)"
     - "Placements section shows logged placements with fee, billing status, retention badge"
   artifacts:
-    - path: "apps/console/app/(shell)/ops/requisitions/[id]/_components/shortlist-table.tsx"
-      provides: "TanStack Table v8 shortlist with Approve/Hold/Pass actions (supply PATCH)"
-      contains: "useReactTable"
-    - path: "apps/console/app/(shell)/ops/requisitions/[id]/_components/candidate-detail-panel.tsx"
-      provides: "Sheet slide-over for candidate enriched profile"
-      contains: "SheetContent"
     - path: "apps/console/app/(shell)/ops/requisitions/[id]/_components/interviews-section.tsx"
       provides: "Interview rows with inline status Select + PATCH + 409 error handling"
       contains: "Invalid status transition"
@@ -52,10 +40,6 @@ must_haves:
       provides: "Global interviews page with MSW-only fetch and filter dropdowns"
       contains: "MSW-only"
   key_links:
-    - from: "shortlist-table.tsx"
-      to: "/api/v1/supply/shortlists/{submission_id}"
-      via: "PATCH mutation — supply domain, not ops domain"
-      pattern: "supply/shortlists"
     - from: "interviews-section.tsx"
       to: "/api/v1/ops/interviews/{interview_id}"
       via: "PATCH on Select onValueChange"
@@ -68,14 +52,18 @@ must_haves:
       to: "MSW handler GET /api/v1/ops/interviews"
       via: "raw fetch() (get?: never in api.d.ts line 548)"
       pattern: "fetch.*ops/interviews"
+    - from: "page.tsx approvedCandidateId"
+      to: "InterviewsSection + PlacementPanel"
+      via: "prop drilling — approvedCandidateId declared by 03-04a"
+      pattern: "approvedCandidateId"
 ---
 
 <objective>
-Build the Shortlist + Interview + Placement vertical slice, completing the full recruiting lifecycle on the requisition detail hub. This plan wires in all four sub-sections (Shortlist, Interviews, Placements) on the req detail page, adds the global /ops/interviews page, and completes the test coverage for OPS-04, OPS-05, OPS-06.
+Build the Interviews + Placement vertical slice, completing OPS-05 (interview state machine) and OPS-06 (placement logging) on the requisition detail hub and global interviews page.
 
-Purpose: OPS-04 (shortlist + match trigger), OPS-05 (interview state machine), OPS-06 (placement logging). By end of this plan, an Ops rep can traverse the full lifecycle: create req → parse JD → trigger match → review shortlist → approve candidate → schedule interview → update status → log placement.
+Purpose: An Ops rep can schedule interviews for approved candidates, advance interview status through VALID_TRANSITIONS, and log placements via a Sheet slide-over form. This plan depends on 03-04a because it consumes `approvedCandidateId` state that 03-04a declares in page.tsx. After both 03-04a and 03-04b complete, the full recruiting lifecycle is navigable end-to-end.
 
-Output: 7 files (6 new components + 1 page), req detail page updated to wire all components, 3 test files updated with passing tests.
+Output: 3 new components (interviews-section.tsx, placement-panel.tsx, placements-section.tsx), 1 new page (ops/interviews/page.tsx), req detail page updated to wire all 4 sections, 2 test files updated with passing tests.
 </objective>
 
 <execution_context>
@@ -91,31 +79,13 @@ Output: 7 files (6 new components + 1 page), req detail page updated to wire all
 @/Users/bhuvanpurohit/Work/talent-platform-ui/.planning/phases/03-console-ops/03-PATTERNS.md
 @/Users/bhuvanpurohit/Work/talent-platform-ui/.planning/phases/03-console-ops/03-UI-SPEC.md
 @/Users/bhuvanpurohit/Work/talent-platform-ui/.planning/phases/03-console-ops/03-03-SUMMARY.md
+@/Users/bhuvanpurohit/Work/talent-platform-ui/.planning/phases/03-console-ops/03-04a-SUMMARY.md
 
 <interfaces>
 <!-- Key types and patterns. Read before implementing. -->
 
 From packages/api-client/src/types/api.d.ts:
 ```typescript
-// Shortlist endpoint returns loosely typed:
-// GET /api/v1/ops/requisitions/{req_id}/shortlist → { "application/json": { [key: string]: unknown } }
-// Define a LOCAL ShortlistEntry type and cast at fetch boundary:
-type ShortlistEntry = {
-  submission_id: string;
-  candidate_id: string;
-  candidate_name?: string | null;
-  current_title?: string | null;
-  fit_score?: number | null;
-  rank?: number | null;
-  status: string;
-}
-// Fetch the response as unknown, cast: (data as Record<string, unknown>)['submissions'] as ShortlistEntry[]
-
-// Shortlist PATCH — SUPPLY domain (not ops):
-// PATCH /api/v1/supply/shortlists/{submission_id}
-// Body: PatchSubmissionRequest = { status: string; notes?: string | null }
-// Use status values: 'approved' | 'hold' | 'passed'
-
 // InterviewResponse:
 { id: string; requisition_id: string; candidate_id: string; status: string; scheduled_at: string | null; notes: string | null; created_at: string; }
 
@@ -135,10 +105,6 @@ type ShortlistEntry = {
 // retention_flag_90d is boolean (required)
 ```
 
-CRITICAL — Shortlist actions use SUPPLY endpoint (Pitfall from RESEARCH.md):
-- `PATCH /api/v1/supply/shortlists/{submission_id}` with body `{ status: 'approved' | 'hold' | 'passed' }`
-- NOT any ops endpoint — there is no PATCH on /ops/shortlist paths in api.d.ts
-
 CRITICAL — No live GET interviews list endpoint (Pitfall 3):
 - `GET /api/v1/ops/interviews` → `get?: never` in api.d.ts line 548
 - Use raw fetch() for both interviews-section.tsx query AND /ops/interviews page
@@ -152,6 +118,11 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   completed: [],   // terminal — Select disabled
 }
 ```
+
+approvedCandidateId state (from 03-04a):
+- Declared in page.tsx as `const [approvedCandidateId, setApprovedCandidateId] = useState<string | null>(null)`
+- Set by ShortlistTable.onApprove callback (wired in 03-04a)
+- Pass as prop to InterviewsSection and PlacementPanel
 
 Phase 2 Sheet slide-over pattern (from lead-detail-panel.tsx):
 ```typescript
@@ -169,404 +140,15 @@ Phase 2 Sheet slide-over pattern (from lead-detail-panel.tsx):
   </SheetContent>
 </Sheet>
 ```
-
-TanStack Table v8 pattern (from RESEARCH.md Pattern 2):
-```typescript
-import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table'
-import type { ColumnDef } from '@tanstack/react-table'
-// Use createColumnHelper<ShortlistEntry>() for typed column definitions
-```
 </interfaces>
 </context>
 
 <tasks>
 
 <task type="auto" tdd="true">
-  <name>Task 1: ShortlistTable + CandidateDetailPanel + update req detail page + shortlist tests</name>
+  <name>Task 1: InterviewsSection + PlacementPanel + PlacementsSection + global interviews page + wire req detail</name>
   <read_first>
-    - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/(shell)/bd/leads/_components/lead-detail-panel.tsx (full file — exact Sheet pattern to clone for candidate-detail-panel.tsx)
-    - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/(shell)/ops/requisitions/[id]/page.tsx (current state from Plan 03-03 — must read to wire in components correctly)
-    - /Users/bhuvanpurohit/Work/talent-platform-ui/packages/api-client/src/types/api.d.ts (verify supply shortlist PATCH path + PatchSubmissionRequest shape + candidate endpoint path for lazy fetch)
-    - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/src/__tests__/ops-shortlist.test.tsx (add 1+ passing test for shortlist action mutation payload)
-    - /Users/bhuvanpurohit/Work/talent-platform-ui/.planning/phases/03-console-ops/03-UI-SPEC.md (Shortlist section spec — column widths, action button icons, status badge colors, candidate detail sheet spec)
-  </read_first>
-  <files>
-    apps/console/app/(shell)/ops/requisitions/[id]/_components/shortlist-table.tsx,
-    apps/console/app/(shell)/ops/requisitions/[id]/_components/candidate-detail-panel.tsx,
-    apps/console/app/(shell)/ops/requisitions/[id]/page.tsx,
-    apps/console/src/__tests__/ops-shortlist.test.tsx
-  </files>
-  <behavior>
-    - ShortlistTable: TanStack Table v8 with ShortlistEntry local type, Approve/Hold/Pass actions via PATCH /supply/shortlists/{id}, row click sets selectedCandidateId + opens Sheet, status badge color map
-    - CandidateDetailPanel: Sheet slide-over, lazy fetch /supply/candidates/{id} when open, Skeleton loading, quick action buttons Approve/Hold/Pass
-    - req detail page: remove placeholder empty states for Shortlist section, wire in ShortlistTable + CandidateDetailPanel
-    - Shortlist optimistic: status badge updates immediately, 5-second undo toast with "Undo" action, PATCH fires after 300ms delay (same pattern as Phase 2 approve/reject optimistic)
-  </behavior>
-  <action>
-**Create `apps/console/app/(shell)/ops/requisitions/[id]/_components/shortlist-table.tsx`:**
-
-```typescript
-'use client'
-
-import { useState } from 'react'
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  createColumnHelper,
-} from '@tanstack/react-table'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@brynzit/api-client'
-import type { components } from '@brynzit/api-client'
-import { toast } from 'sonner'
-import { Badge } from '@brynzit/ui/components/ui/badge'
-import { Button } from '@brynzit/ui/components/ui/button'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@brynzit/ui/components/ui/table'
-import { CheckCircle, PauseCircle, XCircle } from 'lucide-react'
-
-// CRITICAL: GET /api/v1/ops/requisitions/{req_id}/shortlist returns { [key: string]: unknown }
-// Define local type from supply SubmissionResponse shape (verified api.d.ts line 3031)
-type ShortlistEntry = {
-  submission_id: string
-  candidate_id: string
-  candidate_name?: string | null
-  current_title?: string | null
-  fit_score?: number | null
-  rank?: number | null
-  status: string
-}
-
-interface ShortlistTableProps {
-  reqId: string
-  onCandidateSelect: (candidateId: string) => void
-  onApprove: (candidateId: string) => void
-}
-
-function shortlistStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'approved': return 'bg-green-500/20 text-green-700 border-green-500/40'
-    case 'hold': return 'bg-amber-500/20 text-amber-700 border-amber-500/40'
-    case 'passed': return 'bg-muted text-muted-foreground border-border'
-    default: return 'bg-primary/10 text-primary border-primary/20' // shortlisted
-  }
-}
-
-export function ShortlistTable({ reqId, onCandidateSelect, onApprove }: ShortlistTableProps) {
-  const queryClient = useQueryClient()
-
-  const { data: entries = [], isLoading } = useQuery({
-    queryKey: ['ops-shortlist', reqId],
-    queryFn: async () => {
-      const { data, error } = await apiClient.GET(
-        '/api/v1/ops/requisitions/{req_id}/shortlist',
-        { params: { path: { req_id: reqId } } },
-      )
-      if (error) throw error
-      // Safe cast at boundary — backend returns JSONB { [key: string]: unknown }
-      const raw = data as Record<string, unknown>
-      return (raw['submissions'] as ShortlistEntry[] | undefined) ?? []
-    },
-  })
-
-  // CRITICAL: Shortlist actions use SUPPLY domain PATCH — NOT ops endpoint
-  const actionMutation = useMutation({
-    mutationFn: ({ submissionId, status }: { submissionId: string; status: string }) =>
-      apiClient.PATCH('/api/v1/supply/shortlists/{submission_id}', {
-        params: { path: { submission_id: submissionId } },
-        body: { status } satisfies components['schemas']['PatchSubmissionRequest'],
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ops-shortlist', reqId] })
-    },
-    onError: () => { toast.error('Failed to update — try again.') },
-  })
-
-  const handleAction = (entry: ShortlistEntry, newStatus: 'approved' | 'hold' | 'passed') => {
-    const prevStatus = entry.status
-    const name = entry.candidate_name ?? 'Candidate'
-    const toastMsg =
-      newStatus === 'approved' ? `Candidate ${name} approved.`
-      : newStatus === 'hold' ? `Marked ${name} as hold.`
-      : `Passed on ${name}.`
-
-    // Optimistic + 5-second undo (same as Phase 2 approve pattern)
-    const timeoutId = setTimeout(() => {
-      actionMutation.mutate({ submissionId: entry.submission_id, status: newStatus })
-      if (newStatus === 'approved') onApprove(entry.candidate_id)
-    }, 300)
-
-    toast(toastMsg, {
-      duration: 5000,
-      action: {
-        label: 'Undo',
-        onClick: () => {
-          clearTimeout(timeoutId)
-          queryClient.invalidateQueries({ queryKey: ['ops-shortlist', reqId] })
-        },
-      },
-    })
-  }
-
-  const columnHelper = createColumnHelper<ShortlistEntry>()
-
-  const columns: ColumnDef<ShortlistEntry, unknown>[] = [
-    columnHelper.accessor('rank', {
-      header: '#',
-      cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue() ?? '—'}</span>,
-      size: 48,
-    }),
-    columnHelper.accessor('candidate_name', {
-      header: 'Candidate',
-      cell: (info) => (
-        <button
-          className="text-sm text-left hover:text-primary cursor-pointer"
-          onClick={() => onCandidateSelect(info.row.original.candidate_id)}
-        >
-          {info.getValue() ?? 'Unknown'}
-        </button>
-      ),
-    }),
-    columnHelper.accessor('current_title', {
-      header: 'Current Title',
-      cell: (info) => (
-        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
-          {info.getValue() ?? '—'}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('fit_score', {
-      header: 'Fit Score',
-      cell: (info) => {
-        const score = info.getValue()
-        return <span className="text-sm font-semibold">{score != null ? `${score}%` : '—'}</span>
-      },
-      size: 80,
-    }),
-    columnHelper.accessor('status', {
-      header: 'Status',
-      cell: (info) => (
-        <Badge
-          variant="outline"
-          className={`text-xs ${shortlistStatusBadgeClass(info.getValue())}`}
-        >
-          {info.getValue()}
-        </Badge>
-      ),
-      size: 120,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: '',
-      cell: (info) => {
-        const entry = info.row.original
-        return (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              aria-label="Approve candidate"
-              disabled={entry.status === 'approved' || entry.status === 'passed'}
-              onClick={() => handleAction(entry, 'approved')}
-            >
-              <CheckCircle className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              aria-label="Hold candidate"
-              disabled={entry.status !== 'shortlisted'}
-              onClick={() => handleAction(entry, 'hold')}
-            >
-              <PauseCircle className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 hover:text-destructive"
-              aria-label="Pass on candidate"
-              disabled={entry.status === 'passed'}
-              onClick={() => handleAction(entry, 'passed')}
-            >
-              <XCircle className="size-4" />
-            </Button>
-          </div>
-        )
-      },
-      size: 120,
-    }),
-  ]
-
-  const table = useReactTable({
-    data: entries,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  })
-
-  if (isLoading) return <p className="text-sm text-muted-foreground py-4 text-center">Loading shortlist…</p>
-
-  if (entries.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-8 text-center">
-        No candidates shortlisted yet. Trigger a match above to populate this list.
-      </p>
-    )
-  }
-
-  return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id}>
-              {hg.headers.map((header) => (
-                <TableHead key={header.id} style={{ width: header.column.getSize() || undefined }}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="h-10 cursor-pointer hover:bg-muted/30">
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
-```
-
----
-
-**Create `apps/console/app/(shell)/ops/requisitions/[id]/_components/candidate-detail-panel.tsx`:**
-
-Clone from `lead-detail-panel.tsx` — exact Sheet structure, swap lead content for candidate content.
-
-Props:
-```typescript
-interface CandidateDetailPanelProps {
-  candidateId: string | null
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
-  onApprove?: () => void
-}
-```
-
-Lazy fetch: `enabled: !!candidateId && isOpen` — only fires when sheet is open.
-Endpoint: `apiClient.GET('/api/v1/supply/candidates/{candidate_id}', { params: { path: { candidate_id: candidateId! } } })`
-
-Verify: check api.d.ts for the correct candidate detail endpoint path under `/api/v1/supply/`. If the path doesn't exist, use a MSW-only fetch pattern instead.
-
-SheetContent (side="right", w-[560px] max-w-[90vw], overflow-y-auto, bg-card, border-l border-border, p-0).
-
-Sticky header: candidate name (text-xl font-semibold) + current title (14px muted) + close button (X icon, variant="ghost", size="icon", top-right, absolute positioning).
-
-Quick action bar (px-6 py-3, flex gap-2, border-b border-border):
-- "Approve Candidate" Button (variant="default", size="sm", onClick: fires PATCH approved + calls onApprove)
-- "Hold Candidate" Button (variant="outline", size="sm")
-- "Pass on Candidate" Button (variant="outline", size="sm", className includes "text-destructive hover:text-destructive")
-
-Body (px-6 py-4):
-- Fit score (20px/600, text-primary, label "Fit Score" at 12px muted)
-- Skills as Badge variant="secondary" flex-wrap gap-1
-- Skeleton loading state when `isLoading`
-
-Include `SheetDescription` for accessibility (sr-only, "Enriched candidate profile").
-
----
-
-**Update `apps/console/app/(shell)/ops/requisitions/[id]/page.tsx`:**
-
-Read the current file (from Plan 03-03 output). Replace the Shortlist placeholder section with actual components:
-
-1. Add imports at top: `ShortlistTable`, `CandidateDetailPanel`
-2. Remove the Shortlist placeholder `<p>` empty state
-3. Wire in ShortlistTable and CandidateDetailPanel using the shared state already declared:
-```typescript
-{/* Section 2: Shortlist */}
-<Separator className="mb-4" />
-<div className="flex items-center justify-between mb-2">
-  <h2 className="text-base font-semibold">Shortlist</h2>
-</div>
-<ShortlistTable
-  reqId={params.id}
-  onCandidateSelect={(id) => {
-    setSelectedCandidateId(id)
-    setIsCandidatePanelOpen(true)
-  }}
-  onApprove={(candidateId) => setApprovedCandidateId(candidateId)}
-/>
-<CandidateDetailPanel
-  candidateId={selectedCandidateId}
-  isOpen={isCandidatePanelOpen}
-  onOpenChange={setIsCandidatePanelOpen}
-  onApprove={() => {
-    if (selectedCandidateId) setApprovedCandidateId(selectedCandidateId)
-  }}
-/>
-
-{/* Schedule Interview button — shown when ≥1 approved candidate */}
-{approvedCandidateId && (
-  <Button variant="outline" size="sm" className="mt-4 mb-6">
-    <CalendarPlus className="mr-1 size-4" />Schedule Interview
-  </Button>
-)}
-```
-Add `CalendarPlus` to lucide-react imports.
-
----
-
-**Update `apps/console/src/__tests__/ops-shortlist.test.tsx`:**
-
-Add a passing test for the shortlist action mutation payload structure:
-```typescript
-describe('Shortlist action mutation (OPS-04)', () => {
-  it('shortlist action uses supply PATCH endpoint (not ops endpoint)', () => {
-    // This is a path enforcement test — the mutation must use supply/shortlists not ops
-    const SUPPLY_SHORTLIST_PATH = '/api/v1/supply/shortlists/{submission_id}'
-    const OPS_SHORTLIST_PATH = '/api/v1/ops/shortlists/{submission_id}'
-    // The correct path is supply domain:
-    expect(SUPPLY_SHORTLIST_PATH).toContain('supply')
-    expect(SUPPLY_SHORTLIST_PATH).not.toContain('/ops/')
-    // The ops path should NOT be used:
-    expect(OPS_SHORTLIST_PATH).toContain('/ops/')  // this is the wrong one
-  })
-})
-```
-  </action>
-  <verify>
-    <automated>
-      cd /Users/bhuvanpurohit/Work/talent-platform-ui && pnpm --filter @brynzit/console test run src/__tests__/ops-shortlist.test.tsx && pnpm --filter @brynzit/console exec tsc --noEmit && echo "PASSED"
-    </automated>
-  </verify>
-  <done>
-    - `shortlist-table.tsx` exports `ShortlistTable` with `reqId`, `onCandidateSelect`, `onApprove` props
-    - `shortlist-table.tsx` contains `PATCH /api/v1/supply/shortlists/{submission_id}` (supply domain) — NOT any ops endpoint
-    - `shortlist-table.tsx` defines local `ShortlistEntry` type with comment about api.d.ts loose typing
-    - `candidate-detail-panel.tsx` exports `CandidateDetailPanel` with Sheet slide-over, `enabled: !!candidateId && isOpen` lazy fetch
-    - req detail page `page.tsx` imports and renders `ShortlistTable` + `CandidateDetailPanel`
-    - `ops-shortlist.test.tsx` has ≥2 passing tests
-    - TypeScript check exits 0
-    - `grep -c "supply/shortlists"` in shortlist-table.tsx returns ≥1
-  </done>
-</task>
-
-<task type="auto" tdd="true">
-  <name>Task 2: InterviewsSection + PlacementPanel + PlacementsSection + global interviews page + wire req detail + update tests</name>
-  <read_first>
-    - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/(shell)/ops/requisitions/[id]/page.tsx (current state after Task 1 — must read before modifying again)
+    - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/(shell)/ops/requisitions/[id]/page.tsx (current state after 03-04a — must read before modifying again to understand approvedCandidateId declaration and existing imports)
     - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/(shell)/bd/leads/_components/lead-detail-panel.tsx (Sheet structure to clone for placement-panel.tsx)
     - /Users/bhuvanpurohit/Work/talent-platform-ui/packages/api-client/src/types/api.d.ts (verify InterviewResponse, PatchInterviewRequest, CreatePlacementRequest, PlacementResponse exact field names)
     - /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/src/__tests__/ops-interviews.test.tsx (update with passing tests)
@@ -583,11 +165,11 @@ describe('Shortlist action mutation (OPS-04)', () => {
     apps/console/src/__tests__/ops-placements.test.tsx
   </files>
   <behavior>
-    - InterviewsSection: MSW-only fetch for interviews by req, inline Select per row with VALID_TRANSITIONS gate, PATCH on change, toast.error on 409, "Create Interview" button fires POST
+    - InterviewsSection: MSW-only fetch for interviews by req, inline Select per row with VALID_TRANSITIONS gate, PATCH on change, toast.error on 409, "Create Interview" button fires POST (only when approvedCandidateId is set)
     - PlacementPanel: Sheet slide-over, react-hook-form + Zod, pre-filled read-only fields, retention_flag_90d checkbox, POST /ops/placements, toast "Placement logged for [name]."
     - PlacementsSection: read-only list from GET /ops/requisitions/{req_id}/placements, fee/billing/retention badge display
-    - Global /ops/interviews: MSW-only fetch, status/client/req filter Selects, interview rows with inline status Select + PATCH
-    - req detail page: wire Interviews, PlacementPanel, PlacementsSection into existing hub, remove interview/placement placeholder empty states
+    - Global /ops/interviews: MSW-only fetch, status filter Select, interview rows with inline status Select + PATCH
+    - req detail page: wire Interviews, PlacementPanel, PlacementsSection into existing hub using approvedCandidateId state already declared by 03-04a; remove interview/placement placeholder empty states
   </behavior>
   <action>
 **Create `apps/console/app/(shell)/ops/requisitions/[id]/_components/interviews-section.tsx`:**
@@ -1134,7 +716,12 @@ export default function InterviewsPage() {
 
 **Update `apps/console/app/(shell)/ops/requisitions/[id]/page.tsx`:**
 
-Read the current file. Add these imports: `InterviewsSection`, `PlacementPanel`, `PlacementsSection`, `Trophy` from lucide-react.
+Read the current file (state after 03-04a). Add these imports: `InterviewsSection`, `PlacementPanel`, `PlacementsSection`, `Trophy` from lucide-react.
+
+Declare `isPlacementOpen` state (if not already present from 03-04a):
+```typescript
+const [isPlacementOpen, setIsPlacementOpen] = useState(false)
+```
 
 Replace the Interviews placeholder section:
 ```typescript
@@ -1205,7 +792,7 @@ describe('Interview VALID_TRANSITIONS enforcement (OPS-05)', () => {
 
 **Update `apps/console/src/__tests__/ops-placements.test.tsx`:**
 
-The Zod schema tests already pass from Plan 03-01. Add a passing test for the VALID_TRANSITIONS shape for placement context:
+The Zod schema tests already pass from Plan 03-01. Add a passing test for the placement form defaults:
 ```typescript
 describe('Placement form retention flag (OPS-06)', () => {
   it('retention_flag_90d defaults to false', () => {
@@ -1229,13 +816,13 @@ describe('Placement form retention flag (OPS-06)', () => {
     - `placement-panel.tsx` exports `PlacementPanel`, uses `retention_flag_90d: z.boolean()` in Zod schema, Controller + Checkbox for retention flag, toast "Placement logged for [name]." on success
     - `placements-section.tsx` exports `PlacementsSection`, fetches from `/api/v1/ops/requisitions/{req_id}/placements`, shows "90-day retention" Badge when `retention_flag_90d === true`
     - `/ops/interviews/page.tsx` has `// NOTE: MSW-only` comment, status filter Select, interview rows with inline PATCH Select
-    - req detail `page.tsx` imports and renders all 4 section components (ShortlistTable from Task 1, InterviewsSection, PlacementPanel, PlacementsSection)
+    - req detail `page.tsx` imports and renders all 4 section components (ShortlistTable from 03-04a, InterviewsSection, PlacementPanel, PlacementsSection)
     - `ops-interviews.test.tsx` has ≥3 passing tests
     - `ops-placements.test.tsx` has ≥3 passing tests
     - `pnpm --filter @brynzit/console test run` exits 0
     - `pnpm --filter @brynzit/console exec tsc --noEmit` exits 0
-    - `grep -c "Invalid status transition"` in interviews-section.tsx returns ≥1
-    - `grep -c "retention_flag_90d"` in placement-panel.tsx returns ≥2
+    - `grep -v '^//' apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/interviews-section.tsx | grep -c "Invalid status transition"` returns ≥1
+    - `grep -v '^//' apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/placement-panel.tsx | grep -c "retention_flag_90d"` returns ≥2
   </done>
 </task>
 
@@ -1246,19 +833,17 @@ describe('Placement form retention flag (OPS-06)', () => {
 
 | Boundary | Description |
 |----------|-------------|
-| Shortlist actions → supply PATCH | Ops rep actions (Approve/Hold/Pass) cross domain boundary to supply API |
 | Placement form → POST /ops/placements | fee_usd and billing_status cross trust boundary; Zod validates before send |
 | Interview PATCH → 409 error path | 409 response must be surfaced as user feedback (not silently swallowed) |
+| MSW-only interviews fetch | Raw fetch() is used — internal trusted-network tool only |
 
 ## STRIDE Threat Register
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-03-12 | Tampering (domain confusion) | shortlist-table.tsx supply PATCH | mitigate | PATCH uses `/api/v1/supply/shortlists/{submission_id}` with `satisfies PatchSubmissionRequest` — TypeScript compile-time enforcement prevents routing to wrong domain endpoint |
 | T-03-13 | Tampering (state machine bypass) | interviews-section.tsx Select | mitigate | VALID_TRANSITIONS map limits which status values are offered in Select; backend 409 guard is the authoritative enforcement; frontend provides UX-level gate only |
 | T-03-14 | Tampering (invalid placement data) | placement-panel.tsx form | mitigate | Zod v4 `placementSchema` validates: `billing_status` required min 1, `retention_flag_90d` boolean, `fee_usd` positive number if provided; react-hook-form resolver enforces at submit |
 | T-03-15 | Information Disclosure | MSW-only interviews fetch | accept | Internal trusted-network tool; raw fetch() returns mock data in dev; no user PII exposed in URL params (req_id is UUID, not sensitive) |
-| T-03-16 | Denial of Service | candidate-detail-panel lazy fetch | mitigate | `enabled: !!candidateId && isOpen` prevents fetch until panel is open; staleTime: 30s prevents repeated fetches while open |
 </threat_model>
 
 <verification>
@@ -1269,39 +854,34 @@ pnpm --filter @brynzit/console test run --reporter=verbose
 # TypeScript clean
 pnpm --filter @brynzit/console exec tsc --noEmit
 
-# Supply shortlist PATCH domain — shortlist-table must reference supply endpoint
-grep -c "supply/shortlists" /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/shortlist-table.tsx
-# Must return ≥1
-
 # 409 error handling present
-grep -c "Invalid status transition" /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/interviews-section.tsx
+grep -v '^//' apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/interviews-section.tsx | grep -c "Invalid status transition"
 # Must return ≥1
 
 # retention_flag_90d in placement-panel
-grep -c "retention_flag_90d" /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/placement-panel.tsx
+grep -v '^//' apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/placement-panel.tsx | grep -c "retention_flag_90d"
 # Must return ≥2 (schema definition + form field)
 
 # MSW-only comment in global interviews page
-grep -c "MSW-only" /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/\(shell\)/ops/interviews/page.tsx
+grep -v '^//' apps/console/app/\(shell\)/ops/interviews/page.tsx | grep -c "MSW-only"
 # Must return ≥1
 
 # Placements section shows 90-day retention badge
-grep -c "90-day retention" /Users/bhuvanpurohit/Work/talent-platform-ui/apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/placements-section.tsx
+grep -c "90-day retention" apps/console/app/\(shell\)/ops/requisitions/\[id\]/_components/placements-section.tsx
 # Must return ≥1
 ```
 </verification>
 
 <success_criteria>
-- ShortlistTable renders TanStack Table v8 with Approve/Hold/Pass (supply domain PATCH) — confirmed by `grep -c "supply/shortlists"` ≥1
 - InterviewsSection renders inline Select with VALID_TRANSITIONS gate; 409 surfaces as toast "Invalid status transition."
 - PlacementPanel logs placement with `retention_flag_90d` boolean checkbox via Zod + react-hook-form
 - PlacementsSection shows "90-day retention" badge when flag is true
 - /ops/interviews page renders global view with status filter (MSW-only fetch)
-- Req detail page has all 4 sections wired (Shortlist, Interviews, Placements + slide-overs)
+- Req detail page has all 4 sections wired (Shortlist from 03-04a, Interviews, Placements + slide-overs) using `approvedCandidateId` from 03-04a
 - `pnpm --filter @brynzit/console test run` exits 0 with ≥10 total passing tests across all ops test files
 - `pnpm --filter @brynzit/console exec tsc --noEmit` exits 0
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/03-console-ops/03-04-SUMMARY.md` following the template at `@/Users/bhuvanpurohit/Work/talent-platform-ui/.claude/get-shit-done/templates/summary.md`.
+After completion, create `.planning/phases/03-console-ops/03-04b-SUMMARY.md` following the template at `@/Users/bhuvanpurohit/Work/talent-platform-ui/.claude/get-shit-done/templates/summary.md`.
 </output>
