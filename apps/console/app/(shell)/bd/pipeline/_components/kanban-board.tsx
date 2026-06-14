@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -119,6 +119,19 @@ export function KanbanBoard({ columns: initialColumns }: KanbanBoardProps) {
     Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])),
   )
 
+  // Track whether a drag is in progress so we don't clobber an in-flight drag
+  // with a background refetch from PipelinePage's 15-second polling interval.
+  const [isDragging, setIsDragging] = useState(false)
+
+  // Sync local state when the parent delivers fresh polling data.
+  // useState's initialiser only runs on mount, so without this effect the
+  // board ignores all subsequent prop updates and polling is effectively useless.
+  useEffect(() => {
+    if (!isDragging) {
+      setColumns(Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])))
+    }
+  }, [initialColumns, isDragging])
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -148,7 +161,13 @@ export function KanbanBoard({ columns: initialColumns }: KanbanBoardProps) {
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={(event) => { setIsDragging(false); handleDragEnd(event) }}
+      onDragCancel={() => setIsDragging(false)}
+    >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {initialColumns.map((col) => (
           <KanbanColumnComponent
