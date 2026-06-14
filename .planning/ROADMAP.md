@@ -93,7 +93,15 @@ Plans:
   3. Supply rep can ingest candidates via LinkedIn query, CSV upload, or resume upload — all three paths surface async status (queued / processing / done / failed) without manual refresh
   4. Supply rep can view per-requisition shortlist submissions and approve or reject individual candidates, and can review, edit, and approve or reject 2-step AI-generated engagement sequences
   5. Admin can view AI cost breakdown by domain/model/task, browse and filter the agent event log, see quota usage with a warning state above 80%, view pipeline health as status counts per stage, and read/edit agent prompts with save confirmation
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] Wave 1: 04-01-PLAN.md — shadcn tabs+progress install + full MSW supply handlers (14 handlers) + full MSW monitoring handlers (6 handlers) + sidebar Supply+Admin unlock + 8 test stubs (SUP-01..05, ADM-01..05)
+- [ ] Wave 2 *(blocked on Wave 1)*: 04-02-PLAN.md — Supply search page: filter sidebar + CandidateResultCard + explicit-submit search + keyboard nav + CandidateProfileSheet shared component + enrichment polling + Phase 3 stub replacement (SUP-01, SUP-02, SUP-04)
+- [ ] Wave 2 *(blocked on Wave 1)*: 04-03-PLAN.md — Admin page shell (Suspense + tabbed nav) + AdminOverviewTab (4 summary cards) + AdminCostsTab + AdminQuotasTab + AdminPipelineTab (ADM-01, ADM-03, ADM-04)
+- [ ] Wave 3 *(blocked on Wave 2)*: 04-04-PLAN.md — Supply ingest page: LinkedIn form (sync 201) + CSV form (native fetch multipart) + Resume form (async 202 + polling) + IngestJobCard Recent Jobs (SUP-03)
+- [ ] Wave 3 *(blocked on Wave 2)*: 04-05-PLAN.md — AdminEventsTab (TanStack Table v8, server+client filters, limit+offset pagination) + AdminPromptsTab (split-view, dirty state, PUT save) (ADM-02, ADM-05)
+- [ ] Wave 4 *(blocked on Wave 3)*: 04-06-PLAN.md — Supply engagements page + EngagementSequenceSheet (RHF useFieldArray, PATCH-then-POST approve, 5s undo reject) + human verify (SUP-04, SUP-05)
+**Cross-cutting constraints:** No useAsyncJob for enrichment polling (manual setInterval — CandidateProfileResponse has no .status); native fetch for CSV + resume multipart uploads; task_type filter on AdminEventsTab is client-side only; KNOWN_PROMPTS hardcoded (no list endpoint); Suspense wrapper required on /admin page for useSearchParams; title filter field folded into q semantic param (no API title param); match_reason is MSW-only mock field on search results
 **UI hint**: yes
 
 ### Phase 5: Public Site
@@ -123,6 +131,23 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+## Backlog
+
+### Phase 999.1: Ops JD File Upload (BACKLOG)
+
+**Goal:** Ops reps can upload client JD documents (`.pdf`, `.doc`, `.docx`) in addition to pasting JD text, and the system extracts text server-side before reusing the existing JD parse pipeline.
+**Requirements:** OPS-07
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with `/gsd-review-backlog` when ready)
+
+**Notes:**
+- Backend: add an Ops JD upload endpoint such as `POST /api/v1/ops/requisitions/{req_id}/jd/upload` accepting PDF/DOC/DOCX multipart uploads.
+- Backend: extract text server-side, likely reusing the document parsing approach from supply resume parsing where suitable, then call the existing JD parse service with extracted text.
+- Frontend: add upload/dropzone beside the JD textarea in New Requisition and Requisition Detail.
+- Keep pasted JD text as the fallback path.
+
 ## Progress
 
 **Execution Order:**
@@ -133,6 +158,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation | 4/4 | Complete | 2026-06-13 |
 | 2. Console BD | 0/4 | In progress | - |
 | 3. Console Ops | 0/5 | Not started | - |
-| 4. Console Supply + Admin | 0/TBD | Not started | - |
+| 4. Console Supply + Admin | 0/6 | Not started | - |
 | 5. Public Site | 0/TBD | Not started | - |
 | 6. Candidate Dashboard | 0/TBD | Not started | - |
