@@ -633,22 +633,25 @@ import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What status does `RequisitionResponse.status` have immediately after JD parsing completes?**
    - What we know: `useAsyncJob` polls the req endpoint; it needs a terminal status in its statusMap
    - What's unclear: The exact value the backend writes (likely `'open'` but unconfirmed)
    - Recommendation: Use `statusMap: { open: 'complete', filled: 'complete', closed: 'complete' }` and confirm with a live API call or backend source review. The MSW handler should simulate this.
+   - **RESOLVED:** Plans use `statusMap: { open: 'complete', filled: 'complete', closed: 'complete', parsing: 'pending' }` in `requisition-fields.tsx`. MSW handler returns `status: 'open'` on terminal GET response.
 
 2. **What are the exact valid status values for shortlist submission actions (Approve/Hold/Pass)?**
    - What we know: `PatchSubmissionRequest.status` is `string`; D-09 says Approve/Hold/Pass
    - What's unclear: Whether backend accepts `'approved'`/`'hold'`/`'passed'` or different casing/values
    - Recommendation: Mock with lowercase (`'approved'`, `'hold'`, `'passed'`); confirm with live test
+   - **RESOLVED:** Plans use lowercase status values `'approved'`, `'hold'`, `'passed'` in `shortlist-table.tsx` PATCH body. Mocked via MSW supply handler; to be confirmed against live backend during execution.
 
 3. **What are the valid state transitions for interviews?**
    - What we know: D-13 says `Scheduled → Accepted / Declined / Completed`; PATCH returns 409 on invalid
    - What's unclear: Whether `Declined → Completed` is valid, or `Accepted → Declined`, etc.
    - Recommendation: Only offer transitions documented in D-13; surface 409 as toast error
+   - **RESOLVED:** Plans use `VALID_TRANSITIONS: { scheduled: ['accepted', 'declined'], accepted: ['completed'], declined: [], completed: [] }` in `interviews-section.tsx`. Only transitions from D-13 are offered; backend 409 surfaces as `toast.error('Invalid status transition.')`.
 
 ---
 
