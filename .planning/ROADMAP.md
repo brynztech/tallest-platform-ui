@@ -121,7 +121,7 @@ Plans:
 - [x] Wave 1: 05-01-PLAN.md — Deps + postcss + vitest + candidate types + MSW handler expansion (12 jobs, 4 new endpoints) + 3 shadcn components (form, command, scroll-area) ✓ 2026-06-15
 - [x] Wave 2 *(blocked on Wave 1)*: 05-02-PLAN.md — Landing page hero + SiteNav + CandidateAuthContext + Job board (cursor pagination, debounced search, filters, logged-out gating) (PUB-01, JOB-01, JOB-05, JOB-06) ✓ 2026-06-15
 - [x] Wave 3 *(blocked on Wave 2)*: 05-03-PLAN.md — Signup + Login + 3-step onboarding (resume upload + async parse + profile confirm + preferences) (PUB-02, PUB-03, PUB-04) ✓ 2026-06-15
-- [ ] Wave 4 *(blocked on Wave 3)*: 05-04-PLAN.md — Job detail page (JSON-LD, safe JD text) + Apply section (3 states) + Profile edit with completeness meter (PUB-05, PUB-06, JOB-02, JOB-03, JOB-04)
+- [x] Wave 4 *(blocked on Wave 3)*: 05-04-PLAN.md — Job detail page (JSON-LD, safe JD text) + Apply section (3 states) + Profile edit with completeness meter (PUB-05, PUB-06, JOB-02, JOB-03, JOB-04) ✓ 2026-06-15
 - [ ] Wave 5 *(blocked on Wave 4)*: 05-05-PLAN.md — Human verify: full candidate journey walkthrough (all 12 requirements)
 **Cross-cutting constraints:** All candidate endpoints use native fetch (not apiClient — paths absent from api.d.ts); T-05-01 safeRedirect() on all ?redirect= params; T-05-02 JD text as whitespace-pre-wrap (never dangerouslySetInnerHTML); T-05-03 try/catch on localStorage JSON.parse; T-05-04 safeHref() for github_url/linkedin_url; no dark class on html element in apps/web; completeness_score from API only (never computed client-side); use(params) for Next.js 16 async params in all client page components
 **UI hint**: yes
