@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import type { components } from '@brynzit/api-client'
@@ -43,6 +43,8 @@ export function BulkToolbar({
 }: BulkToolbarProps) {
   const queryClient = useQueryClient()
   const [bulkRejectReason, setBulkRejectReason] = useState<string>('')
+  // Ref to the pending delayed-fire timer so the undo handler can cancel it.
+  const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const bulkMutation = useMutation({
     mutationFn: (payload: BulkActionRequest) =>
@@ -73,17 +75,30 @@ export function BulkToolbar({
         ? { due_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }
         : {}),
     }
-    bulkMutation.mutate(payload)
-    toast(`Bulk action: ${action} ${selectedIds.length} leads`, {
+
+    // Show the toast BEFORE firing the mutation so the "Undo" button can cancel
+    // it. Mirror the same delayed-fire pattern used by single-lead actions (D-06).
+    const toastId = toast(`Bulk action: ${action} ${selectedIds.length} leads`, {
       action: {
         label: 'Undo',
         onClick: () => {
-          // Compensating reset — restore from server
-          queryClient.resetQueries({ queryKey: ['leads'] })
+          if (pendingTimer.current) {
+            clearTimeout(pendingTimer.current)
+            pendingTimer.current = null
+          }
+          // Undo: cancel the pending mutation and restore selection state
+          onBulkSettled()
+          toast.dismiss(toastId)
         },
       },
       duration: 5000,
     })
+
+    // Delay the actual API call by 300 ms to give the undo window a chance to fire
+    pendingTimer.current = setTimeout(() => {
+      pendingTimer.current = null
+      bulkMutation.mutate(payload)
+    }, 300)
   }
 
   return (
