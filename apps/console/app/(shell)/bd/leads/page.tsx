@@ -184,12 +184,16 @@ export default function LeadsPage() {
       switch (e.key) {
         case 'j': {
           e.preventDefault()
-          setFocusedIndex((i) => Math.min(i + 1, visibleLeads.length - 1))
+          // Guard empty list: length-1 would be -1 when the queue is clear,
+          // causing Math.min(1, -1) = -1 and silently breaking all action keys.
+          if (visibleLeads.length > 0)
+            setFocusedIndex((i) => Math.min(i + 1, visibleLeads.length - 1))
           break
         }
         case 'k': {
           e.preventDefault()
-          setFocusedIndex((i) => Math.max(i - 1, 0))
+          if (visibleLeads.length > 0)
+            setFocusedIndex((i) => Math.max(i - 1, 0))
           break
         }
         case 'a': {
@@ -246,6 +250,13 @@ export default function LeadsPage() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isDetailOpen, isShortcutOpen, anyPopoverOpen, focusedIndex, visibleLeads])
+
+  // Clamp focusedIndex when visibleLeads shrinks (e.g. after approve/reject removes a card)
+  // so the focused card doesn't silently point past the end of the list.
+  useEffect(() => {
+    if (visibleLeads.length > 0)
+      setFocusedIndex((i) => Math.min(i, visibleLeads.length - 1))
+  }, [visibleLeads.length])
 
   // ---- Intersection observer for load-more ----
   const loadMoreRef = useRef<HTMLDivElement>(null)
