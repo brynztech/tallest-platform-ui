@@ -25,6 +25,7 @@ export default function RequisitionDetailPage({
 
   // Shared state for Wave 3 components (shortlist, placement, candidate panel)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null)
   const [isCandidatePanelOpen, setIsCandidatePanelOpen] = useState(false)
   const [isPlacementOpen, setIsPlacementOpen] = useState(false)
   const [approvedCandidateId, setApprovedCandidateId] = useState<string | null>(null)
@@ -88,14 +89,16 @@ export default function RequisitionDetailPage({
       </div>
       <ShortlistTable
         reqId={id}
-        onCandidateSelect={(candidateId) => {
+        onCandidateSelect={(candidateId, submissionId) => {
           setSelectedCandidateId(candidateId)
+          setSelectedSubmissionId(submissionId)
           setIsCandidatePanelOpen(true)
         }}
         onApprove={(candidateId) => setApprovedCandidateId(candidateId)}
       />
       <CandidateDetailPanel
         candidateId={selectedCandidateId}
+        submissionId={selectedSubmissionId}
         isOpen={isCandidatePanelOpen}
         onOpenChange={setIsCandidatePanelOpen}
         onApprove={() => {

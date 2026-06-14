@@ -18,6 +18,7 @@ import { X } from 'lucide-react'
 
 interface CandidateDetailPanelProps {
   candidateId: string | null
+  submissionId: string | null
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   onApprove?: () => void
@@ -25,6 +26,7 @@ interface CandidateDetailPanelProps {
 
 export function CandidateDetailPanel({
   candidateId,
+  submissionId,
   isOpen,
   onOpenChange,
   onApprove,
@@ -47,14 +49,11 @@ export function CandidateDetailPanel({
   })
 
   // CRITICAL: Shortlist actions use SUPPLY domain PATCH — NOT ops endpoint
+  // submission_id must be the actual shortlist submission UUID, not the candidate UUID
   const actionMutation = useMutation({
     mutationFn: ({ status }: { status: string }) =>
       apiClient.PATCH('/api/v1/supply/shortlists/{submission_id}', {
-        // candidateId is not a submission_id, but the panel fires the quick action
-        // using the candidateId as an identifier for the mutation target.
-        // The actual submission_id is resolved in the parent via the shortlist table.
-        // This quick action fires with candidateId as a contextual hint.
-        params: { path: { submission_id: candidateId! } },
+        params: { path: { submission_id: submissionId! } },
         body: { status } satisfies components['schemas']['PatchSubmissionRequest'],
       }),
     onSuccess: (_, { status }) => {

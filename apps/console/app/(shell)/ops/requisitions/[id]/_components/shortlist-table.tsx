@@ -38,7 +38,7 @@ type ShortlistEntry = {
 
 interface ShortlistTableProps {
   reqId: string
-  onCandidateSelect: (candidateId: string) => void
+  onCandidateSelect: (candidateId: string, submissionId: string) => void
   onApprove: (candidateId: string) => void
 }
 
@@ -166,7 +166,7 @@ export function ShortlistTable({
         <button
           type="button"
           className="cursor-pointer text-left text-sm hover:text-primary"
-          onClick={() => onCandidateSelect(info.row.original.candidate_id)}
+          onClick={() => onCandidateSelect(info.row.original.candidate_id, info.row.original.submission_id)}
         >
           {info.getValue() ?? 'Unknown'}
         </button>
