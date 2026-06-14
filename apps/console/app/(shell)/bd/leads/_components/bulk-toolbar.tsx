@@ -54,7 +54,8 @@ export function BulkToolbar({
     },
     onError: () => {
       toast.error('Bulk action failed. Please try again.')
-      onBulkSettled()
+      // onBulkSettled is always called by onSettled — do not call twice to
+      // avoid a double resetQueries and a redundant state update flicker (WR-03).
     },
   })
 
