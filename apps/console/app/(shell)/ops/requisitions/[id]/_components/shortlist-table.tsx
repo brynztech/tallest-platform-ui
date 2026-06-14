@@ -42,7 +42,7 @@ interface ShortlistTableProps {
   onApprove: (candidateId: string) => void
 }
 
-function shortlistStatusBadgeClass(status: string): string {
+export function shortlistStatusBadgeClass(status: string): string {
   switch (status) {
     case 'approved':
       return 'bg-[oklch(0.45_0.15_145)/20] text-[oklch(0.45_0.15_145)] border-[oklch(0.45_0.15_145)/40]'

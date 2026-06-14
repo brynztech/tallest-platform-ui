@@ -1,23 +1,30 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { shortlistStatusBadgeClass } from '../../app/(shell)/ops/requisitions/[id]/_components/shortlist-table'
 
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
 describe('Shortlist status badge logic (OPS-04)', () => {
-  it('approved status maps to green badge class', () => {
-    function shortlistStatusBadgeClass(status: string) {
-      switch (status) {
-        case 'approved': return 'bg-green-500/20 text-green-700 border-green-500/40'
-        case 'hold': return 'bg-amber-500/20 text-amber-700 border-amber-500/40'
-        case 'passed': return 'bg-muted text-muted-foreground'
-        default: return 'bg-primary/10 text-primary'
-      }
-    }
-    expect(shortlistStatusBadgeClass('approved')).toContain('green')
-    expect(shortlistStatusBadgeClass('hold')).toContain('amber')
-    expect(shortlistStatusBadgeClass('passed')).toBe('bg-muted text-muted-foreground')
-    expect(shortlistStatusBadgeClass('shortlisted')).toContain('primary')
+  it('approved status maps to green badge class (oklch)', () => {
+    // Asserts against the real production function, not a local re-implementation
+    expect(shortlistStatusBadgeClass('approved')).toContain('oklch')
+    expect(shortlistStatusBadgeClass('approved')).toContain('145')
+  })
+
+  it('hold status returns an amber/yellow oklch badge class', () => {
+    const cls = shortlistStatusBadgeClass('hold')
+    // The hold class uses oklch(0.769_0.188_85.87) — a yellow-amber hue
+    expect(cls).toContain('oklch')
+    expect(cls).toContain('85.87')
+  })
+
+  it('passed status returns muted text class', () => {
+    expect(shortlistStatusBadgeClass('passed')).toContain('muted-foreground')
+  })
+
+  it('shortlisted (default) returns empty string — uses Badge variant="secondary"', () => {
+    expect(shortlistStatusBadgeClass('shortlisted')).toBe('')
   })
 
   it('shortlist action uses supply PATCH endpoint (not ops endpoint)', () => {
