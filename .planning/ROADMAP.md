@@ -12,7 +12,7 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
 
 - [x] **Phase 1: Foundation** - Monorepo, shared packages, typed API client, MSW contract architecture, and candidate-facing OpenAPI contracts *(completed 2026-06-13)*
 - [ ] **Phase 2: Console BD** - Full BD review loop — lead queue, outreach, pipeline kanban, CSV import, reply triage, and cross-cutting console UX patterns
-- [ ] **Phase 3: Console Ops** - CRM backbone — clients, requisitions with async JD parse, match + shortlist, interviews, and placements
+- [x] **Phase 3: Console Ops** - CRM backbone — clients, requisitions with async JD parse, match + shortlist, interviews, and placements *(completed 2026-06-14)*
 - [ ] **Phase 4: Console Supply + Admin** - Talent pool search, candidate profiles, ingestion, shortlist review, engagement sequences, and all Admin monitoring screens
 - [ ] **Phase 5: Public Site** - Contrario-grade landing, candidate signup/onboarding, job board with SEO + JSON-LD, apply flow
 - [ ] **Phase 6: Candidate Dashboard** - Application status tracker, substep microcopy, enrichment display, profile edit, and mock-swap readiness
