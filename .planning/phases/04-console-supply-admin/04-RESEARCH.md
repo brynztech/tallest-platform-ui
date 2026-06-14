@@ -827,27 +827,27 @@ Enrichment is "done" when `email_verified !== null` OR `github_public_repos !== 
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Title filter field in search sidebar**
    - What we know: UI-SPEC includes a Title field; API has no `title` param
    - What's unclear: Should title be folded into q, omitted, or is a backend change planned?
-   - Recommendation: Fold into `q` query string in v1 — planner should note this in the plan
+   - **RESOLVED (Q1):** Title field value is folded into the `q` semantic query string — `q = [titleValue, semanticQuery].filter(Boolean).join(' ')`. No `title` param sent to API. Implemented in plan 04-02 Task 1.
 
 2. **Match reason text on CandidateSearchResult**
    - What we know: D-03 specifies "short match reason text" on cards; CandidateSearchResult has no `match_reason` field
    - What's unclear: Is this a backend field to be added, or should it be omitted in v1?
-   - Recommendation: Omit in v1 (show rank badge only); add a MSW mock field `match_reason?: string` as a contract proposal for discussion
+   - **RESOLVED (Q2):** MSW mock-only — `match_reason?: string` is added to mock CandidateSearchResult data as a contract proposal. The UI renders it when present but the real API will return it as undefined until the backend adds the field. Implemented in plan 04-01 Task 1 (MSW supply handler).
 
 3. **Prompt list — hardcoded names**
    - What we know: No list endpoint for prompts; backend has PROMPT_REGISTRY (static)
    - What's unclear: What are the actual registered prompt names?
-   - Recommendation: Use placeholder names in MSW; leave a comment for human to verify against live backend
+   - **RESOLVED (Q3):** `KNOWN_PROMPTS` constant is hardcoded in the UI as `["icp_scoring", "outreach_generation", "jd_parse", "engagement_generation"]` with an inline comment to verify against live backend before production. Implemented in plan 04-05 Task 2.
 
 4. **Engagement generate sync vs async**
    - What we know: POST .../generate returns 201 (EngagementSequenceResponse) per api.d.ts
    - What's unclear: The UI-SPEC mentions useAsyncJob polling for generate — but 201 is synchronous
-   - Recommendation: Treat as synchronous (no polling); if the response includes a `generating` status, poll /supply/candidates/{id}/engagement until status = "draft"
+   - **RESOLVED (Q4):** POST .../generate returns 201 synchronously (not 202). The returned sequence lands in `status: "generating"` initially; the engagements page polls `GET /supply/candidates/{id}/engagement` until a sequence with `status: "draft"` appears. useAsyncJob is NOT used here (no .status field on the polled response root). Implemented in plan 04-06 Task 1.
 
 ---
 
