@@ -1,0 +1,53 @@
+# Contract Proposal: LeadQueueItem Fat Card Fields
+# Requirement: BD-01 / ROADMAP SC1
+# Status: proposed
+# Created: 2026-06-14
+
+summary: |
+  ROADMAP SC1 requires "ICP score, open roles, decision-maker, and suggested angle visible
+  without opening any detail page." The current LeadQueueItem schema lacks open_roles_count,
+  open_roles_summary, and suggested_angle. These three fields must be added to the
+  /api/v1/bd/leads list endpoint response so the fat card can render them inline.
+
+endpoint: GET /api/v1/bd/leads
+
+current_LeadQueueItem_gaps:
+  - field: open_roles_count
+    type: integer | null
+    description: Number of open roles at the company (from enrichment)
+    source: CompanyEnrichment.open_roles_count (already tracked server-side)
+  - field: open_roles_summary
+    type: string | null
+    description: Short human-readable label e.g. "3 open roles (Engineering)"
+    source: CompanyEnrichment.open_roles_summary (already exists in CompanyProfile schema)
+  - field: suggested_angle
+    type: string | null
+    description: AI-generated 1-sentence outreach angle for this lead
+    source: Lead.suggested_angle (generated during BD scoring pipeline)
+
+proposed_schema_addition:
+  LeadQueueItem:
+    # ... existing fields unchanged ...
+    open_roles_count:
+      type: integer
+      nullable: true
+      description: Number of open roles at the company
+    open_roles_summary:
+      type: string
+      nullable: true
+      description: Short label e.g. "3 open roles (Engineering)"
+    suggested_angle:
+      type: string
+      nullable: true
+      description: AI-generated 1-sentence outreach hook for this specific lead
+
+ui_mock_status: |
+  MSW mock for GET /api/v1/bd/leads now returns these fields on each LeadQueueItem.
+  LeadCard renders them when present. When the backend ships this schema change,
+  regenerate packages/api-client types (pnpm generate:api) and the mock fields
+  will be superseded by real data automatically.
+
+backend_effort: low
+  # open_roles_count + open_roles_summary: already computed in CompanyEnrichment,
+  # just needs to be joined and included in the LeadQueueItem serializer
+  # suggested_angle: already a field on the Lead model from the scoring pipeline

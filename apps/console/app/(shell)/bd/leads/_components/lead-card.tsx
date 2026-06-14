@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { components } from '@brynzit/api-client'
+import type { LeadQueueItemExtended } from '@brynzit/api-client'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Checkbox } from '@brynzit/ui/components/ui/checkbox'
@@ -10,7 +10,7 @@ import { Clock } from 'lucide-react'
 import { RejectPopover } from './reject-popover'
 import { SnoozePopover } from './snooze-popover'
 
-type LeadQueueItem = components['schemas']['LeadQueueItem']
+type LeadQueueItem = LeadQueueItemExtended
 
 function icpBadgeClass(score: number | null) {
   if (score === null || score === undefined) return 'bg-muted text-muted-foreground'
@@ -121,7 +121,19 @@ export function LeadCard({
         )}
       </div>
 
-      {/* Row 3: updated date */}
+      {/* Row 3: open roles + suggested angle (BD-01 / ROADMAP SC1) */}
+      {(lead.open_roles_summary || lead.suggested_angle) && (
+        <div className="ml-7 mt-1.5 flex flex-col gap-0.5">
+          {lead.open_roles_summary && (
+            <span className="text-xs text-muted-foreground">{lead.open_roles_summary}</span>
+          )}
+          {lead.suggested_angle && (
+            <span className="line-clamp-1 text-xs italic text-muted-foreground/80">{lead.suggested_angle}</span>
+          )}
+        </div>
+      )}
+
+      {/* Row 4: updated date */}
       <div className="ml-7 mt-2 flex gap-4 text-xs text-muted-foreground">
         <span>{new Date(lead.updated_at).toLocaleDateString()}</span>
       </div>

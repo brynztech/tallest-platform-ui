@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { InfiniteData } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
-import type { components } from '@brynzit/api-client'
+import type { components, LeadQueueItemExtended } from '@brynzit/api-client'
 import { toast } from 'sonner'
 import { LeadCard } from './_components/lead-card'
 import { LeadDetailPanel } from './_components/lead-detail-panel'
@@ -12,7 +12,7 @@ import { BulkToolbar } from './_components/bulk-toolbar'
 import { ShortcutOverlay } from './_components/shortcut-overlay'
 
 type LeadQueueResponse = components['schemas']['LeadQueueResponse']
-type LeadQueueItem = components['schemas']['LeadQueueItem']
+type LeadQueueItem = LeadQueueItemExtended
 
 const REASON_LABELS: Record<string, string> = {
   NOT_ICP_FIT: 'Not a fit',
