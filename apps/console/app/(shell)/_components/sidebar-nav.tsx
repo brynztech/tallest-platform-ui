@@ -23,10 +23,17 @@ const OPS_NAV = [
   { href: '/ops/interviews', label: 'Interviews', badgeKey: null },
 ] as const
 
-// Stub sections — dimmed, not clickable
-const STUB_SECTIONS = [
-  { label: 'Supply', items: ['Candidates', 'Shortlists', 'Engagements'] },
-  { label: 'Admin', items: ['Costs', 'Events', 'Quotas', 'Prompts'] },
+// Supply nav items — unlocked in Phase 4
+// NOTE: no Shortlists route in Supply nav; shortlist review lives at /ops/requisitions/[id]
+const SUPPLY_NAV = [
+  { href: '/supply/search', label: 'Candidates' },
+  { href: '/supply/ingest', label: 'Ingest' },
+  { href: '/supply/engagements', label: 'Engagements' },
+] as const
+
+// Admin nav items — unlocked in Phase 4
+const ADMIN_NAV = [
+  { href: '/admin', label: 'Admin' },
 ] as const
 
 export function SidebarNav() {
@@ -160,27 +167,55 @@ export function SidebarNav() {
         })}
       </div>
 
-      {/* Stub sections — dimmed, cursor-not-allowed */}
-      {STUB_SECTIONS.map((section) => (
-        <div key={section.label} className="flex flex-col px-2 py-3 opacity-40">
-          <span
-            className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            title="Coming in a future phase"
-          >
-            {section.label}
-          </span>
-          {section.items.map((item) => (
-            <div
-              key={item}
-              className="flex h-9 cursor-not-allowed items-center rounded-md px-2 text-sm text-muted-foreground"
-              title="Coming in a future phase"
-              aria-disabled="true"
+      {/* Supply section — unlocked in Phase 4 */}
+      <div className="flex flex-col px-2 py-3">
+        <span className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Supply
+        </span>
+        {SUPPLY_NAV.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
+                'hover:bg-accent hover:text-accent-foreground',
+                isActive
+                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  : 'text-muted-foreground',
+              )}
             >
-              {item}
-            </div>
-          ))}
-        </div>
-      ))}
+              <span className="flex-1 truncate">{item.label}</span>
+            </Link>
+          )
+        })}
+      </div>
+
+      {/* Admin section — unlocked in Phase 4 */}
+      <div className="flex flex-col px-2 py-3">
+        <span className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin
+        </span>
+        {ADMIN_NAV.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
+                'hover:bg-accent hover:text-accent-foreground',
+                isActive
+                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  : 'text-muted-foreground',
+              )}
+            >
+              <span className="flex-1 truncate">{item.label}</span>
+            </Link>
+          )
+        })}
+      </div>
     </nav>
   )
 }
