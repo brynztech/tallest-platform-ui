@@ -362,8 +362,13 @@ export default function RequisitionsPage() {
                       <Skeleton className="h-8 w-full" />
                     </>
                   ) : (
-                    // Phase 3 — Parsed fields animate in (complete or failed)
+                    // Phase 3 — Parsed fields animate in (complete or failed).
+                    // These are display-only: values are already saved on the
+                    // requisition record. Edit them from the requisition detail page.
                     <>
+                      <p className="text-xs text-muted-foreground">
+                        Parsed from JD — review before navigating. Edit from the requisition detail page.
+                      </p>
                       <div
                         className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
                         style={{ animationDelay: '0ms' }}
@@ -371,13 +376,14 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_seniority">Seniority</Label>
                         <Input
                           id="parsed_seniority"
-                          defaultValue={
+                          readOnly
+                          value={
                             phase === 'complete' && polledReq
                               ? ((polledReq as components['schemas']['RequisitionResponse']).seniority ?? '')
                               : ''
                           }
                           placeholder="e.g. senior"
-                          className="mt-1"
+                          className="mt-1 bg-muted/50"
                         />
                       </div>
                       <div
@@ -387,7 +393,8 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_skills">Skills (comma-separated)</Label>
                         <Input
                           id="parsed_skills"
-                          defaultValue={
+                          readOnly
+                          value={
                             phase === 'complete' && polledReq
                               ? (
                                   (
@@ -398,7 +405,7 @@ export default function RequisitionsPage() {
                               : ''
                           }
                           placeholder="e.g. TypeScript, React, Node.js"
-                          className="mt-1"
+                          className="mt-1 bg-muted/50"
                         />
                       </div>
                       <div
@@ -408,13 +415,14 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_comp">Compensation Range</Label>
                         <Input
                           id="parsed_comp"
-                          defaultValue={
+                          readOnly
+                          value={
                             phase === 'complete' && polledReq
                               ? ((polledReq as components['schemas']['RequisitionResponse']).compensation_range ?? '')
                               : ''
                           }
                           placeholder="e.g. $150k–$180k"
-                          className="mt-1"
+                          className="mt-1 bg-muted/50"
                         />
                       </div>
                       <div
@@ -424,13 +432,13 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_start_date">Target Start Date</Label>
                         <Input
                           id="parsed_start_date"
-                          type="date"
-                          defaultValue={
+                          readOnly
+                          value={
                             phase === 'complete' && polledReq
                               ? ((polledReq as components['schemas']['RequisitionResponse']).target_start_date ?? '')
                               : ''
                           }
-                          className="mt-1"
+                          className="mt-1 bg-muted/50"
                         />
                       </div>
                     </>
