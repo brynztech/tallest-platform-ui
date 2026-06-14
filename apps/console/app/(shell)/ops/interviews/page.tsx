@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['accepted', 'declined'],
@@ -144,9 +143,6 @@ export default function InterviewsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Badge variant="secondary" className="text-xs">
-                    {interview.status}
-                  </Badge>
                 </div>
               )
             })}
