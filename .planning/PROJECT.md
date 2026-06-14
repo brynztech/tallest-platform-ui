@@ -20,14 +20,18 @@ Every human gate in the recruiting pipeline — lead review, outreach approval, 
 - [x] Turborepo + pnpm monorepo: `apps/web` (public), `apps/console` (internal), `packages/ui` (shared components/design tokens), typed API client generated from the FastAPI OpenAPI schema
 - [x] TanStack Query data layer against `/api/v1`; MSW mocks for endpoints the backend doesn't have yet
 
-### Active
+*Validated in Phase 2: Console BD (2026-06-14)*
 
-**Console — BD section**
-- [ ] LeadQueue: paginated lead review (fat cards: ICP score, open roles, decision-maker, suggested angle) with approve/reject(+reason)/snooze and bulk actions — under-30-second review loop
-- [ ] OutreachPreview: 3-email sequence review/edit (PATCH step), approve/reject
-- [ ] PipelineView: kanban of lead statuses (discovered → converted) from `/bd/pipeline`
-- [ ] CSV lead import with async status tracking (`/bd/imports`)
-- [ ] Reply/task surface: urgent BD tasks (interested replies + briefings), snoozed items
+- [x] Console shell: dark-mode sidebar (BD nav + badge counts, Ops/Supply/Admin dimmed), ThemeProvider, Sonner toasts, Vitest infrastructure
+- [x] LeadQueue: cursor-paginated fat cards (ICP score, open roles, suggested angle via mock bridge), approve/reject(+7 reasons)/snooze with 5-second undo, bulk actions, J/K/A/R/S/? keyboard shortcuts, slide-over detail panel
+- [x] CSV import: react-dropzone + `useAsyncJob` polling (processing → done, no refresh)
+- [x] Outreach sequences: expand steps, inline edit, approve/reject
+- [x] Pipeline kanban: 7 columns (discovered → converted), drag-to-reorder (visual), 15s poll
+- [x] Reply triage: classification-based quick-actions (interested/OOO/unsubscribe)
+- [x] Tailwind v4: each app owns `@import "tailwindcss"` + `@source`; `packages/ui` exports `theme.css` tokens only
+- [ ] **OPEN GAP (BD-01)**: `open_roles_count`, `open_roles_summary`, `suggested_angle` not in live `LeadQueueItem` schema — frontend mock bridge in place, contract proposal at `.planning/contracts/bd-lead-queue-item-fat-card.yaml`, backend implementation required
+
+### Active
 
 **Console — Ops section**
 - [ ] Clients CRM: client list/detail, notes (Slack/WhatsApp logs)
