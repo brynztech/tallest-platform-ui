@@ -32,11 +32,14 @@ export function ClientNotes({ clientId }: ClientNotesProps) {
   )
 
   const addNoteMutation = useMutation({
-    mutationFn: (text: string) =>
-      apiClient.POST('/api/v1/ops/clients/{client_id}/notes', {
+    mutationFn: async (text: string) => {
+      const { data, error } = await apiClient.POST('/api/v1/ops/clients/{client_id}/notes', {
         params: { path: { client_id: clientId } },
         body: { text, channel: 'other' },
-      }),
+      })
+      if (error) throw error
+      return data
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-notes', clientId] })
       setNoteText('')
