@@ -120,12 +120,13 @@ export function ShortlistTable({
       pendingTimeouts.delete(entry.submission_id)
     }
 
-    // Optimistic + 5-second undo (same as Phase 2 approve pattern)
+    // Delay mutation to match the 5-second undo window shown in the toast.
+    // Previously 300ms caused the undo button to silently do nothing.
     const timeoutId = setTimeout(() => {
       pendingTimeouts.delete(entry.submission_id)
       actionMutation.mutate({ submissionId: entry.submission_id, status: newStatus })
       if (newStatus === 'approved') onApprove(entry.candidate_id)
-    }, 300)
+    }, 5000)
 
     pendingTimeouts.set(entry.submission_id, timeoutId)
 
