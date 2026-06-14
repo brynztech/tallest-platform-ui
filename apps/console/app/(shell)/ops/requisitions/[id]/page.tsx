@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { Trophy, Zap } from 'lucide-react'
 import { RequisitionFields } from './_components/requisition-fields'
 import { ShortlistTable } from './_components/shortlist-table'
-import { CandidateDetailPanel } from './_components/candidate-detail-panel'
+import { CandidateProfileSheet } from '@/app/(shell)/_components/candidate-profile-sheet'
 import { InterviewsSection } from './_components/interviews-section'
 import { PlacementPanel } from './_components/placement-panel'
 import { PlacementsSection } from './_components/placements-section'
@@ -131,14 +131,13 @@ export default function RequisitionDetailPage({
         }}
         onApprove={(candidateId) => setApprovedCandidateId(candidateId)}
       />
-      <CandidateDetailPanel
+      <CandidateProfileSheet
         candidateId={selectedCandidateId}
         submissionId={selectedSubmissionId}
         isOpen={isCandidatePanelOpen}
         onOpenChange={setIsCandidatePanelOpen}
-        onApprove={() => {
-          if (selectedCandidateId) setApprovedCandidateId(selectedCandidateId)
-        }}
+        source="shortlist"
+        requisitionId={id}
       />
 
       {/* Section 3: Interviews */}
