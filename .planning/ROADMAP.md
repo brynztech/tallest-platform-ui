@@ -118,7 +118,7 @@ Plans:
   6. A logged-in candidate with a complete profile can apply in one click; a candidate with an incomplete profile receives a short completion prompt; both paths accept an optional note of ≤200 characters (no cover letter field); match-strength badges appear on roles
 **Plans**: 5 plans
 Plans:
-- [ ] Wave 1: 05-01-PLAN.md — Deps + postcss + vitest + candidate types + MSW handler expansion (12 jobs, 4 new endpoints) + 3 shadcn components (form, command, scroll-area)
+- [x] Wave 1: 05-01-PLAN.md — Deps + postcss + vitest + candidate types + MSW handler expansion (12 jobs, 4 new endpoints) + 3 shadcn components (form, command, scroll-area) ✓ 2026-06-15
 - [ ] Wave 2 *(blocked on Wave 1)*: 05-02-PLAN.md — Landing page hero + SiteNav + CandidateAuthContext + Job board (cursor pagination, debounced search, filters, logged-out gating) (PUB-01, JOB-01, JOB-05, JOB-06)
 - [ ] Wave 3 *(blocked on Wave 2)*: 05-03-PLAN.md — Signup + Login + 3-step onboarding (resume upload + async parse + profile confirm + preferences) (PUB-02, PUB-03, PUB-04)
 - [ ] Wave 4 *(blocked on Wave 3)*: 05-04-PLAN.md — Job detail page (JSON-LD, safe JD text) + Apply section (3 states) + Profile edit with completeness meter (PUB-05, PUB-06, JOB-02, JOB-03, JOB-04)

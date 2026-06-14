@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_execute
-stopped_at: Phase 5 planned — ready to execute
+status: in_progress
+stopped_at: Phase 5 executing — Wave 1 starting
 last_updated: "2026-06-15T00:00:00.000Z"
 last_activity: 2026-06-15
 progress:
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-06-12)
 
 ## Current Position
 
-Phase: 5 planned — ready to execute
-Plan: 5 plans created (05-01 through 05-05)
-Status: Ready to execute Phase 5
+Phase: 5 — Public Site (executing)
+Plan: Executing 05-01 through 05-05 (Wave 1 starting)
+Status: In progress — Phase 5 executing
 Last activity: 2026-06-15
 
 Progress: [██░░░░░░░░] 17%
