@@ -1,7 +1,8 @@
 ---
 phase: 5
 slug: public-site
-status: draft
+status: approved
+reviewed_at: 2026-06-14
 shadcn_initialized: true
 preset: "new-york / cssVariables: true / baseColor: neutral / tailwind v4"
 created: 2026-06-14
@@ -55,9 +56,10 @@ Declared values from `packages/ui/src/styles/theme.css` — do NOT redefine:
 
 All type is Geist (`--font-sans`). Light mode only. No dark surface text inversions.
 
+**Hero headline editorial exception:** The `/` landing page H1 uses 120px at weight 300 (`font-light`). This is a one-off editorial exception — use a direct Tailwind override `text-[120px] font-light` on that single element. It is NOT a named scale tier and does NOT appear in the formal type scale below. Weight 300 is part of this editorial exception only — it is NOT a formal system weight.
+
 | Role | Size | Weight | Line Height | Letter Spacing | Usage |
 |------|------|--------|-------------|----------------|-------|
-| Display (hero headline) | 120px | 300 (light) | 1.05 | 0.04em (wide) | Landing page H1 only |
 | Heading | 28px | 400 (regular) | 1.2 | 0 | Page titles, section headers |
 | Subheading | 20px | 400 (regular) | 1.3 | 0 | Card titles, form section labels |
 | Body | 16px | 400 (regular) | 1.5 | 0 | All body copy, form labels, descriptions |
@@ -66,8 +68,7 @@ All type is Geist (`--font-sans`). Light mode only. No dark surface text inversi
 [CONTEXT.md D-03 — 120px+, weight 300–400, wide letter-spacing, Geist light]
 
 **Constraints:**
-- Maximum 2 font weights in use: 300 (display/hero only) and 400 (everything else)
-- Semibold (600) is reserved for button labels and badge text only — do not introduce a third weight
+- 2 font weights in formal use: 400 (all body, headings, labels, and running text), 600/semibold (button labels and nav wordmark only). Weight 300 is excluded from the formal system — it belongs to the hero editorial exception above.
 - No italic styles in this phase
 - Hero subtext: 16px weight 400, line-height 1.5, color `--muted-foreground`
 
@@ -80,12 +81,15 @@ Tokens are defined in `packages/ui/src/styles/theme.css` — use CSS variable na
 | Role | CSS Token | OKLCH | Usage |
 |------|-----------|-------|-------|
 | Dominant (60%) | `--background` | `oklch(1 0 0)` | Page backgrounds, hero surface, nav background |
-| Secondary (30%) | `--muted` / `--card` | `oklch(0.961 0 0)` | Job cards, onboarding step containers, profile form card, blurred locked card overlay |
+| Secondary (30%) — tinted | `--muted` | `oklch(0.961 0 0)` | Filter bar bg, job card hover bg, onboarding step containers, profile form sections, blurred locked card overlay, disabled states, form field bg |
+| Secondary (30%) — card | `--card` | `oklch(1 0 0)` | Card backgrounds (white — same as background; use `--muted` when a tinted surface is needed) |
 | Accent (10%) | `--primary` | `oklch(0.546 0.215 261.3)` | Reserved elements listed below |
 | Destructive | `--destructive` | `oklch(0.577 0.245 27.325)` | Sign-out confirmation action only |
 | Text primary | `--foreground` | `oklch(0.145 0 0)` | All body and heading text |
 | Text muted | `--muted-foreground` | `oklch(0.556 0 0)` | Hero subtext, captions, secondary labels |
 | Border | `--border` | `oklch(0.922 0 0)` | Card borders, input borders, separator lines |
+
+**Executors: use `--muted` for tinted off-white surfaces, not `--card`. `--card` is pure white (same value as `--background`) and is the correct token only for card component backgrounds that sit on a tinted surface.**
 
 **Accent (`--primary`) reserved for:**
 1. Primary CTA button fill ("Join the talent pool", "Sign up", "Apply now")
@@ -94,7 +98,7 @@ Tokens are defined in `packages/ui/src/styles/theme.css` — use CSS variable na
 4. Completeness meter filled bar
 5. Step indicator active segment/dot
 6. "Continue" / "Save & continue" button in onboarding
-7. Focused input ring (`--ring`)
+7. Focused input ring — note: `--ring` in `theme.css` is neutral gray (`oklch(0.708 0 0)`), not `--primary`. If an accent-colored focus ring is desired, add `--ring: var(--primary)` to `apps/web/app/globals.css`. Otherwise the neutral gray ring is intentional and `--ring` should remain as-is.
 
 **Accent is NOT used for:**
 - Navigation links (use `--foreground`)
@@ -120,7 +124,7 @@ Single-height nav: 48px height, `--background` fill, `--border` bottom border, f
 **Logged-out state:**
 - Left: Brynzit wordmark (`--foreground`, 16px weight 600)
 - Center: "Jobs" text link (`--foreground`, 14px weight 400)
-- Right: "Sign in" ghost button + "Join" filled (`--primary`) button
+- Right: "Sign in" ghost button + "Join free" filled (`--primary`) button
 
 **Logged-in state:**
 - Left: Brynzit wordmark
@@ -130,7 +134,7 @@ Single-height nav: 48px height, `--background` fill, `--border` bottom border, f
 **Constraints:**
 - No hamburger/mobile collapse in Phase 5 (public site is responsive but nav collapses gracefully at mobile using Tailwind breakpoints)
 - No marketing links (How it works, About, Pricing) — sparse contrario.ai-style [CONTEXT.md D-14]
-- "Join" button: `variant="default"` (filled `--primary`), `size="sm"`, label "Join"
+- "Join free" button: `variant="default"` (filled `--primary`), `size="sm"`, label "Join free"
 - "Sign in" button: `variant="ghost"`, `size="sm"`, label "Sign in"
 
 [CONTEXT.md D-14]
@@ -146,7 +150,7 @@ Single-height nav: 48px height, `--background` fill, `--border` bottom border, f
 | Vertical centering | `min-h-[calc(100vh-48px)]` flex column centered |
 | Top padding | 120px above headline |
 | Max content width | 900px centered |
-| Headline | 120px, weight 300, line-height 1.05, letter-spacing 0.04em, `--foreground`, ≤8 words |
+| Headline | `text-[120px]` (direct Tailwind override — editorial exception, not a named scale tier), weight 300 (`font-light`), line-height 1.05, letter-spacing 0.04em, `--foreground`, ≤8 words |
 | Subtext | 16px, weight 400, line-height 1.5, `--muted-foreground`, 1–2 lines |
 | CTA button | `variant="default"` filled `--primary`, `size="lg"`, label "Join the talent pool", routes to `/signup` |
 | Spacing between headline and subtext | 24px (lg) |
@@ -227,7 +231,7 @@ Single-height nav: 48px height, `--background` fill, `--border` bottom border, f
 
 | Condition | Button | Additional element |
 |-----------|--------|-------------------|
-| Not logged in | "Apply" → redirects to `/signup?redirect=/jobs/[id]` | None |
+| Not logged in | "Sign up to apply" → redirects to `/signup?redirect=/jobs/[id]` | None |
 | Logged in, `completeness_score >= 70` | "Apply now" filled `--primary`, `size="lg"` | Optional note textarea (≤200 chars, `--muted` background) below button |
 | Logged in, `completeness_score < 70` | "Complete your profile" outline button → `/profile/edit` | "Your profile is [X]% complete. Reach 70% to apply in one click." (14px `--muted-foreground`) + shadcn Progress bar showing completeness_score |
 | Application submitted (success) | "Applied" disabled button, green checkmark icon | Sonner toast: "Application submitted" |
@@ -431,11 +435,13 @@ Apply is immediate (no undo pattern) — undo toast applies only to review-queue
 | Landing hero headline | "The talent platform built for you." (≤8 words, adjust during implementation if a stronger line emerges — same structure) |
 | Landing hero subtext | "Brynzit matches engineers and designers to the roles they actually want." |
 | Primary CTA (landing, nav) | "Join the talent pool" |
+| Nav join button | "Join free" |
 | Primary CTA (signup page button) | "Create account" |
 | Primary CTA (login page button) | "Sign in" |
 | Primary CTA (job board, after signup gate) | "Join for free" |
 | Primary CTA (apply, complete profile) | "Apply now" |
 | Primary CTA (apply, incomplete profile) | "Complete your profile" |
+| Apply button (not logged in) | "Sign up to apply" |
 | Job board empty state heading | "No roles match your filters" |
 | Job board empty state body | "Try adjusting your filters or search terms to see more opportunities." |
 | Job board empty state action | "Clear all filters" |
@@ -557,7 +563,7 @@ Employment type mapping: `full_time` → `FULL_TIME`, `part_time` → `PART_TIME
 | Filter pill dismiss | Remove from active params, immediate query re-trigger |
 | "Clear all" filters | Reset all filter state, immediate query re-trigger |
 | Job card click | Navigate to `/jobs/[id]` |
-| Logged-out "Apply" | Redirect to `/signup?redirect=/jobs/{id}` [D-12] |
+| Logged-out apply button | "Sign up to apply" — redirect to `/signup?redirect=/jobs/{id}` [D-12] |
 | Resume dropzone | react-dropzone, accept `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
 | Resume parse polling | `useAsyncJob` from `packages/hooks` — poll until `complete` or `failed` terminal state |
 | Step 1 → Step 2 auto-advance | 800ms after `complete` state, push to `/onboarding/2` |
@@ -579,6 +585,7 @@ Employment type mapping: `full_time` → `FULL_TIME`, `part_time` → `PART_TIME
 - JSON-LD: no visual output, zero accessibility impact
 - Blurred cards: `aria-hidden="true"` on blurred card content; overlay is the accessible element
 - Step indicator: `aria-current="step"` on the active segment
+- Nav avatar dropdown trigger (logged-in): add `aria-label="Account menu"` — Radix DropdownMenu.Trigger does not auto-generate this label
 
 ---
 
