@@ -7,10 +7,13 @@ import { Separator } from '@brynzit/ui/components/ui/separator'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import Link from 'next/link'
-import { CalendarPlus, Zap } from 'lucide-react'
+import { Trophy, Zap } from 'lucide-react'
 import { RequisitionFields } from './_components/requisition-fields'
 import { ShortlistTable } from './_components/shortlist-table'
 import { CandidateDetailPanel } from './_components/candidate-detail-panel'
+import { InterviewsSection } from './_components/interviews-section'
+import { PlacementPanel } from './_components/placement-panel'
+import { PlacementsSection } from './_components/placements-section'
 
 export default function RequisitionDetailPage({
   params,
@@ -23,7 +26,7 @@ export default function RequisitionDetailPage({
   // Shared state for Wave 3 components (shortlist, placement, candidate panel)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [isCandidatePanelOpen, setIsCandidatePanelOpen] = useState(false)
-  const [, setIsPlacementOpen] = useState(false)
+  const [isPlacementOpen, setIsPlacementOpen] = useState(false)
   const [approvedCandidateId, setApprovedCandidateId] = useState<string | null>(null)
 
   const {
@@ -100,27 +103,37 @@ export default function RequisitionDetailPage({
         }}
       />
 
-      {/* Schedule Interview button — shown when ≥1 candidate approved (consumed by 03-04b) */}
+      {/* Section 3: Interviews */}
+      <Separator className="my-4" />
+      <h2 className="mb-2 text-base font-semibold">Interviews</h2>
+      <InterviewsSection reqId={id} approvedCandidateId={approvedCandidateId} />
+
+      {/* Log Placement button — visible when approvedCandidateId is set */}
       {approvedCandidateId && (
-        <Button variant="outline" size="sm" className="mb-6 mt-4">
-          <CalendarPlus className="mr-1 size-4" />
-          Schedule Interview
+        <Button
+          variant="default"
+          size="sm"
+          className="mb-6 mt-4"
+          onClick={() => setIsPlacementOpen(true)}
+        >
+          <Trophy className="mr-1 size-4" />
+          Log Placement
         </Button>
       )}
 
-      {/* Section 3: Interviews — placeholder, filled by Plan 03-04b */}
-      <Separator className="my-4" />
-      <h2 className="mb-2 text-base font-semibold">Interviews</h2>
-      <p className="py-4 text-center text-sm text-muted-foreground">
-        No interviews scheduled. Use &apos;Schedule Interview&apos; above to create one.
-      </p>
-
-      {/* Section 4: Placements — placeholder, filled by Plan 03-04b */}
+      {/* Section 4: Placements */}
       <Separator className="my-4" />
       <h2 className="mb-2 text-base font-semibold">Placements</h2>
-      <p className="py-4 text-center text-sm text-muted-foreground">
-        No placements logged. Use &apos;Log Placement&apos; above when a candidate is ready.
-      </p>
+      <PlacementsSection reqId={id} />
+
+      {/* Placement slide-over */}
+      <PlacementPanel
+        isOpen={isPlacementOpen}
+        onOpenChange={setIsPlacementOpen}
+        reqId={id}
+        clientId={req.client_id ?? ''}
+        approvedCandidateId={approvedCandidateId}
+      />
     </div>
   )
 }
