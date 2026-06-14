@@ -1,29 +1,50 @@
 # Contract Proposal: LeadQueueItem Fat Card Fields
 # Requirement: BD-01 / ROADMAP SC1
-# Status: proposed
+# Status: proposed — pending backend implementation
 # Created: 2026-06-14
+# DO NOT mark as closed until backend ships and pnpm generate:api confirms the fields
+# appear in the generated api.d.ts schema.
 
 summary: |
   ROADMAP SC1 requires "ICP score, open roles, decision-maker, and suggested angle visible
   without opening any detail page." The current LeadQueueItem schema lacks open_roles_count,
-  open_roles_summary, and suggested_angle. These three fields must be added to the
-  /api/v1/bd/leads list endpoint response so the fat card can render them inline.
+  open_roles_summary, and suggested_angle. This is a FRONTEND CONTRACT PROPOSAL only —
+  the UI mocks these fields via LeadQueueItemExtended and MSW; the backend has not confirmed
+  or committed to any implementation of these fields.
 
 endpoint: GET /api/v1/bd/leads
 
 current_LeadQueueItem_gaps:
   - field: open_roles_count
     type: integer | null
-    description: Number of open roles at the company (from enrichment)
-    source: CompanyEnrichment.open_roles_count (already tracked server-side)
+    description: Number of open roles at the company
+    source_note: |
+      Canonical source unclear — backend team to confirm. Likely derivable from
+      Contact.open_roles_summary or a related enrichment field. Do not assume this
+      lives on CompanyEnrichment without backend confirmation.
+    backend_status: unconfirmed
+
   - field: open_roles_summary
     type: string | null
     description: Short human-readable label e.g. "3 open roles (Engineering)"
-    source: CompanyEnrichment.open_roles_summary (already exists in CompanyProfile schema)
+    source_note: |
+      Backend team to confirm canonical model. Contact.open_roles_summary is the
+      likely source if enrichment is Contact-scoped, but this is an assumption —
+      backend may have a different canonical path (Lead, Company, or enrichment join).
+    backend_status: unconfirmed
+
   - field: suggested_angle
     type: string | null
     description: AI-generated 1-sentence outreach angle for this lead
-    source: Lead.suggested_angle (generated during BD scoring pipeline)
+    source_note: |
+      NOT confirmed as an existing field on any backend model. Backend must either:
+      (a) add a CompanyLead.suggested_angle field populated during the BD scoring/enrichment
+          pipeline before leads reach review_queue status, OR
+      (b) define a deterministic derivation rule from existing icp_breakdown and/or
+          enrichment data that produces a stable, human-readable angle string.
+      The frontend cannot safely derive this from icp_breakdown client-side — that
+      would be non-deterministic and inconsistent across sessions.
+    backend_status: not_implemented — requires design decision before backend work begins
 
 proposed_schema_addition:
   LeadQueueItem:
@@ -31,23 +52,34 @@ proposed_schema_addition:
     open_roles_count:
       type: integer
       nullable: true
-      description: Number of open roles at the company
+      description: Number of open roles at the company (source TBD by backend)
     open_roles_summary:
       type: string
       nullable: true
-      description: Short label e.g. "3 open roles (Engineering)"
+      description: Short label e.g. "3 open roles (Engineering)" (source TBD by backend)
     suggested_angle:
       type: string
       nullable: true
-      description: AI-generated 1-sentence outreach hook for this specific lead
+      description: |
+        AI-generated 1-sentence outreach hook for this lead.
+        Requires backend design decision: new model field or enrichment derivation.
 
-ui_mock_status: |
-  MSW mock for GET /api/v1/bd/leads now returns these fields on each LeadQueueItem.
-  LeadCard renders them when present. When the backend ships this schema change,
-  regenerate packages/api-client types (pnpm generate:api) and the mock fields
-  will be superseded by real data automatically.
+frontend_mock_status: |
+  LeadQueueItemExtended in packages/api-client/src/types/extensions.ts bridges the gap
+  in dev. MSW mock (packages/mocks/src/handlers/bd.ts) returns realistic values.
+  LeadCard renders them when present, hides them gracefully when null.
+  When backend ships and pnpm generate:api reflects the new fields, delete
+  LeadQueueItemExtended and the extensions.ts file — the generated type will include
+  them natively.
 
-backend_effort: low
-  # open_roles_count + open_roles_summary: already computed in CompanyEnrichment,
-  # just needs to be joined and included in the LeadQueueItem serializer
-  # suggested_angle: already a field on the Lead model from the scoring pipeline
+acceptance_for_phase_2: |
+  Phase 2 is accepted with this gap explicitly noted. BD-01 / ROADMAP SC1 is partially
+  satisfied: the fat card renders all four required fields in dev via mock data, and the
+  contract proposal is documented for backend follow-up. The schema gap is NOT closed and
+  must be addressed before the live backend can satisfy this requirement end-to-end.
+
+next_steps:
+  - Backend team confirms canonical model/source for open_roles_count + open_roles_summary
+  - Backend team decides on suggested_angle: new field vs. derivation rule
+  - Backend implements and updates OpenAPI schema
+  - Frontend runs pnpm generate:api, removes LeadQueueItemExtended, closes this proposal
