@@ -251,6 +251,26 @@ export const opsHandlers: HttpHandler[] = [
     )
   }),
 
+  // 11b. PATCH /api/v1/ops/requisitions/:req_id — update requisition fields
+  // NOTE: MSW-only — no live PATCH /api/v1/ops/requisitions/{req_id} endpoint (api.d.ts patch?: never)
+  http.patch(`${API_BASE}/api/v1/ops/requisitions/:req_id`, async ({ params, request }) => {
+    const body = await request.json() as Partial<components['schemas']['CreateRequisitionRequest']>
+    return HttpResponse.json({
+      id: params.req_id as string,
+      client_id: body.client_id ?? null,
+      title: body.title ?? 'Updated Requisition',
+      status: 'open',
+      skills: body.skills ?? [],
+      seniority: body.seniority ?? null,
+      compensation_range: body.compensation_range ?? null,
+      target_start_date: body.target_start_date ?? null,
+      intake_details: null,
+      shortlist: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } satisfies components['schemas']['RequisitionResponse'])
+  }),
+
   // 12. POST /api/v1/ops/requisitions/:req_id/match — trigger candidate matching (202 async)
   http.post(`${API_BASE}/api/v1/ops/requisitions/:req_id/match`, () => {
     return HttpResponse.json({ status: 'processing' }, { status: 202 })
