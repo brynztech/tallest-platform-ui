@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -64,6 +64,15 @@ export function ShortlistTable({
   const queryClient = useQueryClient()
   // Track pending undo timeouts for each submission
   const [pendingTimeouts] = useState(() => new Map<string, ReturnType<typeof setTimeout>>())
+
+  // Clear all pending timeouts on unmount to prevent stale-closure mutations
+  // from firing after the component is gone
+  useEffect(() => {
+    return () => {
+      pendingTimeouts.forEach((id) => clearTimeout(id))
+      pendingTimeouts.clear()
+    }
+  }, [pendingTimeouts])
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ['ops-shortlist', reqId],
