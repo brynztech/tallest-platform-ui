@@ -62,6 +62,18 @@ Inherited from Phase 3 (identical to Phase 2). No new scale changes.
 - Engagement sequence steps: `flex flex-col gap-4` between StepEditor cards.
 - Filter chips row: `flex flex-wrap gap-2` with `mt-3` top margin from search form.
 
+**Phase 4 micro-spacing exceptions (badge padding and dense UI elements — same precedent as Phase 2 ICP badge `px-2.5 py-1`):**
+
+| Value | px | Location | Justification |
+|-------|----|----------|---------------|
+| `px-1.5 py-0.5` | 6px / 2px | Rank badge (#1/#2/#3) | Badge/pill internal padding — requires sub-4 micro-spacing to maintain pill density without excess whitespace; identical precedent to Phase 2 ICP score badge |
+| `mt-0.5` | 2px | CandidateResultCard Row 2 (title/company line) | Optical micro-gap between name row and subtitle row in dense card format |
+| `gap-1.5` | 6px | Results header active filter chips | Dense chip row — 4px gap collapses chips visually; 8px gap is too wide for inline chip rows |
+| `py-0.5` | 2px | AdminEventsTab EventRow | Dense table-row internal padding in a monitoring log — matches Phase 2 shortcut overlay kbd element precedent |
+| `py-2.5` | 10px | AdminPromptsTab PromptListItem | Prompt list items need slightly more vertical rhythm than `py-2` (8px) without the full `py-3` (12px) — badge padding exception |
+| `pl-[10px]` | 10px | Active PromptListItem left padding (active state left-border offset) | Left border `border-l-2` (2px) is compensated by reducing padding from 12px to 10px so text stays optically aligned — same technique as Phase 2 active nav item |
+| `size-1.5` / `h-1.5` | 6px | Dirty state amber dot; overview quota progress bar height | Fine decorative elements — a 4px dot is invisible; 8px is too prominent |
+
 ---
 
 ## Typography
@@ -74,7 +86,7 @@ Inherited from Phase 3 — 4 roles, 2 weights, unchanged.
 - Match reason text on card: 12px/400 (`Label / Meta` role), `text-muted-foreground`, `line-clamp-2` — same visual rhythm as suggested angle in Phase 2 lead cards.
 - Availability badge: 12px/400 (`Label / Meta` role) — same as Phase 3 status badges.
 - Enrichment section headings inside profile slide-over (e.g. "GitHub Signals", "Contact"): 12px/400 uppercase tracking-wider `text-muted-foreground` — section header sub-role, consistent with Phase 3 slide-over section labels.
-- Prompt editor textarea: 13px monospace (`font-mono`) — differentiated from body to signal code/template content. Not a new type role; uses `font-mono` modifier within existing 14px body size.
+- Prompt editor textarea: text-sm (14px) with font-mono modifier — monospace family alone differentiates editor content from body text without introducing a new size.
 - Cost table cells: 14px/400 Body role. Total row: 14px/600 semibold.
 - Admin card value display (Total Spend dollar amount, Quota percentage): 20px/600 (Heading role) — primary scan target within each summary card.
 - Admin card label (e.g. "Total Spend (30d)", "Quota Usage"): 12px/400 (`Label / Meta` role) above value.
@@ -327,7 +339,7 @@ Sheet (Radix, side="right")
 
 ### /supply/ingest — Ingest Page (D-08, D-09, D-10, D-11)
 
-**Focal point:** Primary focal point: "Submit" button within the active tab (accent blue). Secondary: "Recent Jobs" section heading as status monitoring anchor.
+**Focal point:** Primary focal point: "Add Candidate" button within the active LinkedIn tab (accent blue). Secondary: "Recent Jobs" section heading as status monitoring anchor.
 
 ```
 /supply/ingest page (overflow-y-auto, px-6 py-6)
@@ -346,8 +358,8 @@ Sheet (Radix, side="right")
 │   │       ├── linkedin_url field
 │   │       │   ├── Label "LinkedIn Profile URL" (12px/400)
 │   │       │   └── Input (type="url", placeholder="https://linkedin.com/in/username", required)
-│   │       └── "Submit" button (variant="default", size="sm", mt-3)
-│   │           [submitting: disabled + spinner + "Submitting…"]
+│   │       └── "Add Candidate" button (variant="default", size="sm", mt-3)
+│   │           [submitting: disabled + spinner + "Adding…"]
 │   ├── TabsContent value="csv"
 │   │   └── CsvForm (react-hook-form + Zod)
 │   │       ├── Description text (text-sm muted-foreground, mb-4)
@@ -640,7 +652,7 @@ AdminPromptsTab (flex h-[calc(100vh-14rem)] gap-0)
     │   └── Right: dirty state indicator (12px/400, text-[oklch(0.769_0.188_85.87)], only when dirty)
     │           "• Unsaved changes"
     ├── Prompt textarea
-    │   └── Textarea (font-mono, text-sm [13px via text-[0.8125rem]], min-h-[400px], resize-y, w-full,
+    │   └── Textarea (font-mono, text-sm, min-h-[400px], resize-y, w-full,
     │                  bg-muted/30, border-border, focus:ring-primary)
     │       [placeholder: "Select a prompt from the list to edit"]
     ├── Action row (flex gap-2, mt-4, justify-end)
@@ -682,7 +694,7 @@ AdminPromptsTab (flex h-[calc(100vh-14rem)] gap-0)
 ### Ingest Submission Flows (D-10, D-11, SUP-03)
 
 **LinkedIn (synchronous):**
-1. Rep enters LinkedIn URL and clicks "Submit".
+1. Rep enters LinkedIn URL and clicks "Add Candidate".
 2. POST `/api/v1/supply/candidates/ingest` fires. 201 response with `IngestLinkedInResponse`.
 3. Form clears. Success toast: "Candidate added: [name]."
 4. New `IngestJobCard` appears in Recent Jobs with status "done" and "Candidate added: [name]".
@@ -811,8 +823,8 @@ Flow is identical to Phase 3 shortlist table row actions:
 | LinkedIn description | "Enter a LinkedIn profile URL to ingest a single candidate via Proxycurl." |
 | LinkedIn URL label | "LinkedIn Profile URL" |
 | LinkedIn URL placeholder | "https://linkedin.com/in/username" |
-| LinkedIn submit CTA | "Submit" |
-| LinkedIn submitting | "Submitting…" |
+| LinkedIn submit CTA | "Add Candidate" |
+| LinkedIn submit loading | "Adding…" |
 | LinkedIn success toast | "Candidate added: [name]." |
 | LinkedIn proxycurl error | "LinkedIn ingest unavailable — Proxycurl key not configured. Use CSV or resume upload instead." |
 | LinkedIn other error | "Ingest failed — try again." |
@@ -978,6 +990,7 @@ No third-party registries declared for this phase. Registry vetting gate: not ap
 | Date | Change | Reason |
 |------|--------|--------|
 | 2026-06-14 | Initial creation | Phase 4 UI design contract |
+| 2026-06-14 | Submit → Add Candidate (D1 BLOCK); 13px → text-sm font-mono (D4 BLOCK); micro-spacing exceptions documented (D5 BLOCK) | UI checker blocking issues resolved |
 
 ---
 
