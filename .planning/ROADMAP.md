@@ -73,7 +73,7 @@ Plans:
   4. Ops rep can create interviews and update them through scheduled → accepted / declined → completed states, and log placements with fee, billing terms, and a 90-day retention flag
 **Plans**: 5 plans
 Plans:
-- [ ] Wave 1: 03-01-PLAN.md — textarea shadcn component + all Ops MSW handlers (19 handlers) + sidebar Ops section unlock + 5 Wave-0 test stubs
+- [x] Wave 1: 03-01-PLAN.md ✓ — textarea shadcn component + all Ops MSW handlers (20 handlers) + sidebar Ops section unlock + 5 Wave-0 test stubs
 - [ ] Wave 2 *(blocked on Wave 1)*: 03-02-PLAN.md — Client CRM vertical: client list, create dialog, two-panel detail layout, editable fields, append-only notes log (OPS-01)
 - [ ] Wave 2 *(blocked on Wave 1)*: 03-03-PLAN.md — Requisition + JD Parse vertical: global req list (MSW-only), create dialog with async parse polling, req detail hub page, fields card (OPS-02, OPS-03)
 - [ ] Wave 3 *(blocked on Wave 2)*: 03-04a-PLAN.md — ShortlistTable + CandidateDetailPanel vertical: TanStack Table v8 shortlist, candidate slide-over, approvedCandidateId state (OPS-04)
