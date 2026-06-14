@@ -78,7 +78,7 @@ Plans:
 - [x] Wave 2 *(blocked on Wave 1)*: 03-03-PLAN.md ✓ — Requisition + JD Parse vertical: global req list (MSW-only), create dialog with async parse polling, req detail hub page, fields card (OPS-02, OPS-03)
 - [x] Wave 3 *(blocked on Wave 2)*: 03-04a-PLAN.md ✓ — ShortlistTable + CandidateDetailPanel vertical: TanStack Table v8 shortlist, candidate slide-over, approvedCandidateId state (OPS-04)
 - [x] Wave 3 *(blocked on Wave 2, 03-04a)*: 03-04b-PLAN.md ✓ — Interviews + Placement vertical: interview state machine, placement slide-over form, global interviews page (OPS-05, OPS-06)
-- [ ] Gap Closure *(blocked on 03-04a)*: 03-05-PLAN.md — Wire match trigger mutation: POST /match onClick + shortlist invalidation (OPS-04 gap)
+- [x] Gap Closure *(blocked on 03-04a)*: 03-05-PLAN.md ✓ — Wire match trigger mutation: POST /match onClick + shortlist invalidation (OPS-04 gap)
 **Cross-cutting constraints:** GET /api/v1/ops/requisitions and GET /api/v1/ops/interviews are MSW-only (get?: never in api.d.ts); shortlist Approve/Hold/Pass use PATCH /api/v1/supply/shortlists/{submission_id}; useAsyncJob statusMap override required for JD parse (open/filled/closed → complete); note text rendered as JSX text nodes (never dangerouslySetInnerHTML)
 **UI hint**: yes
 
