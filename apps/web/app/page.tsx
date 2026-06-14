@@ -1,10 +1,9 @@
+import { HeroSection } from './_components/hero-section'
+
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-2 p-8">
-      <h1 className="text-3xl font-semibold tracking-tight">Brynzit is coming.</h1>
-      <p className="text-muted-foreground text-base">
-        The talent platform built for speed.
-      </p>
+    <main className="flex min-h-[calc(100vh-48px)] flex-col items-center justify-center px-8">
+      <HeroSection />
     </main>
   )
 }

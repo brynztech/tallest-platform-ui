@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import { WebProviders } from './_components/web-providers'
+import { SiteNav } from './_components/site-nav'
+import { Toaster } from '@brynzit/ui/components/ui/sonner'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
@@ -18,7 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={geist.variable}>
       <body className="bg-background text-foreground font-sans antialiased">
-        <WebProviders>{children}</WebProviders>
+        <WebProviders>
+          <SiteNav />
+          {children}
+        </WebProviders>
+        <Toaster position="bottom-right" theme="light" />
       </body>
     </html>
   )
