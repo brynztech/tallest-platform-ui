@@ -10,6 +10,9 @@ out/
 # Generated files (openapi types are committed as snapshot — update via pnpm generate:api:live)
 # packages/api-client/src/types/api.d.ts  (intentionally committed)
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # Environment
 .env
 .env.local
