@@ -1,7 +1,7 @@
 ---
 phase: 3
 slug: console-ops
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york
 created: 2026-06-14
@@ -90,6 +90,7 @@ Identical scale to Phase 2. No new type roles introduced.
 - Req status badge (Open / Filled / Closed): 12px/400 (`Label / Meta` role) — same as Phase 2 status badges.
 - Parse status text ("Parsing JD…" / "Parse failed"): 12px/400, rendered below the JD textarea, not as a badge.
 - Note timestamp in notes log: 12px/400, `text-muted-foreground`, ISO-relative format ("2 hours ago").
+- Fit score large display (Candidate Detail Sheet): 20px/600, brand blue (`text-primary`) — uses existing Heading role; semibold weight and accent color provide sufficient visual prominence without introducing a 5th font size.
 
 ---
 
@@ -169,6 +170,8 @@ Active route: left border `border-l-2 border-primary` + `bg-primary/10` tint. Ma
 
 ### /ops/clients — Client List Page
 
+**Focal point:** Primary visual anchor is the client name (14px/600, semibold) in each row. Secondary anchor is the "New Client" CTA button (accent blue, top-right of toolbar) — the only accent element on an otherwise neutral-surface page.
+
 ```
 /ops/clients page
 ├── Toolbar row (sticky top-0, bg-background/90 backdrop-blur, h-14, px-4, flex items-center justify-between)
@@ -204,6 +207,8 @@ Dialog (Radix, max-w-md)
 ---
 
 ### /ops/clients/{id} — Client Detail Page (Two-Panel Layout)
+
+**Focal point:** Primary focal point: client name at 20px/600 in the page header. Secondary: action buttons in the toolbar.
 
 ```
 /ops/clients/{id} page
@@ -243,6 +248,8 @@ Dialog (Radix, max-w-md)
 ---
 
 ### /ops/requisitions — Global Requisitions List
+
+**Focal point:** Primary visual anchor is the requisition title (14px/600, semibold) in each row. Secondary anchor is the "New Requisition" CTA button (accent blue, top-right of toolbar) — the only accent element on this list page.
 
 ```
 /ops/requisitions page
@@ -302,6 +309,8 @@ Dialog (Radix, max-w-lg)
 
 ### /ops/requisitions/{id} — Requisition Detail Hub (Scrollable)
 
+**Focal point:** Primary focal point: requisition title at 20px/600 in the page header. Secondary: "Trigger Candidate Match" CTA in accent blue.
+
 ```
 /ops/requisitions/{id} page (overflow-y-auto, px-6 py-6)
 ├── Page header (flex items-start justify-between, mb-6)
@@ -358,7 +367,7 @@ Dialog (Radix, max-w-lg)
 │   │       ├── Status Select (inline, w-[160px]) — values: Scheduled / Accepted / Declined / Completed
 │   │       │   [triggers PATCH on change; error toast on 409]
 │   │       └── Status badge (12px/400, mirrors Select value color)
-│   └── Empty state: "No interviews scheduled." (14px muted, text-center, py-4)
+│   └── Empty state: "No interviews scheduled. Use 'Schedule Interview' above to create one." (14px muted, text-center, py-4)
 │
 ├── "Log Placement" button (variant="default", size="sm", Trophy icon + "Log Placement", mt-4 mb-6)
 │   [visible when ≥1 interview has status="accepted" or "completed"]
@@ -374,7 +383,7 @@ Dialog (Radix, max-w-lg)
         │       ├── Billing status (text-xs muted)
         │       ├── "90-day retention" badge (variant="secondary", only if retention_flag_90d=true)
         │       └── Placed date (text-xs muted)
-        └── Empty state: "No placements logged." (14px muted, text-center, py-4)
+        └── Empty state: "No placements logged. Use 'Log Placement' above when a candidate is ready." (14px muted, text-center, py-4)
 ```
 
 ---
@@ -382,6 +391,8 @@ Dialog (Radix, max-w-lg)
 ### Candidate Detail Sheet (Slide-Over) — Shortlist Row Click (D-10)
 
 Reuses the exact Sheet pattern from Phase 2 (lead detail panel). Only content differs.
+
+**Focal point:** Primary focal point: fit score at 20px/600 brand blue. Secondary: candidate name at 16px/600.
 
 ```
 Sheet (Radix, side="right")
@@ -392,11 +403,12 @@ Sheet (Radix, side="right")
     │   ├── Current title + company (14px/400 muted)
     │   └── Close button (X icon, variant="ghost", size="icon", top-right)
     ├── Quick action bar (px-6 py-3, flex gap-2, border-b border-border)
-    │   ├── Approve button (variant="default", size="sm", "Approve")
-    │   ├── Hold button (variant="outline", size="sm", "Hold")
-    │   └── Pass button (variant="outline", size="sm", "Pass") — `text-destructive hover:text-destructive` on hover
+    │   ├── "Approve Candidate" button (variant="default", size="sm")
+    │   ├── "Hold Candidate" button (variant="outline", size="sm")
+    │   └── "Pass on Candidate" button (variant="outline", size="sm") — `text-destructive hover:text-destructive` on hover
+    │       [Pass on Candidate: confirmation approach is a 5-second undo toast — same as shortlist table row action; no modal required]
     └── Body (px-6 py-4, flex flex-col gap-6)
-        ├── Fit score (large: 28px/600 brand blue, with label "Fit Score" at 12px/400 muted above)
+        ├── Fit score (20px/600 brand blue text-primary, with label "Fit Score" at 12px/400 muted above)
         ├── Skills section (flex flex-wrap gap-1, Badge variant="secondary" per skill)
         ├── Experience section (list of roles, text-sm)
         ├── Contact section (email, LinkedIn link if present)
@@ -408,6 +420,8 @@ Sheet (Radix, side="right")
 ---
 
 ### Placement Log Slide-Over (D-14, D-15)
+
+**Focal point:** Primary focal point: form heading "Log Placement" at 20px/600. Secondary: primary submit button "Log Placement" in accent blue.
 
 ```
 Sheet (Radix, side="right")
@@ -428,7 +442,7 @@ Sheet (Radix, side="right")
             ├── 90-day retention Checkbox + label "Flag for 90-day retention check"
             ├── Notes field (Textarea, min-h-[80px], optional, placeholder="Any additional notes")
             ├── Separator
-            ├── Cancel button (variant="outline", w-full)
+            ├── Close button (variant="outline", w-full)
             └── "Log Placement" button (variant="default", w-full)
                 [submitting: disabled + "Logging…"]
 ```
@@ -436,6 +450,8 @@ Sheet (Radix, side="right")
 ---
 
 ### /ops/interviews — Global Interviews Page
+
+**Focal point:** Primary focal point: interview status badges (color semantics as primary scan target). Secondary: date/time column as scheduling anchor.
 
 ```
 /ops/interviews page
@@ -532,7 +548,7 @@ Phase 3 Ops flows are form-heavy and read-heavy, not queue-driven. J/K navigatio
 | Create dialog title | "New Client" |
 | Create dialog submit | "Create Client" |
 | Edit dialog title | "Edit Client" |
-| Edit dialog submit | "Save Changes" |
+| Edit dialog submit | "Update Client" |
 | Empty state heading | "No clients yet" |
 | Empty state body | "Add your first client to start tracking requisitions and placements." |
 | Error (list load fail) | "Couldn't load clients. Check your connection or refresh the page." |
@@ -591,15 +607,24 @@ Phase 3 Ops flows are form-heavy and read-heavy, not queue-driven. J/K navigatio
 | Shortlist action undo | "[action] — Undo" (5-second window) |
 | Shortlist action fail | "Failed to update — try again." |
 | Interviews section heading | "Interviews" |
-| Interviews empty state | "No interviews scheduled." |
+| Interviews empty state | "No interviews scheduled. Use 'Schedule Interview' above to create one." |
 | "Schedule Interview" button | "Schedule Interview" |
 | Interview status transition 409 | "Invalid status transition." |
 | "Log Placement" button | "Log Placement" |
 | Placements section heading | "Placements" |
-| Placements empty state | "No placements logged." |
+| Placements empty state | "No placements logged. Use 'Log Placement' above when a candidate is ready." |
 | Placement log toast | "Placement logged for [Candidate Name]." |
 | Placement log fail | "Failed to log placement — try again." |
 | Parse never ran notice | "No JD parsed — fields were entered manually." |
+
+### Candidate Detail Sheet
+
+| Element | Copy |
+|---------|------|
+| Quick action: approve | "Approve Candidate" |
+| Quick action: hold | "Hold Candidate" |
+| Quick action: pass | "Pass on Candidate" |
+| Pass confirmation approach | 5-second undo toast (same as shortlist table row action — no modal; toast IS the confirmation mechanism) |
 
 ### Interviews Page
 
@@ -617,7 +642,7 @@ Phase 3 Ops flows are form-heavy and read-heavy, not queue-driven. J/K navigatio
 | Slide-over title | "Log Placement" |
 | Submit button | "Log Placement" |
 | Submit button (submitting) | "Logging…" |
-| Cancel button | "Cancel" |
+| Close button | "Close" |
 | Billing status hint | "Common values: pending, invoiced, paid" |
 | Retention checkbox label | "Flag for 90-day retention check" |
 
@@ -660,5 +685,22 @@ No third-party registries declared for this phase. Registry vetting gate: not ap
 
 ---
 
+## Revision Log
+
+| Date | Change | Reason |
+|------|--------|--------|
+| 2026-06-14 | Placement Slide-Over "Cancel" button label changed to "Close" | BLOCK 1: "Cancel" is a prohibited generic label per Dimension 1 copywriting rules |
+| 2026-06-14 | Fit score large display changed from 28px to 20px (Heading role) | BLOCK 2: 28px created a 5th font size, breaking the 4-size maximum |
+| 2026-06-14 | Added focal point declarations to /ops/clients and /ops/requisitions list pages | FLAG: Visual Hierarchy section lacked explicit focal point anchors for these pages |
+| 2026-06-14 | Edit Client dialog submit changed from "Save Changes" to "Update Client" | BLOCK 3: "Save Changes" is a prohibited generic label per Dimension 1 copywriting rules |
+| 2026-06-14 | Candidate Detail Sheet quick action CTAs expanded: "Approve" → "Approve Candidate", "Hold" → "Hold Candidate", "Pass" → "Pass on Candidate" | Non-blocking: aligns button labels with existing aria-labels declared for shortlist table row actions |
+| 2026-06-14 | Added explicit undo-toast note for "Pass on Candidate" action | Non-blocking: clarifies 5-second undo toast IS the confirmation mechanism, not just an implied pattern |
+| 2026-06-14 | Interviews empty state updated with solution path copy | Non-blocking: "No interviews scheduled. Use 'Schedule Interview' above to create one." |
+| 2026-06-14 | Placements empty state updated with solution path copy | Non-blocking: "No placements logged. Use 'Log Placement' above when a candidate is ready." |
+| 2026-06-14 | Added focal point declarations for /ops/clients/{id}, /ops/requisitions/{id}, /ops/interviews, Candidate Detail Sheet, Placement Log Slide-Over | Non-blocking: fills missing focal point anchors for 5 pages/components |
+
+---
+
 *Phase: 3 — Console Ops*
 *UI-SPEC created: 2026-06-14*
+*UI-SPEC revised: 2026-06-14*
