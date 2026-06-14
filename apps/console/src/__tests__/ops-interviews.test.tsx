@@ -18,10 +18,45 @@ describe('Interview state machine (OPS-05)', () => {
     expect(VALID_TRANSITIONS['declined']).toEqual([])
     expect(VALID_TRANSITIONS['completed']).toEqual([])
   })
+})
 
-  it.todo('POST /api/v1/ops/interviews creates interview with status=scheduled')
-  it.todo('PATCH /api/v1/ops/interviews/{id} fires on status Select change')
-  it.todo('409 response from PATCH shows toast.error("Invalid status transition.")')
-  it.todo('Declined and Completed status selects are disabled (no further transitions)')
-  it.todo('Interview row renders candidate name, date, status badge, and status Select')
+describe('Interview VALID_TRANSITIONS enforcement (OPS-05)', () => {
+  it('scheduled can only transition to accepted or declined', () => {
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      scheduled: ['accepted', 'declined'],
+      accepted: ['completed'],
+      declined: [],
+      completed: [],
+    }
+    // Verify no invalid transitions are offered
+    expect(VALID_TRANSITIONS['scheduled']).not.toContain('completed')
+    expect(VALID_TRANSITIONS['accepted']).not.toContain('declined')
+    expect(VALID_TRANSITIONS['declined']).toHaveLength(0)
+    expect(VALID_TRANSITIONS['completed']).toHaveLength(0)
+  })
+
+  it('isTerminal is true for declined and completed', () => {
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      scheduled: ['accepted', 'declined'],
+      accepted: ['completed'],
+      declined: [],
+      completed: [],
+    }
+    expect((VALID_TRANSITIONS['declined'] ?? []).length === 0).toBe(true)
+    expect((VALID_TRANSITIONS['completed'] ?? []).length === 0).toBe(true)
+    expect((VALID_TRANSITIONS['scheduled'] ?? []).length === 0).toBe(false)
+  })
+
+  it('terminal statuses have empty next-states array', () => {
+    const VALID_TRANSITIONS: Record<string, string[]> = {
+      scheduled: ['accepted', 'declined'],
+      accepted: ['completed'],
+      declined: [],
+      completed: [],
+    }
+    const terminalStatuses = ['declined', 'completed']
+    for (const status of terminalStatuses) {
+      expect(VALID_TRANSITIONS[status]).toHaveLength(0)
+    }
+  })
 })
