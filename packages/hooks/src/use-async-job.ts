@@ -19,6 +19,11 @@ export type UseAsyncJobOptions<TData, TRawStatus extends string = string> = {
    *   Resume upload: no status endpoint — see known gap in .planning/phases/01-foundation/01-RESEARCH.md
    */
   endpoint: string
+  /**
+   * API base URL. Defaults to NEXT_PUBLIC_API_URL env var or 'http://localhost:8000'.
+   * Must match the MSW handler origin in development to ensure requests are intercepted.
+   */
+  apiBase?: string
   /** Additional enabled gate on top of jobId presence */
   enabled?: boolean
   /**
@@ -76,6 +81,7 @@ export function useAsyncJob<TData, TRawStatus extends string = string>(
   const {
     jobId,
     endpoint,
+    apiBase,
     enabled = true,
     statusMap = {},
     refetchInterval: intervalOverride = 2000,
@@ -84,12 +90,19 @@ export function useAsyncJob<TData, TRawStatus extends string = string>(
   const mergedMap: Record<string, AsyncJobPhase> = { ...DEFAULT_STATUS_MAP, ...statusMap }
   const isEnabled = !!jobId && enabled
 
-  // Build poll URL: replace {id} placeholder or append jobId as path segment
+  // Resolve API base: explicit option → NEXT_PUBLIC_API_URL → localhost fallback.
+  // This ensures fetch() sends requests to the correct origin so MSW can intercept them.
+  const base =
+    apiBase ??
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) ??
+    'http://localhost:8000'
+
+  // Build poll URL: prepend base, then replace {id} placeholder or append jobId as path segment
   const url = endpoint.includes('{id}')
-    ? endpoint.replace('{id}', jobId ?? '')
+    ? `${base}${endpoint.replace('{id}', jobId ?? '')}`
     : jobId
-      ? `${endpoint}/${jobId}`
-      : endpoint
+      ? `${base}${endpoint}/${jobId}`
+      : `${base}${endpoint}`
 
   const query = useQuery<TData>({
     queryKey: ['async-job', url, jobId],
