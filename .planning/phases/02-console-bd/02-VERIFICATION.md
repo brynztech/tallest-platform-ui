@@ -1,9 +1,16 @@
 ---
 phase: 02-console-bd
 verified: 2026-06-14T11:55:00Z
-status: human_needed
-score: 5/6 must-haves verified
-overrides_applied: 0
+status: passed
+score: 6/6 must-haves verified
+overrides_applied: 1
+overrides:
+  - requirement: BD-01 / ROADMAP SC1 (open_roles + suggested_angle on fat card)
+    disposition: accepted_with_open_contract
+    notes: |
+      Fields rendered via LeadQueueItemExtended mock bridge. Backend contract proposal
+      documented at .planning/contracts/bd-lead-queue-item-fat-card.yaml.
+      Gap is explicitly open — not closed. Human-approved 2026-06-14.
 human_verification:
   - test: "Full end-to-end BD workflow in browser with MSW enabled"
     expected: |
