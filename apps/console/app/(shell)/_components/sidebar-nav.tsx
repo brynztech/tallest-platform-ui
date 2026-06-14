@@ -16,9 +16,15 @@ const BD_NAV = [
   { href: '/bd/replies', label: 'Replies', badgeKey: 'replies-count' as const },
 ] as const
 
+// Ops nav items — fully wired in Phase 3
+const OPS_NAV = [
+  { href: '/ops/clients', label: 'Clients', badgeKey: null },
+  { href: '/ops/requisitions', label: 'Requisitions', badgeKey: null },
+  { href: '/ops/interviews', label: 'Interviews', badgeKey: null },
+] as const
+
 // Stub sections — dimmed, not clickable
 const STUB_SECTIONS = [
-  { label: 'Ops', items: ['Clients', 'Requisitions', 'Interviews', 'Placements'] },
   { label: 'Supply', items: ['Candidates', 'Shortlists', 'Engagements'] },
   { label: 'Admin', items: ['Costs', 'Events', 'Quotas', 'Prompts'] },
 ] as const
@@ -124,6 +130,31 @@ export function SidebarNav() {
                   {badgeCount}
                 </Badge>
               )}
+            </Link>
+          )
+        })}
+      </div>
+
+      {/* Ops section */}
+      <div className="flex flex-col px-2 py-3">
+        <span className="px-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Ops
+        </span>
+        {OPS_NAV.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
+                'hover:bg-accent hover:text-accent-foreground',
+                isActive
+                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  : 'text-muted-foreground',
+              )}
+            >
+              <span className="flex-1 truncate">{item.label}</span>
             </Link>
           )
         })}
