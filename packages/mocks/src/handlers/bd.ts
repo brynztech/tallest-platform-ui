@@ -49,7 +49,15 @@ export const bdHandlers: HttpHandler[] = [
     } satisfies components['schemas']['LeadQueueResponse'])
   }),
 
-  // 2. Lead detail (fat card)
+  // 2. Snoozed wake badge count — must be registered BEFORE the :lead_id wildcard handler.
+  // MSW v2 uses first-match-wins; ':lead_id' matches any path segment including
+  // the literal string 'snoozed-wake-count', so this specific route must come first.
+  // (MSW-only stub — no live endpoint per RESEARCH.md Open Question 2)
+  http.get(`${API_BASE}/api/v1/bd/leads/snoozed-wake-count`, () => {
+    return HttpResponse.json({ count: 2 })
+  }),
+
+  // 3. Lead detail (fat card)
   http.get(`${API_BASE}/api/v1/bd/leads/:lead_id`, ({ params }) => {
     return HttpResponse.json({
       id: params.lead_id as string,
@@ -215,9 +223,4 @@ export const bdHandlers: HttpHandler[] = [
     })
   }),
 
-  // 12. Snoozed wake badge count (MSW-only stub — no live endpoint per RESEARCH.md Open Question 2)
-  // NOTE: No live /bd/leads?has_woken_snooze=true endpoint. MSW stub derives count from mock.
-  http.get(`${API_BASE}/api/v1/bd/leads/snoozed-wake-count`, () => {
-    return HttpResponse.json({ count: 2 })
-  }),
 ]
