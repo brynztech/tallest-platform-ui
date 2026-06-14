@@ -1,8 +1,9 @@
 'use client'
 
 import { use, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
+import { toast } from 'sonner'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
@@ -57,6 +58,22 @@ export default function RequisitionDetailPage({
     enabled: !!req?.client_id,
   })
 
+  const queryClient = useQueryClient()
+
+  const matchMutation = useMutation({
+    mutationFn: () =>
+      apiClient.POST('/api/v1/ops/requisitions/{req_id}/match', {
+        params: { path: { req_id: id } },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ops-shortlist', id] })
+      toast('Match triggered — shortlist will refresh shortly.')
+    },
+    onError: () => {
+      toast.error('Failed to trigger match — try again.')
+    },
+  })
+
   if (isLoading)
     return (
       <div className="p-6">
@@ -89,9 +106,15 @@ export default function RequisitionDetailPage({
       <RequisitionFields req={req} />
 
       {/* Trigger Match button */}
-      <Button variant="default" size="sm" className="mb-6 mt-4" disabled={req.status !== 'open'}>
+      <Button
+        variant="default"
+        size="sm"
+        className="mb-6 mt-4"
+        disabled={req.status !== 'open' || matchMutation.isPending}
+        onClick={() => matchMutation.mutate()}
+      >
         <Zap className="mr-1 size-4" />
-        Trigger Candidate Match
+        {matchMutation.isPending ? 'Matching…' : 'Trigger Candidate Match'}
       </Button>
 
       {/* Section 2: Shortlist */}
