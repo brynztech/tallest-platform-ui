@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MSWProvider } from './msw-provider'
+import { CandidateAuthProvider } from './candidate-auth-context'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,7 +17,9 @@ export function WebProviders({ children }: { children: React.ReactNode }) {
   return (
     <MSWProvider>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <CandidateAuthProvider>
+          {children}
+        </CandidateAuthProvider>
       </QueryClientProvider>
     </MSWProvider>
   )
