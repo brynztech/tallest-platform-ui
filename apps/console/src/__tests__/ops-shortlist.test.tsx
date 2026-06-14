@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { shortlistStatusBadgeClass } from '../../app/(shell)/ops/requisitions/[id]/_components/shortlist-table'
+import { shortlistStatusBadgeClass } from '../../app/(shell)/ops/requisitions/[id]/_components/shortlist-utils'
 
 afterEach(() => {
   vi.restoreAllMocks()

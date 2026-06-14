@@ -22,6 +22,7 @@ import {
   TableRow,
 } from '@brynzit/ui/components/ui/table'
 import { CheckCircle, PauseCircle, XCircle } from 'lucide-react'
+import { shortlistStatusBadgeClass } from './shortlist-utils'
 
 // CRITICAL: GET /api/v1/ops/requisitions/{req_id}/shortlist returns { [key: string]: unknown }
 // Define local type based on supply SubmissionResponse shape (verified api.d.ts line 3031)
@@ -40,20 +41,6 @@ interface ShortlistTableProps {
   reqId: string
   onCandidateSelect: (candidateId: string, submissionId: string) => void
   onApprove: (candidateId: string) => void
-}
-
-export function shortlistStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'approved':
-      return 'bg-[oklch(0.45_0.15_145)/20] text-[oklch(0.45_0.15_145)] border-[oklch(0.45_0.15_145)/40]'
-    case 'hold':
-      return 'border-[oklch(0.769_0.188_85.87)] text-[oklch(0.769_0.188_85.87)]'
-    case 'passed':
-      return 'text-muted-foreground border-border'
-    default:
-      // shortlisted — neutral secondary
-      return ''
-  }
 }
 
 export function ShortlistTable({
