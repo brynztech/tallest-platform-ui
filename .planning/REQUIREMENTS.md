@@ -46,7 +46,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **ADM-01**: Admin can view AI spend broken down by domain, model, and task type
 - [ ] **ADM-02**: Admin can browse and filter the agent event log (domain, task type, date)
-- [ ] **ADM-03**: Admin can monitor quota usage vs caps with a warning state above 80%
+- [ ] **ADM-03**: Admin can monitor quota usage vs caps with amber warning above 60% and destructive warning above 90%
 - [ ] **ADM-04**: Admin can see pipeline health as status counts per stage across domains
 - [ ] **ADM-05**: Admin can read and edit agent prompts with save confirmation
 
@@ -88,6 +88,7 @@ Deferred to future release. Tracked but not in current roadmap.
 - **CUX-04**: Command palette (Cmd+K) across entities and actions
 - **ADM-06**: Cost drilldown per workflow run (cost per lead scored / outreach generated / match run)
 - **CUX-05**: Column-order preference for kanban stored locally
+- **OPS-07**: Ops rep can upload JD documents (`.pdf`, `.doc`, `.docx`) for a requisition; backend extracts text server-side and reuses the existing JD parse pipeline, while pasted JD text remains available as a fallback
 
 ### Public
 
@@ -140,6 +141,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OPS-04 | Phase 3 | Pending |
 | OPS-05 | Phase 3 | Pending |
 | OPS-06 | Phase 3 | Pending |
+| OPS-07 | Phase 999.1 — Ops JD File Upload (BACKLOG) | Deferred |
 | SUP-01 | Phase 4 | Pending |
 | SUP-02 | Phase 4 | Pending |
 | SUP-03 | Phase 4 | Pending |
@@ -169,6 +171,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1 requirements: 45 total (note: planning_context stated 38; actual count from requirements list is 45 — no orphans, all mapped)
 - Mapped to phases: 45
 - Unmapped: 0 ✓
+- v2/backlog requirements: OPS-07 added for future JD file upload
 
 ---
 *Requirements defined: 2026-06-13*

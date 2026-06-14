@@ -13,7 +13,7 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
 - [x] **Phase 1: Foundation** - Monorepo, shared packages, typed API client, MSW contract architecture, and candidate-facing OpenAPI contracts *(completed 2026-06-13)*
 - [ ] **Phase 2: Console BD** - Full BD review loop — lead queue, outreach, pipeline kanban, CSV import, reply triage, and cross-cutting console UX patterns
 - [x] **Phase 3: Console Ops** - CRM backbone — clients, requisitions with async JD parse, match + shortlist, interviews, and placements *(completed 2026-06-14)*
-- [ ] **Phase 4: Console Supply + Admin** - Talent pool search, candidate profiles, ingestion, shortlist review, engagement sequences, and all Admin monitoring screens
+- [x] **Phase 4: Console Supply + Admin** - Talent pool search, candidate profiles, ingestion, shortlist review, engagement sequences, and all Admin monitoring screens *(completed 2026-06-14)*
 - [ ] **Phase 5: Public Site** - Contrario-grade landing, candidate signup/onboarding, job board with SEO + JSON-LD, apply flow
 - [ ] **Phase 6: Candidate Dashboard** - Application status tracker, substep microcopy, enrichment display, profile edit, and mock-swap readiness
 
@@ -95,12 +95,12 @@ Plans:
   5. Admin can view AI cost breakdown by domain/model/task, browse and filter the agent event log, see quota usage with a warning state above 80%, view pipeline health as status counts per stage, and read/edit agent prompts with save confirmation
 **Plans**: 6 plans
 Plans:
-- [ ] Wave 1: 04-01-PLAN.md — shadcn tabs+progress install + full MSW supply handlers (14 handlers) + full MSW monitoring handlers (6 handlers) + sidebar Supply+Admin unlock + 8 test stubs (SUP-01..05, ADM-01..05)
-- [ ] Wave 2 *(blocked on Wave 1)*: 04-02-PLAN.md — Supply search page: filter sidebar + CandidateResultCard + explicit-submit search + keyboard nav + CandidateProfileSheet shared component + enrichment polling + Phase 3 stub replacement (SUP-01, SUP-02, SUP-04)
-- [ ] Wave 2 *(blocked on Wave 1)*: 04-03-PLAN.md — Admin page shell (Suspense + tabbed nav) + AdminOverviewTab (4 summary cards) + AdminCostsTab + AdminQuotasTab + AdminPipelineTab (ADM-01, ADM-03, ADM-04)
-- [ ] Wave 3 *(blocked on Wave 2)*: 04-04-PLAN.md — Supply ingest page: LinkedIn form (sync 201) + CSV form (native fetch multipart) + Resume form (async 202 + polling) + IngestJobCard Recent Jobs (SUP-03)
-- [ ] Wave 3 *(blocked on Wave 2)*: 04-05-PLAN.md — AdminEventsTab (TanStack Table v8, server+client filters, limit+offset pagination) + AdminPromptsTab (split-view, dirty state, PUT save) (ADM-02, ADM-05)
-- [ ] Wave 4 *(blocked on Wave 3)*: 04-06-PLAN.md — Supply engagements page + EngagementSequenceSheet (RHF useFieldArray, PATCH-then-POST approve, 5s undo reject) + human verify (SUP-04, SUP-05)
+- [x] Wave 1: 04-01-PLAN.md ✓ — shadcn tabs+progress install + full MSW supply handlers (14 handlers) + full MSW monitoring handlers (6 handlers) + sidebar Supply+Admin unlock + 8 test stubs (SUP-01..05, ADM-01..05)
+- [x] Wave 2 *(blocked on Wave 1)*: 04-02-PLAN.md ✓ — Supply search page: filter sidebar + CandidateResultCard + explicit-submit search + keyboard nav + CandidateProfileSheet shared component + enrichment polling + Phase 3 stub replacement (SUP-01, SUP-02, SUP-04)
+- [x] Wave 2 *(blocked on Wave 1)*: 04-03-PLAN.md ✓ — Admin page shell (Suspense + tabbed nav) + AdminOverviewTab (4 summary cards) + AdminCostsTab + AdminQuotasTab + AdminPipelineTab (ADM-01, ADM-03, ADM-04)
+- [x] Wave 3 *(blocked on Wave 2)*: 04-04-PLAN.md ✓ — Supply ingest page: LinkedIn form (sync 201) + CSV form (native fetch multipart) + Resume form (async 202 + polling) + IngestJobCard Recent Jobs (SUP-03)
+- [x] Wave 3 *(blocked on Wave 2)*: 04-05-PLAN.md ✓ — AdminEventsTab (TanStack Table v8, server+client filters, limit+offset pagination) + AdminPromptsTab (split-view, dirty state, PUT save) (ADM-02, ADM-05)
+- [x] Wave 4 *(blocked on Wave 3)*: 04-06-PLAN.md ✓ — Supply engagements page + EngagementSequenceSheet (RHF useFieldArray, PATCH-then-POST approve, 5s undo reject) + human verify (SUP-04, SUP-05)
 **Cross-cutting constraints:** No useAsyncJob for enrichment polling (manual setInterval — CandidateProfileResponse has no .status); native fetch for CSV + resume multipart uploads; task_type filter on AdminEventsTab is client-side only; KNOWN_PROMPTS hardcoded (no list endpoint); Suspense wrapper required on /admin page for useSearchParams; title filter field folded into q semantic param (no API title param); match_reason is MSW-only mock field on search results
 **UI hint**: yes
 
