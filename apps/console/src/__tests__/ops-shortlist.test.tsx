@@ -66,4 +66,6 @@ describe('Shortlist status badge logic (OPS-04)', () => {
   it.todo('PATCH /supply/shortlists/{id} with status=passed fires and invalidates shortlist query')
   it.todo('Shortlist row click sets selectedCandidateId and opens candidate Sheet')
   it.todo('Approve action shows 5-second undo toast with "Candidate [name] approved."')
+  it.todo('POST /ops/requisitions/{req_id}/match fires on button click when req.status === "open"')
+  it.todo('Shortlist query is invalidated after successful match trigger')
 })
