@@ -662,19 +662,19 @@ All candidate handlers exist as stubs. Phase 5 must:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Resume parse endpoint for candidates**
+1. **Resume parse endpoint for candidates** — RESOLVED: use `POST /candidate/profile/resume` and poll `GET /candidate/profile/resume/status/{parse_id}`. Defined as new MSW-only contract in Phase 5. Endpoint documented in contracts YAML for swap-readiness when backend ships.
    - What we know: Supply ingest uses `POST /supply/resumes/upload`. Candidate-facing resume parse is a new mock-only endpoint.
    - What's unclear: Whether the final backend will use a different polling mechanism (e.g., poll the candidate profile's `completeness_score` changing rather than a dedicated status endpoint).
    - Recommendation: Define `POST /candidate/profile/resume` + status endpoint in Phase 5 MSW as a reasonable contract. Document the endpoint in a contract YAML file for swap-readiness.
 
-2. **Job detail page: RSC vs client component**
+2. **Job detail page: RSC vs client component** — RESOLVED: use client component with `useEffect` for JSON-LD injection. Avoids server-side MSW complexity. If Google Rich Results Test fails with client-side JSON-LD, the executor must implement RSC `generateMetadata` approach as fallback (see Plan 04 threat model note).
    - What we know: JSON-LD is best generated server-side. But all data is MSW-only, and MSW server requires `NEXT_PUBLIC_API_MOCKING=enabled`.
    - What's unclear: Whether the planner prefers a pure RSC job detail page (requires server-side MSW) or a client-rendered page (uses browser service worker).
    - Recommendation: Make `/jobs/[id]` a client component (`'use client'`) for consistency with the job board. JSON-LD can be injected via `useEffect` or by a minimal RSC wrapper that passes static metadata. This avoids the server-side MSW complexity.
 
-3. **Signup response and token storage**
+3. **Signup response and token storage** — RESOLVED: MSW signup handler returns `access_token` on 201 (enhanced from stub). Auto-login after signup — no separate login step needed. Matches D-12 redirect to onboarding without re-authentication.
    - What we know: Signup returns `{ id, email }` (no token). Login returns `{ access_token }`.
    - What's unclear: Whether the signup flow should auto-login (call login internally after signup) or redirect to login for a separate login step.
    - Recommendation: Auto-login after signup (store mock token immediately from signup response — enhance the MSW handler to also return `access_token` on 201). This matches D-12 which describes post-signup flow going directly to onboarding without a separate login step.

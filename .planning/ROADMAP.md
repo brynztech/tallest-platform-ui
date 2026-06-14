@@ -166,5 +166,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Console BD | 0/4 | In progress | - |
 | 3. Console Ops | 0/5 | Not started | - |
 | 4. Console Supply + Admin | 0/6 | Not started | - |
-| 5. Public Site | 0/5 | Not started | - |
+| 5. Public Site | 0/5 | Planned | - |
 | 6. Candidate Dashboard | 0/TBD | Not started | - |
