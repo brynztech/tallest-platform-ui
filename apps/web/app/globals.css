@@ -1,8 +1,9 @@
-@import '@brynzit/ui/styles/globals.css';
-@source '../../../packages/ui/src/**/*.{ts,tsx}';
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@import "@brynzit/ui/styles/theme.css";
 
 /* apps/web overrides: light mode default, editorial spacing */
-/* @theme is NOT defined here — only in packages/ui/src/styles/globals.css */
 :root {
   --radius: 0.5rem;
   /* background, foreground inherit light values from shared @theme */

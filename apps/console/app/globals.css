@@ -1,9 +1,9 @@
-@import '@brynzit/ui/styles/globals.css';
-@source './**/*.{ts,tsx}';
-@source '../../../packages/ui/src/**/*.{ts,tsx}';
+@import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@import "@brynzit/ui/styles/theme.css";
 
 /* apps/console overrides: dark mode default, compact density */
-/* @theme is NOT defined here — only in packages/ui/src/styles/globals.css */
 :root {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
