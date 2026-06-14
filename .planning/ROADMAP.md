@@ -14,7 +14,7 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
 - [ ] **Phase 2: Console BD** - Full BD review loop — lead queue, outreach, pipeline kanban, CSV import, reply triage, and cross-cutting console UX patterns
 - [x] **Phase 3: Console Ops** - CRM backbone — clients, requisitions with async JD parse, match + shortlist, interviews, and placements *(completed 2026-06-14)*
 - [x] **Phase 4: Console Supply + Admin** - Talent pool search, candidate profiles, ingestion, shortlist review, engagement sequences, and all Admin monitoring screens *(completed 2026-06-14)*
-- [ ] **Phase 5: Public Site** - Contrario-grade landing, candidate signup/onboarding, job board with SEO + JSON-LD, apply flow
+- [ ] **Phase 5: Public Site** - Contrario-grade landing, anonymous job-search preview, candidate signup/onboarding, job board with SEO + JSON-LD, apply flow
 - [ ] **Phase 6: Candidate Dashboard** - Application status tracker, substep microcopy, enrichment display, profile edit, and mock-swap readiness
 
 ## Phase Details
@@ -105,18 +105,25 @@ Plans:
 **UI hint**: yes
 
 ### Phase 5: Public Site
-**Goal**: A visitor can discover Brynzit on a contrario-grade landing page, sign up as a candidate, upload their resume to prefill their profile via async parsing, complete a stepped onboarding flow, browse and search a job board where every listing has JobPosting JSON-LD for Google for Jobs, view job detail pages, and apply with one click (or a short override form if their profile is incomplete) — all against MSW contract mocks.
+**Goal**: A visitor can discover Brynzit on a contrario-grade landing page, run an anonymous public job search that previews a limited set of roles before signup, sign up as a candidate, upload their resume to prefill their profile via async parsing, complete a stepped onboarding flow, browse and search the full job board where every listing has JobPosting JSON-LD for Google for Jobs, view job detail pages, and apply with one click (or a short override form if their profile is incomplete) — all against MSW contract mocks.
 **Mode:** mvp
 **Depends on**: Phase 4
-**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, JOB-01, JOB-02, JOB-03, JOB-04, JOB-05
+**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, JOB-01, JOB-02, JOB-03, JOB-04, JOB-05, JOB-06
 **Success Criteria** (what must be TRUE):
   1. A visitor landing on `/` sees a Brynzit landing page at contrario.ai reference polish — editorial typography, clear value proposition, candidate-facing CTA driving signup — not a generic AI-generated dashboard
   2. A candidate can sign up, log in (mocked auth), upload a resume and watch async parsing prefill their profile, then complete a stepped onboarding flow with progress indication and a completeness meter that gates 1-click apply
   3. A candidate can edit their profile after onboarding without restarting the flow
-  4. A visitor can browse a job board with instant-update search and filters (role type, location, remote, seniority, skills) with removable filter pills, and open job detail pages with full JD, company context, and compensation where available
+  4. A visitor can search open roles before signup and see a limited preview of matching jobs; full results, saved jobs, apply actions, and personalized AI match-strength require sign-in / joining the talent pool
   5. Every job listing page renders `JobPosting` JSON-LD structured data and a canonical URL from first ship; running the Google Rich Results Test on any job page returns no errors
   6. A logged-in candidate with a complete profile can apply in one click; a candidate with an incomplete profile receives a short completion prompt; both paths accept an optional note of ≤200 characters (no cover letter field); match-strength badges appear on roles
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] Wave 1: 05-01-PLAN.md — Deps + postcss + vitest + candidate types + MSW handler expansion (12 jobs, 4 new endpoints) + 3 shadcn components (form, command, scroll-area)
+- [ ] Wave 2 *(blocked on Wave 1)*: 05-02-PLAN.md — Landing page hero + SiteNav + CandidateAuthContext + Job board (cursor pagination, debounced search, filters, logged-out gating) (PUB-01, JOB-01, JOB-05, JOB-06)
+- [ ] Wave 3 *(blocked on Wave 2)*: 05-03-PLAN.md — Signup + Login + 3-step onboarding (resume upload + async parse + profile confirm + preferences) (PUB-02, PUB-03, PUB-04)
+- [ ] Wave 4 *(blocked on Wave 3)*: 05-04-PLAN.md — Job detail page (JSON-LD, safe JD text) + Apply section (3 states) + Profile edit with completeness meter (PUB-05, PUB-06, JOB-02, JOB-03, JOB-04)
+- [ ] Wave 5 *(blocked on Wave 4)*: 05-05-PLAN.md — Human verify: full candidate journey walkthrough (all 12 requirements)
+**Cross-cutting constraints:** All candidate endpoints use native fetch (not apiClient — paths absent from api.d.ts); T-05-01 safeRedirect() on all ?redirect= params; T-05-02 JD text as whitespace-pre-wrap (never dangerouslySetInnerHTML); T-05-03 try/catch on localStorage JSON.parse; T-05-04 safeHref() for github_url/linkedin_url; no dark class on html element in apps/web; completeness_score from API only (never computed client-side); use(params) for Next.js 16 async params in all client page components
 **UI hint**: yes
 
 ### Phase 6: Candidate Dashboard
@@ -159,5 +166,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Console BD | 0/4 | In progress | - |
 | 3. Console Ops | 0/5 | Not started | - |
 | 4. Console Supply + Admin | 0/6 | Not started | - |
-| 5. Public Site | 0/TBD | Not started | - |
+| 5. Public Site | 0/5 | Not started | - |
 | 6. Candidate Dashboard | 0/TBD | Not started | - |
