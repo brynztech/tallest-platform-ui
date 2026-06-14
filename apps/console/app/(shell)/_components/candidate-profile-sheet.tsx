@@ -15,7 +15,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { toast } from 'sonner'
-import { X, Sparkles, MapPin, Github, Mail, CheckCircle, ExternalLink, Download, Zap } from 'lucide-react'
+import { X, Sparkles, MapPin, Code2, Mail, CheckCircle, ExternalLink, Download, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface CandidateProfileSheetProps {
@@ -412,7 +412,7 @@ export function CandidateProfileSheet({
                       <div className="flex flex-col gap-1.5 text-sm">
                         {talentPool?.github_public_repos != null && (
                           <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <Github className="size-3" />
+                            <Code2 className="size-3" />
                             Public repos: {talentPool.github_public_repos}
                           </span>
                         )}

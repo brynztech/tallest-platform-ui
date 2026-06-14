@@ -7,8 +7,8 @@ import { Badge } from '@brynzit/ui/components/ui/badge'
 import { FilterSidebar } from './_components/filter-sidebar'
 import type { SearchFilters } from './_components/filter-sidebar'
 import { CandidateResultCard } from './_components/candidate-result-card'
-import { CandidateProfileSheet } from '@/app/(shell)/_components/candidate-profile-sheet'
-import { ShortcutOverlay } from '@/app/(shell)/bd/leads/_components/shortcut-overlay'
+import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
+import { ShortcutOverlay } from '@/(shell)/bd/leads/_components/shortcut-overlay'
 
 export default function SupplySearchPage() {
   // Separate live (form editing) from submitted (triggers query) filters

@@ -3,7 +3,7 @@
 import type { components } from '@brynzit/api-client'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { MapPin, CheckCircle, Github } from 'lucide-react'
+import { MapPin, CheckCircle, Code2 } from 'lucide-react'
 
 type CandidateSearchResult = components['schemas']['CandidateSearchResult']
 
@@ -125,7 +125,7 @@ export function CandidateResultCard({
           )}
           {candidate.github_public_repos != null && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Github className="size-3" />
+              <Code2 className="size-3" />
               {candidate.github_public_repos} repos
             </span>
           )}
