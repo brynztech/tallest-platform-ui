@@ -72,7 +72,17 @@ export function PlacementPanel({
   })
 
   const onSubmit = form.handleSubmit((values) => {
-    submitMutation.mutate(values as components['schemas']['CreatePlacementRequest'])
+    const body: components['schemas']['CreatePlacementRequest'] = {
+      requisition_id: values.requisition_id,
+      candidate_id: values.candidate_id ?? null,
+      fee_usd: values.fee_usd ?? null,
+      billing_status: values.billing_status,
+      retention_flag_90d: values.retention_flag_90d,
+      notes: values.notes ?? null,
+      // Coerce empty string to null — backend expects ISO datetime or null
+      confirmed_at: values.confirmed_at || null,
+    }
+    submitMutation.mutate(body)
   })
 
   return (
