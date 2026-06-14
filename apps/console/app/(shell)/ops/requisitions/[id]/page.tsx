@@ -45,6 +45,18 @@ export default function RequisitionDetailPage({
     },
   })
 
+  // Fetch client list to resolve client name from client_id UUID
+  const { data: clientsData } = useQuery({
+    queryKey: ['ops-clients'],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET('/api/v1/ops/clients', {})
+      if (error) throw error
+      return data
+    },
+    staleTime: 60 * 1000,
+    enabled: !!req?.client_id,
+  })
+
   if (isLoading)
     return (
       <div className="p-6">
@@ -65,7 +77,7 @@ export default function RequisitionDetailPage({
         <div>
           <h1 className="text-xl font-semibold">{req.title}</h1>
           <Link href={`/ops/clients/${req.client_id}`} className="text-sm text-primary">
-            {req.client_id}
+            {clientsData?.find((c) => c.id === req.client_id)?.name ?? req.client_id}
           </Link>
         </div>
         <div className="flex items-center gap-2">
