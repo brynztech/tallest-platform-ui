@@ -73,11 +73,22 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **JOB-03**: Job listings render `JobPosting` JSON-LD and canonical URLs for SEO from first ship
 - [ ] **JOB-04**: Candidate with a complete profile can apply in one click; incomplete profiles get a short completion prompt; optional note ≤200 chars (no cover letter)
 - [ ] **JOB-05**: Candidate sees match-strength badges ("Strong match" / "Partial match") on roles before applying (mock-first)
+- [ ] **JOB-06**: Anonymous visitors can run a public job search and see a limited preview of matching roles before signup; viewing all matches, saving jobs, applying, or receiving personalized AI matches requires sign-in / joining the talent pool
 
 ### Public — Candidate Dashboard
 
 - [ ] **DASH-01**: Candidate can track each application through statuses (Submitted → Under Review → Shortlisted → Interview Scheduled → Offer / Not Proceeding)
 - [ ] **DASH-02**: Status displays use specific substep microcopy ("Matching to open roles", "Recruiter notified") rather than generic labels
+
+### Public Site Visual Polish
+
+- [ ] **POL-01**: Landing hero uses large editorial typography, a single restrained accent colour, and no gradient backgrounds — Contrario.ai reference aesthetic
+- [ ] **POL-02**: Job board listing cards have softer borders, refined spacing, and intentional hover/focus states (not shadcn utility defaults)
+- [ ] **POL-03**: Auth (login/signup) and multi-step onboarding forms are polished: consistent field spacing, softer focus rings, clear visual hierarchy
+- [ ] **POL-04**: Resume upload dropzone has crafted idle / drag / uploading / done state set — no raw dashed-border utility default
+- [ ] **POL-05**: Locked-jobs overlay is redesigned: tasteful blur/fade, non-aggressive CTA, palette-consistent
+- [ ] **POL-06**: All interactive elements have present-but-not-noisy motion: hover transitions ≤150ms, consistent focus rings across all inputs
+- [ ] **POL-07**: Site renders light-only (no dark-class leakage), restrained palette, one accent colour throughout — no black borders or AI-purple gradients anywhere in apps/web
 
 ## v2 Requirements
 
@@ -163,13 +174,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | JOB-03 | Phase 5 | Pending |
 | JOB-04 | Phase 5 | Pending |
 | JOB-05 | Phase 5 | Pending |
+| JOB-06 | Phase 5 | Pending |
+| POL-01 | Phase 5.1 | Pending |
+| POL-02 | Phase 5.1 | Pending |
+| POL-03 | Phase 5.1 | Pending |
+| POL-04 | Phase 5.1 | Pending |
+| POL-05 | Phase 5.1 | Pending |
+| POL-06 | Phase 5.1 | Pending |
+| POL-07 | Phase 5.1 | Pending |
 | DASH-01 | Phase 6 | Pending |
 | DASH-02 | Phase 6 | Pending |
 | PUB-07 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 45 total (note: planning_context stated 38; actual count from requirements list is 45 — no orphans, all mapped)
-- Mapped to phases: 45
+- v1 requirements: 53 total (46 original + 7 POL requirements added for Phase 5.1)
+- Mapped to phases: 53
 - Unmapped: 0 ✓
 - v2/backlog requirements: OPS-07 added for future JD file upload
 
