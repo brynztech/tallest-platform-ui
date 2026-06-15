@@ -1,0 +1,96 @@
+'use client'
+
+import { FormEvent, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Button } from '@brynzit/ui/components/ui/button'
+import { Input } from '@brynzit/ui/components/ui/input'
+import { Label } from '@brynzit/ui/components/ui/label'
+import { useCandidateAuth } from '../_components/candidate-auth-context'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+function safeRedirect(value: string | null): string | null {
+  if (!value) return null
+  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null
+  return value
+}
+
+export default function LoginPage() {
+  const router = useRouter()
+  const { signIn } = useCandidateAuth()
+  const [email, setEmail] = useState('alex@example.com')
+  const [password, setPassword] = useState('password')
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
+
+    const response = await fetch(`${API_BASE}/api/v1/candidate/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+
+    setIsSubmitting(false)
+
+    if (!response.ok) {
+      setError('Invalid email or password.')
+      return
+    }
+
+    const data = (await response.json()) as { access_token: string }
+    signIn(data.access_token, { id: 'mock-candidate-id', email })
+    router.push(safeRedirect(new URLSearchParams(window.location.search).get('redirect')) ?? '/jobs')
+  }
+
+  return (
+    <main className="mx-auto flex min-h-[calc(100vh-48px)] max-w-[380px] flex-col justify-center px-6">
+      <div className="space-y-2 text-center">
+        <h1 className="text-3xl font-light tracking-tight text-foreground">Sign in</h1>
+        <p className="text-sm text-muted-foreground">Continue to your Brynzit candidate account.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+          />
+        </div>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Signing in...' : 'Sign in'}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        New here?{' '}
+        <Link href="/signup" className="text-foreground underline underline-offset-4">
+          Join free
+        </Link>
+      </p>
+    </main>
+  )
+}
