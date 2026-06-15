@@ -26,10 +26,13 @@ const EMPLOYMENT_LABELS: Record<PublicJobItem['employment_type'], string> = {
 
 export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
   return (
-    <Link href={`/jobs/${job.id}`} className="block" aria-hidden={isLocked}>
+    <Link href={`/jobs/${job.id}`} className="group block" tabIndex={isLocked ? -1 : undefined} aria-hidden={isLocked}>
       <Card
         className={cn(
-          'cursor-pointer p-4 transition-colors hover:bg-muted',
+          'cursor-pointer p-4',
+          'transition-[color,box-shadow,transform] duration-150 ease-out',
+          'hover:bg-muted/50 hover:shadow-md hover:-translate-y-px',
+          'group-focus-visible:outline-none group-focus-visible:ring-2 group-focus-visible:ring-ring',
           isLocked && 'blur-[4px] pointer-events-none select-none',
         )}
       >

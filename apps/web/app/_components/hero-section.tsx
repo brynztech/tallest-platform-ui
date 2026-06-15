@@ -4,7 +4,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 
 export function HeroSection() {
   return (
-    <div className="flex max-w-[900px] flex-col items-center text-center" style={{ paddingTop: '120px' }}>
+    <div className="flex max-w-[900px] flex-col items-center pt-28 text-center md:pt-[120px]">
       <h1
         className="text-[120px] font-light leading-[1.05] tracking-[0.04em] text-foreground"
       >
