@@ -3,6 +3,95 @@ import type { HttpHandler } from 'msw'
 import type { components, LeadQueueItemExtended } from '@brynzit/api-client'
 import { API_BASE } from '../base-url'
 
+const mockBdLeadQueueItems: LeadQueueItemExtended[] = [
+  { id: '00000000-0000-0000-0000-000000000001', company_name: 'Acme Corp', canonical_domain: 'acme.com', contact_name: 'Jane Doe', contact_title: 'VP Engineering', contact_email: 'jane@acme.com', icp_score: 87, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000001', open_roles_count: 4, open_roles_summary: '4 open roles (Engineering)', suggested_angle: 'Scaling eng team rapidly — strong timing for a recruiting partner.' },
+  { id: '00000000-0000-0000-0000-000000000002', company_name: 'Buildco', canonical_domain: 'buildco.io', contact_name: 'Tom Smith', contact_title: 'CTO', contact_email: 'tom@buildco.io', icp_score: 72, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000002', open_roles_count: 2, open_roles_summary: '2 open roles (Product)', suggested_angle: 'Two senior PM roles open — product-led growth push underway.' },
+  { id: '00000000-0000-0000-0000-000000000003', company_name: 'Dataflow Inc', canonical_domain: 'dataflow.com', contact_name: 'Sara Lee', contact_title: 'Head of Talent', contact_email: 'sara@dataflow.com', icp_score: 55, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000003', open_roles_count: null, open_roles_summary: null, suggested_angle: null },
+  { id: '00000000-0000-0000-0000-000000000004', company_name: 'Fintech Ltd', canonical_domain: 'fintech.co', contact_name: 'Alex Kim', contact_title: 'CEO', contact_email: 'alex@fintech.co', icp_score: 91, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000004', open_roles_count: 7, open_roles_summary: '7 open roles (Sales, Eng)', suggested_angle: 'Series B just closed — headcount plan live, talent team under pressure.' },
+  { id: '00000000-0000-0000-0000-000000000005', company_name: 'Growthbase', canonical_domain: 'growthbase.com', contact_name: 'Maya Patel', contact_title: 'Founder', contact_email: 'maya@growthbase.com', icp_score: 68, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000005', open_roles_count: 1, open_roles_summary: '1 open role (Design)', suggested_angle: 'First design hire — founder-led recruiting, high friction expected.' },
+  { id: '00000000-0000-0000-0000-000000000006', company_name: 'Horizon Labs', canonical_domain: 'horizonlabs.ai', contact_name: 'Chris Wu', contact_title: 'VP Sales', contact_email: 'chris@horizonlabs.ai', icp_score: 83, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000006', open_roles_count: 3, open_roles_summary: '3 open roles (Sales)', suggested_angle: 'AE pipeline stalled — missed quota two quarters, VP Sales owns the fix.' },
+]
+
+const mockBdLeadCompanyDetails: Record<
+  string,
+  { funding_stage: string; headcount: number; tech_stack: string; icp_breakdown: Record<string, number> }
+> = {
+  '00000000-0000-0000-0000-000000000001': {
+    funding_stage: 'Series B',
+    headcount: 120,
+    tech_stack: 'React, Node.js, PostgreSQL',
+    icp_breakdown: { company_size: 0.9, industry_fit: 0.8, tech_stack: 0.85, timing: 0.9 },
+  },
+  '00000000-0000-0000-0000-000000000002': {
+    funding_stage: 'Series A',
+    headcount: 85,
+    tech_stack: 'Next.js, Go, AWS',
+    icp_breakdown: { company_size: 0.72, industry_fit: 0.74, tech_stack: 0.7, timing: 0.78 },
+  },
+  '00000000-0000-0000-0000-000000000003': {
+    funding_stage: 'Seed',
+    headcount: 34,
+    tech_stack: 'Python, Snowflake, React',
+    icp_breakdown: { company_size: 0.55, industry_fit: 0.6, tech_stack: 0.62, timing: 0.5 },
+  },
+  '00000000-0000-0000-0000-000000000004': {
+    funding_stage: 'Series B',
+    headcount: 160,
+    tech_stack: 'TypeScript, Java, Kubernetes',
+    icp_breakdown: { company_size: 0.92, industry_fit: 0.88, tech_stack: 0.9, timing: 0.94 },
+  },
+  '00000000-0000-0000-0000-000000000005': {
+    funding_stage: 'Pre-seed',
+    headcount: 18,
+    tech_stack: 'Rails, React, PostgreSQL',
+    icp_breakdown: { company_size: 0.68, industry_fit: 0.64, tech_stack: 0.66, timing: 0.72 },
+  },
+  '00000000-0000-0000-0000-000000000006': {
+    funding_stage: 'Series A',
+    headcount: 95,
+    tech_stack: 'Python, React, BigQuery',
+    icp_breakdown: { company_size: 0.82, industry_fit: 0.86, tech_stack: 0.8, timing: 0.84 },
+  },
+}
+
+export function getMockBdLeadDetail(
+  leadId: string,
+): components['schemas']['LeadFatCardResponse'] {
+  const lead = mockBdLeadQueueItems.find((item) => item.id === leadId) ?? mockBdLeadQueueItems[0]
+  const companyDetails = mockBdLeadCompanyDetails[lead.id]
+
+  return {
+    id: lead.id,
+    canonical_domain: lead.canonical_domain,
+    icp_score: lead.icp_score,
+    status: lead.status,
+    icp_breakdown: companyDetails.icp_breakdown,
+    enrichment_status: lead.enrichment_status,
+    rejection_reason: null,
+    import_id: null,
+    created_at: lead.created_at,
+    updated_at: lead.updated_at,
+    contact: {
+      id: lead.contact_id,
+      name: lead.contact_name ?? 'Unknown contact',
+      title: lead.contact_title,
+      email: lead.contact_email,
+      linkedin_url: lead.contact_name
+        ? `https://linkedin.com/in/${lead.contact_name.toLowerCase().replace(/\s+/g, '')}`
+        : null,
+      company_name: lead.company_name,
+      tech_stack: companyDetails.tech_stack,
+      funding_stage: companyDetails.funding_stage,
+      headcount: companyDetails.headcount,
+      open_roles_summary: lead.open_roles_summary ?? null,
+      verified: true,
+      last_enriched_at: new Date().toISOString(),
+    },
+    active_sequence: null,
+    tasks: [],
+  }
+}
+
 // BD domain MSW handlers.
 // T-02-01 mitigation: MSW only activates when NEXT_PUBLIC_API_MOCKING=enabled;
 // this guard is enforced in the MSWProvider early-return pattern (Phase 1).
@@ -35,16 +124,8 @@ export const bdHandlers: HttpHandler[] = [
     // LeadQueueItemExtended adds open_roles_count/summary + suggested_angle per
     // .planning/contracts/bd-lead-queue-item-fat-card.yaml (BD-01 / ROADMAP SC1).
     // These fields are absent from the live api.d.ts until the backend ships them.
-    const mockLeads: LeadQueueItemExtended[] = [
-      { id: '00000000-0000-0000-0000-000000000001', company_name: 'Acme Corp', canonical_domain: 'acme.com', contact_name: 'Jane Doe', contact_title: 'VP Engineering', contact_email: 'jane@acme.com', icp_score: 87, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000001', open_roles_count: 4, open_roles_summary: '4 open roles (Engineering)', suggested_angle: 'Scaling eng team rapidly — strong timing for a recruiting partner.' },
-      { id: '00000000-0000-0000-0000-000000000002', company_name: 'Buildco', canonical_domain: 'buildco.io', contact_name: 'Tom Smith', contact_title: 'CTO', contact_email: 'tom@buildco.io', icp_score: 72, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000002', open_roles_count: 2, open_roles_summary: '2 open roles (Product)', suggested_angle: 'Two senior PM roles open — product-led growth push underway.' },
-      { id: '00000000-0000-0000-0000-000000000003', company_name: 'Dataflow Inc', canonical_domain: 'dataflow.com', contact_name: 'Sara Lee', contact_title: 'Head of Talent', contact_email: 'sara@dataflow.com', icp_score: 55, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000003', open_roles_count: null, open_roles_summary: null, suggested_angle: null },
-      { id: '00000000-0000-0000-0000-000000000004', company_name: 'Fintech Ltd', canonical_domain: 'fintech.co', contact_name: 'Alex Kim', contact_title: 'CEO', contact_email: 'alex@fintech.co', icp_score: 91, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000004', open_roles_count: 7, open_roles_summary: '7 open roles (Sales, Eng)', suggested_angle: 'Series B just closed — headcount plan live, talent team under pressure.' },
-      { id: '00000000-0000-0000-0000-000000000005', company_name: 'Growthbase', canonical_domain: 'growthbase.com', contact_name: 'Maya Patel', contact_title: 'Founder', contact_email: 'maya@growthbase.com', icp_score: 68, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000005', open_roles_count: 1, open_roles_summary: '1 open role (Design)', suggested_angle: 'First design hire — founder-led recruiting, high friction expected.' },
-      { id: '00000000-0000-0000-0000-000000000006', company_name: 'Horizon Labs', canonical_domain: 'horizonlabs.ai', contact_name: 'Chris Wu', contact_title: 'VP Sales', contact_email: 'chris@horizonlabs.ai', icp_score: 83, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000006', open_roles_count: 3, open_roles_summary: '3 open roles (Sales)', suggested_angle: 'AE pipeline stalled — missed quota two quarters, VP Sales owns the fix.' },
-    ]
-    const page1 = mockLeads.slice(0, 5)
-    const page2 = mockLeads.slice(5)
+    const page1 = mockBdLeadQueueItems.slice(0, 5)
+    const page2 = mockBdLeadQueueItems.slice(5)
     return HttpResponse.json({
       leads: cursor ? page2 : page1,
       next_cursor: cursor ? null : 'cursor-page-2',
@@ -62,34 +143,7 @@ export const bdHandlers: HttpHandler[] = [
 
   // 3. Lead detail (fat card)
   http.get(`${API_BASE}/api/v1/bd/leads/:lead_id`, ({ params }) => {
-    return HttpResponse.json({
-      id: params.lead_id as string,
-      canonical_domain: 'acme.com',
-      icp_score: 87,
-      status: 'review_queue',
-      icp_breakdown: { company_size: 0.9, industry_fit: 0.8, tech_stack: 0.85, timing: 0.9 },
-      enrichment_status: 'complete',
-      rejection_reason: null,
-      import_id: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      contact: {
-        id: '00000000-0000-0000-0001-000000000001',
-        name: 'Jane Doe',
-        title: 'VP Engineering',
-        email: 'jane@acme.com',
-        linkedin_url: 'https://linkedin.com/in/janedoe',
-        company_name: 'Acme Corp',
-        tech_stack: 'React, Node.js, PostgreSQL',
-        funding_stage: 'Series B',
-        headcount: 120,
-        open_roles_summary: '3 open engineering roles',
-        verified: true,
-        last_enriched_at: new Date().toISOString(),
-      },
-      active_sequence: null,
-      tasks: [],
-    } satisfies components['schemas']['LeadFatCardResponse'])
+    return HttpResponse.json(getMockBdLeadDetail(params.lead_id as string))
   }),
 
   // 3. Bulk action

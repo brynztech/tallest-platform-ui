@@ -10,6 +10,7 @@ import { LeadCard } from './_components/lead-card'
 import { LeadDetailPanel } from './_components/lead-detail-panel'
 import { BulkToolbar } from './_components/bulk-toolbar'
 import { ShortcutOverlay } from './_components/shortcut-overlay'
+import { getFocusedIndexForLead } from './_lib/focus-index'
 
 type LeadQueueResponse = components['schemas']['LeadQueueResponse']
 type LeadQueueItem = LeadQueueItemExtended
@@ -171,6 +172,12 @@ export default function LeadsPage() {
   // ---- Keyboard shortcuts (CUX-03) ----
   const visibleLeads = leads.filter((l) => !leavingIds.has(l.id))
 
+  function openLeadDetail(leadId: string) {
+    setFocusedIndex((currentIndex) => getFocusedIndexForLead(visibleLeads, leadId, currentIndex))
+    setDetailLeadId(leadId)
+    setIsDetailOpen(true)
+  }
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const activeEl = document.activeElement
@@ -227,10 +234,7 @@ export default function LeadsPage() {
         case 'Enter': {
           e.preventDefault()
           const lead = visibleLeads[focusedIndex]
-          if (lead) {
-            setDetailLeadId(lead.id)
-            setIsDetailOpen(true)
-          }
+          if (lead) openLeadDetail(lead.id)
           break
         }
         case ' ': {
@@ -295,11 +299,20 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_28%_0%,oklch(0.24_0.05_38_/_0.28),transparent_34%)]">
       {/* Sticky toolbar */}
-      <div className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-border bg-background/90 px-6 backdrop-blur">
-        <h1 className="text-xl font-semibold">Lead Queue</h1>
-        <span className="text-sm text-muted-foreground">{totalCount} leads</span>
+      <div className="sticky top-0 z-10 flex min-h-16 items-center gap-4 border-b border-border/60 bg-background/82 px-6 py-3 backdrop-blur-xl">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-[-0.045em]">Lead Queue</h1>
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              {totalCount} leads
+            </span>
+          </div>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Review ICP fit, approve outreach, or snooze companies for later.
+          </p>
+        </div>
         {selectedIds.size > 0 && (
           <div className="ml-auto">
             <BulkToolbar
@@ -313,11 +326,11 @@ export default function LeadsPage() {
       </div>
 
       {/* Lead cards */}
-      <div className="flex flex-col gap-2 px-4 py-4">
+      <div className="flex w-full max-w-[920px] flex-col gap-2.5 px-5 py-5">
         {visibleLeads.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <h2 className="text-xl font-semibold">Queue is clear</h2>
-            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-border/60 bg-card/55 py-24 text-center shadow-sm shadow-black/10">
+            <h2 className="text-xl font-semibold tracking-[-0.03em]">Queue is clear</h2>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
               No leads waiting for review. New leads appear here when the ICP scoring agent processes
               them.
             </p>
@@ -339,8 +352,7 @@ export default function LeadsPage() {
                 })
               }}
               onOpenDetail={(id) => {
-                setDetailLeadId(id)
-                setIsDetailOpen(true)
+                openLeadDetail(id)
               }}
               onApprove={(id) => handleAction(id, 'approve')}
               onReject={(id, reason) => handleAction(id, 'reject', { reason })}

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { getMockBdLeadDetail } from '@brynzit/mocks'
+import { getFocusedIndexForLead } from '../../app/(shell)/bd/leads/_lib/focus-index'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -50,6 +52,25 @@ describe('Lead queue (BD-01, BD-02, BD-03)', () => {
     expect(payload.due_at).toBeDefined()
     expect(typeof payload.due_at).toBe('string')
     expect(() => new Date(payload.due_at!)).not.toThrow()
+  })
+
+  it('lead detail mock returns the company for the requested lead id', async () => {
+    const data = getMockBdLeadDetail('00000000-0000-0000-0000-000000000002')
+
+    expect(data.id).toBe('00000000-0000-0000-0000-000000000002')
+    expect(data.contact.company_name).toBe('Buildco')
+    expect(data.contact.name).toBe('Tom Smith')
+  })
+
+  it('mouse-opened lead updates the focused index to the clicked row', () => {
+    const leads = [
+      { id: 'lead-1' },
+      { id: 'lead-2' },
+      { id: 'lead-3' },
+    ]
+
+    expect(getFocusedIndexForLead(leads, 'lead-3', 0)).toBe(2)
+    expect(getFocusedIndexForLead(leads, 'missing-lead', 1)).toBe(1)
   })
 
   it.todo('approve action optimistically removes card and shows undo toast')

@@ -1,5 +1,5 @@
 export { API_BASE } from './base-url'
-export { bdHandlers } from './handlers/bd'
+export { bdHandlers, getMockBdLeadDetail } from './handlers/bd'
 export { opsHandlers } from './handlers/ops'
 export { supplyHandlers } from './handlers/supply'
 export { monitoringHandlers } from './handlers/monitoring'
