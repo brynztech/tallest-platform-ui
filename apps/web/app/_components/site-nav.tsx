@@ -26,7 +26,7 @@ export function SiteNav() {
         <Link
           href="/jobs"
           className={cn(
-            'text-sm transition-colors',
+            'text-sm transition-colors duration-150 ease-out',
             pathname === '/jobs' || pathname.startsWith('/jobs/')
               ? 'text-foreground'
               : 'text-muted-foreground hover:text-foreground',
@@ -39,7 +39,7 @@ export function SiteNav() {
       <div className="flex items-center gap-2">
         {isLoggedIn ? (
           <>
-            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/dashboard" className="text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground">
               Dashboard
             </Link>
             <DropdownMenu>

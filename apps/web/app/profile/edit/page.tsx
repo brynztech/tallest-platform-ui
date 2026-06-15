@@ -294,7 +294,7 @@ export default function ProfileEditPage() {
                       type="button"
                       onClick={() => toggleSkill(skill)}
                       aria-label={`Remove ${skill}`}
-                      className="ml-1 text-muted-foreground hover:text-foreground"
+                      className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                     >
                       ×
                     </button>
