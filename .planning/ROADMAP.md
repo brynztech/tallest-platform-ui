@@ -15,6 +15,7 @@ Six phases build Brynzit from a bare monorepo to a complete dual-face product: a
 - [x] **Phase 3: Console Ops** - CRM backbone — clients, requisitions with async JD parse, match + shortlist, interviews, and placements *(completed 2026-06-14)*
 - [x] **Phase 4: Console Supply + Admin** - Talent pool search, candidate profiles, ingestion, shortlist review, engagement sequences, and all Admin monitoring screens *(completed 2026-06-14)*
 - [ ] **Phase 5: Public Site** - Contrario-grade landing, anonymous job-search preview, candidate signup/onboarding, job board with SEO + JSON-LD, apply flow
+- [ ] **Phase 5.1: Public Site Visual Polish** *(INSERTED)* - Taste Skill visual pass: landing hero, job board cards, auth/onboarding forms, resume dropzone, locked-jobs overlay, motion/hover/focus states, restrained palette, softer borders
 - [ ] **Phase 6: Candidate Dashboard** - Application status tracker, substep microcopy, enrichment display, profile edit, and mock-swap readiness
 
 ## Phase Details
@@ -124,6 +125,27 @@ Plans:
 - [x] Wave 4 *(blocked on Wave 3)*: 05-04-PLAN.md — Job detail page (JSON-LD, safe JD text) + Apply section (3 states) + Profile edit with completeness meter (PUB-05, PUB-06, JOB-02, JOB-03, JOB-04) ✓ 2026-06-15
 - [ ] Wave 5 *(blocked on Wave 4)*: 05-05-PLAN.md — Human verify: full candidate journey walkthrough (all 12 requirements)
 **Cross-cutting constraints:** All candidate endpoints use native fetch (not apiClient — paths absent from api.d.ts); T-05-01 safeRedirect() on all ?redirect= params; T-05-02 JD text as whitespace-pre-wrap (never dangerouslySetInnerHTML); T-05-03 try/catch on localStorage JSON.parse; T-05-04 safeHref() for github_url/linkedin_url; no dark class on html element in apps/web; completeness_score from API only (never computed client-side); use(params) for Next.js 16 async params in all client page components
+**UI hint**: yes
+
+### Phase 5.1: Public Site Visual Polish
+**Goal**: Every screen in apps/web feels like a polished candidate-facing brand, not a wireframe or a generic AI-generated dashboard. Governed by Taste Skill principles: light-only editorial, Contrario-inspired, large light typography, restrained palette with one accent colour, softer borders and cards, no black or AI-purple gradients. Targets: landing hero, job board listing cards, auth/signup/onboarding forms, resume upload dropzone, locked-jobs overlay, and all interactive states (hover/focus/motion).
+**Mode:** mvp
+**Depends on**: Phase 5
+**Requirements**: POL-01, POL-02, POL-03, POL-04, POL-05, POL-06, POL-07
+**Success Criteria** (what must be TRUE):
+  1. Landing hero uses large editorial typography, a single restrained accent colour, and no gradient backgrounds — matches the Contrario.ai reference aesthetic
+  2. Job board cards have softer borders, refined spacing, and hover/focus states that feel intentional rather than utility-generated
+  3. Auth (login/signup) and onboarding forms are polished: consistent field spacing, softer focus rings, and visual hierarchy that does not feel like a shadcn default
+  4. Resume upload dropzone has a crafted idle/drag/uploading/done state set — no raw dashed-border utility default
+  5. Locked-jobs overlay is redesigned: tasteful blur/fade, clear but non-aggressive CTA, consistent with the palette
+  6. All interactive elements have motion that is present but not noisy: hover transitions ≤150ms, focus rings consistent across all inputs
+  7. Running the site in a browser at 1440px desktop shows zero "dark-mode leakage" (no dark class artefacts) and zero raw Tailwind utility appearances that break the editorial register
+**Plans**: 4 plans
+Plans:
+- [ ] Wave 1: 05.1-01-PLAN.md — Token foundation: warm amber/terracotta accent + warm near-white background + accent focus-ring tokens in globals.css, delete .dark block, create visual-polish test scaffold (POL-06, POL-07)
+- [ ] Wave 2 *(blocked on 01)*: 05.1-02-PLAN.md — Landing hero (inline-style fix, accent CTA) + job board polish (card hover lift, filter-bar focus rings, locked-jobs overlay gradient redesign) (POL-01, POL-02, POL-05, POL-06)
+- [ ] Wave 2 *(blocked on 01)*: 05.1-03-PLAN.md — Auth form polish (login/signup spacing + heading) + crafted multi-state ResumeDropzone component + onboarding step normalization (POL-03, POL-04, POL-06)
+- [ ] Wave 3 *(blocked on 02, 03)*: 05.1-04-PLAN.md — Profile edit + site-nav interactive cleanup, phase-wide motion/dark guards, human verify of all 6 surfaces at 1440px (POL-06, POL-07)
 **UI hint**: yes
 
 ### Phase 6: Candidate Dashboard
