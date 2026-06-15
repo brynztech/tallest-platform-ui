@@ -44,3 +44,53 @@ describe('globals.css token foundation (POL-06, POL-07)', () => {
     expect(css).toContain('@brynzit/ui/styles/theme.css')
   })
 })
+
+describe('Landing hero polish (POL-01)', () => {
+  const src = readFile('_components/hero-section.tsx')
+  it('replaces inline paddingTop with Tailwind padding', () => {
+    expect(src).not.toContain('paddingTop')
+    expect(src).toContain('pt-28')
+  })
+  it('has no gradient background', () => {
+    expect(src).not.toContain('bg-gradient')
+  })
+  it('keeps font-light exactly once (editorial headline)', () => {
+    expect(src.match(/font-light/g)?.length).toBe(1)
+  })
+})
+
+describe('Job card hover polish (POL-02, POL-06)', () => {
+  const src = readFile('jobs/_components/job-card.tsx')
+  it('uses a hover lift (translate)', () => {
+    expect(src).toContain('hover:-translate-y-px')
+  })
+  it('uses the valid bracketed multi-property transition, not transition-shadow', () => {
+    expect(src).toContain('transition-[color,box-shadow,transform]')
+    expect(src).not.toContain('transition-shadow')
+  })
+  it('has a keyboard group focus ring', () => {
+    expect(src).toContain('group-focus-visible:ring-2')
+  })
+})
+
+describe('Filter bar focus rings (POL-06)', () => {
+  const src = readFile('jobs/_components/filter-bar.tsx')
+  it('adds an accent focus ring to all raw buttons', () => {
+    // worktree filter-bar has 3 pill buttons (role_type, seniority, remote) + 1 clear = 4
+    expect(src.match(/focus-visible:ring-ring/g)?.length).toBeGreaterThanOrEqual(4)
+  })
+})
+
+describe('Locked-jobs overlay redesign (POL-05)', () => {
+  const src = readFile('jobs/_components/locked-jobs-overlay.tsx')
+  it('uses a bottom-anchored gradient fade', () => {
+    expect(src).toContain('bg-gradient-to-t')
+    expect(src).toContain('from-background')
+    expect(src).toContain('bottom-0')
+  })
+  it('removes the hard shadowed box', () => {
+    expect(src).not.toContain('shadow-lg')
+    expect(src).not.toContain('top-1/4')
+    expect(src).not.toContain('border border-border')
+  })
+})
