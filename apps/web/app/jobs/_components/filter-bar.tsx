@@ -85,7 +85,7 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
           Remote
         </Button>
         {hasActiveFilters && (
-          <button onClick={clearAll} className="ml-auto text-sm text-muted-foreground hover:text-foreground">
+          <button onClick={clearAll} className="ml-auto rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
             Clear all
           </button>
         )}
@@ -98,7 +98,7 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
               <button
                 onClick={() => handleFilterChange('role_type', '')}
                 aria-label="Remove role type filter"
-                className="ml-1 text-muted-foreground hover:text-foreground"
+                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >×</button>
             </Badge>
           )}
@@ -108,7 +108,7 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
               <button
                 onClick={() => handleFilterChange('seniority', '')}
                 aria-label="Remove seniority filter"
-                className="ml-1 text-muted-foreground hover:text-foreground"
+                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >×</button>
             </Badge>
           )}
@@ -118,7 +118,7 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
               <button
                 onClick={() => handleFilterChange('remote', false)}
                 aria-label="Remove remote filter"
-                className="ml-1 text-muted-foreground hover:text-foreground"
+                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >×</button>
             </Badge>
           )}
