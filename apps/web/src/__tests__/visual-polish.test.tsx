@@ -75,9 +75,8 @@ describe('Job card hover polish (POL-02, POL-06)', () => {
 
 describe('Filter bar focus rings (POL-06)', () => {
   const src = readFile('jobs/_components/filter-bar.tsx')
-  it('adds an accent focus ring to all raw buttons', () => {
-    // worktree filter-bar has 3 pill buttons (role_type, seniority, remote) + 1 clear = 4
-    expect(src.match(/focus-visible:ring-ring/g)?.length).toBeGreaterThanOrEqual(4)
+  it('adds an accent focus ring to all 6 raw buttons', () => {
+    expect(src.match(/focus-visible:ring-ring/g)?.length).toBe(6)
   })
 })
 

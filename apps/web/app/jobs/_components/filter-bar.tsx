@@ -8,6 +8,8 @@ import { Button } from '@brynzit/ui/components/ui/button'
 export interface JobFilters {
   role_type: string
   seniority: string
+  location: string
+  skills: string
   remote: boolean
 }
 
@@ -21,7 +23,13 @@ const ROLE_LABELS: Record<string, string> = { full_time: 'Full-time', part_time:
 const SENIORITY_LEVELS = ['junior', 'mid', 'senior', 'staff', 'principal']
 
 export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
-  const [filters, setFilters] = useState<JobFilters>({ role_type: '', seniority: '', remote: false })
+  const [filters, setFilters] = useState<JobFilters>({
+    role_type: '',
+    seniority: '',
+    location: '',
+    skills: '',
+    remote: false,
+  })
   const [searchText, setSearchText] = useState('')
 
   function handleFilterChange(key: keyof JobFilters, value: string | boolean) {
@@ -31,14 +39,15 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
   }
 
   function clearAll() {
-    const reset = { role_type: '', seniority: '', remote: false }
+    const reset = { role_type: '', seniority: '', location: '', skills: '', remote: false }
     setFilters(reset)
     onFiltersChange(reset)
     setSearchText('')
     onSearchChange('')
   }
 
-  const hasActiveFilters = filters.role_type || filters.seniority || filters.remote
+  const hasActiveFilters =
+    filters.role_type || filters.seniority || filters.location || filters.skills || filters.remote
 
   return (
     <div>
@@ -48,6 +57,18 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
           placeholder="Search roles, skills…"
           value={searchText}
           onChange={e => { setSearchText(e.target.value); onSearchChange(e.target.value) }}
+        />
+        <Input
+          className="w-[180px]"
+          placeholder="Location"
+          value={filters.location}
+          onChange={e => handleFilterChange('location', e.target.value)}
+        />
+        <Input
+          className="w-[180px]"
+          placeholder="Skills"
+          value={filters.skills}
+          onChange={e => handleFilterChange('skills', e.target.value)}
         />
         <Select
           value={filters.role_type || 'all'}
@@ -108,6 +129,26 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
               <button
                 onClick={() => handleFilterChange('seniority', '')}
                 aria-label="Remove seniority filter"
+                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              >×</button>
+            </Badge>
+          )}
+          {filters.location && (
+            <Badge variant="secondary" className="h-9 gap-1 rounded-full px-3">
+              {filters.location}
+              <button
+                onClick={() => handleFilterChange('location', '')}
+                aria-label="Remove location filter"
+                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              >×</button>
+            </Badge>
+          )}
+          {filters.skills && (
+            <Badge variant="secondary" className="h-9 gap-1 rounded-full px-3">
+              {filters.skills}
+              <button
+                onClick={() => handleFilterChange('skills', '')}
+                aria-label="Remove skills filter"
                 className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               >×</button>
             </Badge>
