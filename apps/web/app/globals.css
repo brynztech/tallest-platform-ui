@@ -3,21 +3,15 @@
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 @import "@brynzit/ui/styles/theme.css";
 
-/* apps/web overrides: light mode default, editorial spacing */
+/* apps/web overrides: light-only, editorial, warm palette (Phase 5.1) */
 :root {
-  --radius: 0.5rem;
-  /* background, foreground inherit light values from shared @theme */
+  --radius: 0.625rem;
+  /* Warm near-white background — Contrario.ai reference (≈ #FAFAF8) */
+  --color-background: oklch(0.99 0.003 30);
+  /* Warm amber/terracotta accent — replaces blue-violet "AI-purple" primary */
+  --color-primary: oklch(0.55 0.15 35);
+  --color-primary-foreground: oklch(0.985 0 0);
+  /* Focus ring tracks the accent for coherent editorial focus state */
+  --color-ring: oklch(0.55 0.15 35);
 }
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --border: oklch(0.269 0 0);
-  --primary: oklch(0.546 0.215 261.3);
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.556 0 0);
-}
+/* No dark-mode block — removed per POL-07 (light-only, never activated) */
