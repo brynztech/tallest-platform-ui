@@ -10,8 +10,9 @@ import { AdminEventsTab } from './admin-events-tab'
 import { AdminQuotasTab } from './admin-quotas-tab'
 import { AdminPipelineTab } from './admin-pipeline-tab'
 import { AdminPromptsTab } from './admin-prompts-tab'
+import { AdminCandidatesTab } from './admin-candidates-tab'
 
-const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts'] as const
+const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates'] as const
 
 export function AdminContent() {
   const searchParams = useSearchParams()
@@ -57,6 +58,7 @@ export function AdminContent() {
           <TabsTrigger value="quotas">Quotas</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="prompts">Prompts</TabsTrigger>
+          <TabsTrigger value="candidates">Candidates</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <AdminOverviewTab onNavigate={handleTabChange} />
@@ -75,6 +77,9 @@ export function AdminContent() {
         </TabsContent>
         <TabsContent value="prompts">
           <AdminPromptsTab onDirtyChange={handlePromptsDirtyChange} />
+        </TabsContent>
+        <TabsContent value="candidates">
+          <AdminCandidatesTab />
         </TabsContent>
       </Tabs>
     </div>
