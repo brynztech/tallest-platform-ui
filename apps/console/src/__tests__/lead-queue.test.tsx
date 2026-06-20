@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { getMockBdLeadDetail } from '@brynzit/mocks'
 import { getFocusedIndexForLead } from '../../app/(shell)/bd/leads/_lib/focus-index'
+import {
+  canReviewLead,
+  filterLeadsForStatusTab,
+  getQueryStatusForTab,
+} from '../../app/(shell)/bd/leads/_lib/lead-status'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -71,6 +76,26 @@ describe('Lead queue (BD-01, BD-02, BD-03)', () => {
 
     expect(getFocusedIndexForLead(leads, 'lead-3', 0)).toBe(2)
     expect(getFocusedIndexForLead(leads, 'missing-lead', 1)).toBe(1)
+  })
+
+  it('status tabs map live backend statuses into visible groups', () => {
+    const leads = [
+      { id: 'review', status: 'review_queue' },
+      { id: 'new', status: 'discovered' },
+      { id: 'scored', status: 'icp_scored' },
+      { id: 'suppressed', status: 'suppressed' },
+    ]
+
+    expect(getQueryStatusForTab('processing')).toBe('all')
+    expect(filterLeadsForStatusTab(leads, 'processing').map((lead) => lead.id)).toEqual([
+      'new',
+      'scored',
+    ])
+    expect(filterLeadsForStatusTab(leads, 'suppressed').map((lead) => lead.id)).toEqual([
+      'suppressed',
+    ])
+    expect(canReviewLead({ status: 'review_queue' })).toBe(true)
+    expect(canReviewLead({ status: 'suppressed' })).toBe(false)
   })
 
   it.todo('approve action optimistically removes card and shows undo toast')

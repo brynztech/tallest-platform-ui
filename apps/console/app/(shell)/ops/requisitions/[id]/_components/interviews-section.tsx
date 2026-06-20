@@ -18,25 +18,32 @@ import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { CalendarPlus } from 'lucide-react'
 
-// Valid transitions per D-13 from CONTEXT.md
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['accepted', 'declined'],
   accepted: ['completed'],
-  declined: [], // terminal
-  completed: [], // terminal
+  declined: [],
+  completed: [],
 }
 
 interface InterviewsSectionProps {
   reqId: string
-  approvedCandidateId: string | null
+  /** Shortlisted/approved candidates to populate the candidate selector */
+  candidates: Array<{ id: string; name: string }>
+  /** Pre-select this candidate in the scheduling form (e.g. the approved one) */
+  defaultCandidateId?: string | null
 }
 
-export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSectionProps) {
+export function InterviewsSection({ reqId, candidates, defaultCandidateId }: InterviewsSectionProps) {
   const queryClient = useQueryClient()
-  // Date input for scheduling interviews — avoids creating date-less records
   const [scheduledDate, setScheduledDate] = useState('')
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>(
+    defaultCandidateId ?? candidates[0]?.id ?? '',
+  )
 
-  // NOTE: MSW-only — no live GET /api/v1/ops/interviews endpoint (api.d.ts get?: never line 548)
+  // Sync selector when defaultCandidateId arrives from parent (e.g. after approval)
+  const effectiveCandidateId =
+    selectedCandidateId || defaultCandidateId || candidates[0]?.id || ''
+
   const { data: interviews = [] } = useQuery({
     queryKey: ['ops-interviews', reqId],
     queryFn: async () => {
@@ -61,7 +68,6 @@ export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSect
       queryClient.invalidateQueries({ queryKey: ['ops-interviews', reqId] })
     },
     onError: () => {
-      // Pitfall 5: backend returns 409 on invalid state transitions
       toast.error('Invalid status transition.')
       queryClient.invalidateQueries({ queryKey: ['ops-interviews', reqId] })
     },
@@ -72,10 +78,10 @@ export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSect
       apiClient.POST('/api/v1/ops/interviews', { body }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ops-interviews', reqId] })
-      toast('Interview created.')
+      toast('Interview logged.')
     },
     onError: () => {
-      toast.error('Failed to create interview.')
+      toast.error('Failed to schedule interview.')
     },
   })
 
@@ -83,7 +89,7 @@ export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSect
     <div>
       {interviews.length === 0 ? (
         <p className="py-4 text-center text-sm text-muted-foreground">
-          No interviews scheduled. Use &apos;Schedule Interview&apos; above to create one.
+          No interviews logged yet.
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -96,7 +102,12 @@ export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSect
                 key={interview.id}
                 className="flex h-10 items-center gap-4 rounded-lg border border-border bg-card px-4 py-3"
               >
-                <span className="flex-1 text-sm">{interview.candidate_id ?? '—'}</span>
+                <span className="flex-1 text-sm">
+                  {interview.candidate_id
+                    ? (candidates.find((c) => c.id === interview.candidate_id)?.name ??
+                      `${interview.candidate_id.slice(0, 8)}…`)
+                    : '—'}
+                </span>
                 {interview.scheduled_at && (
                   <span className="w-[120px] text-xs text-muted-foreground">
                     {new Date(interview.scheduled_at).toLocaleDateString()}
@@ -128,43 +139,77 @@ export function InterviewsSection({ reqId, approvedCandidateId }: InterviewsSect
         </div>
       )}
 
-      {approvedCandidateId && (
-        <div className="mt-3 flex items-end gap-2">
+      {/* Log Interview form — always visible */}
+      <div className="mt-4 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+        <p className="w-full text-xs text-muted-foreground">
+          Lightweight tracker only: record the interview date and status here. Calendar invites,
+          meeting links, and recruiter notes are managed outside Brynzit for v1.
+        </p>
+        {candidates.length > 0 ? (
           <div className="flex flex-col gap-1">
-            <Label htmlFor="interview_date" className="text-xs text-muted-foreground">
-              Date *
+            <Label className="text-xs text-muted-foreground">Candidate *</Label>
+            <Select value={effectiveCandidateId} onValueChange={setSelectedCandidateId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select candidate" />
+              </SelectTrigger>
+              <SelectContent>
+                {candidates.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="candidate_id_input" className="text-xs text-muted-foreground">
+              Candidate ID
             </Label>
             <Input
-              id="interview_date"
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-[160px]"
+              id="candidate_id_input"
+              placeholder="UUID (optional)"
+              value={effectiveCandidateId}
+              onChange={(e) => setSelectedCandidateId(e.target.value)}
+              className="w-[200px]"
             />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={createMutation.isPending || !scheduledDate}
-            onClick={() => {
-              createMutation.mutate(
-                {
-                  requisition_id: reqId,
-                  candidate_id: approvedCandidateId,
-                  // Convert local date string (YYYY-MM-DD) to ISO datetime
-                  scheduled_at: new Date(scheduledDate).toISOString(),
-                },
-                {
-                  onSuccess: () => setScheduledDate(''),
-                },
-              )
-            }}
-          >
-            <CalendarPlus className="mr-1 size-4" />
-            Schedule Interview
-          </Button>
+        )}
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="interview_date" className="text-xs text-muted-foreground">
+            Interview Date *
+          </Label>
+          <Input
+            id="interview_date"
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+            className="w-[160px]"
+          />
         </div>
-      )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={createMutation.isPending || !scheduledDate}
+          onClick={() => {
+            createMutation.mutate(
+              {
+                requisition_id: reqId,
+                candidate_id: effectiveCandidateId || null,
+                scheduled_at: new Date(scheduledDate).toISOString(),
+              },
+              {
+                onSuccess: () => setScheduledDate(''),
+              },
+            )
+          }}
+        >
+          <CalendarPlus className="mr-1 size-4" />
+          Log Interview
+        </Button>
+      </div>
     </div>
   )
 }

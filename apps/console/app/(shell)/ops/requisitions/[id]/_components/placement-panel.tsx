@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import type { components } from '@brynzit/api-client'
 import { toast } from 'sonner'
-import { Sheet, SheetContent, SheetTitle } from '@brynzit/ui/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@brynzit/ui/components/ui/sheet'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Checkbox } from '@brynzit/ui/components/ui/checkbox'
@@ -91,6 +91,9 @@ export function PlacementPanel({
         side="right"
         className="w-[480px] max-w-[90vw] overflow-y-auto border-l border-border bg-card p-0"
       >
+        <SheetDescription className="sr-only">
+          Log placement billing, retention, and confirmation details for an approved candidate.
+        </SheetDescription>
         <div className="sticky top-0 z-10 border-b border-border bg-card/95 px-6 py-4 backdrop-blur">
           <SheetTitle className="text-xl font-semibold">Log Placement</SheetTitle>
         </div>

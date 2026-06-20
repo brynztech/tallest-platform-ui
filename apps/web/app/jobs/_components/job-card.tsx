@@ -29,15 +29,16 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
     <Link href={`/jobs/${job.id}`} className="group block" tabIndex={isLocked ? -1 : undefined} aria-hidden={isLocked}>
       <Card
         className={cn(
-          'cursor-pointer p-4',
+          'min-h-[178px] cursor-pointer rounded-[1.25rem] border-border/70 bg-card/85 p-5',
           'transition-[color,box-shadow,transform] duration-150 ease-out',
-          'hover:bg-muted/50 hover:shadow-md hover:-translate-y-px',
+          'hover:-translate-y-px hover:bg-card hover:shadow-xl hover:shadow-foreground/[0.06]',
           'group-focus-visible:outline-none group-focus-visible:ring-2 group-focus-visible:ring-ring',
           isLocked && 'blur-[4px] pointer-events-none select-none',
         )}
       >
-        <div className="space-y-2">
-          <p className="text-base text-foreground">{job.title}</p>
+        <div className="flex h-full flex-col">
+          <div className="space-y-2">
+          <p className="text-lg font-medium tracking-[-0.025em] text-foreground">{job.title}</p>
           {job.company_name && (
             <p className="text-sm text-muted-foreground">{job.company_name}</p>
           )}
@@ -48,11 +49,13 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
             </p>
           )}
           {formatComp(job.compensation_min, job.compensation_max) && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-foreground">
               {formatComp(job.compensation_min, job.compensation_max)}
             </p>
           )}
-          <div className="flex flex-wrap gap-1 pt-1">
+          </div>
+
+          <div className="mt-auto flex flex-wrap gap-1.5 pt-5">
             <Badge variant="secondary">{EMPLOYMENT_LABELS[job.employment_type]}</Badge>
             {job.skills.slice(0, 3).map(skill => (
               <Badge key={skill} variant="outline">{skill}</Badge>

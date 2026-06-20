@@ -13,7 +13,7 @@ const BD_NAV = [
   { href: '/bd/outreach', label: 'Outreach', badgeKey: null },
   { href: '/bd/pipeline', label: 'Pipeline', badgeKey: null },
   { href: '/bd/imports', label: 'Imports', badgeKey: null },
-  { href: '/bd/replies', label: 'Replies', badgeKey: 'replies-count' as const },
+  { href: '/bd/replies', label: 'Replies', badgeKey: null },
 ] as const
 
 // Ops nav items — fully wired in Phase 3
@@ -52,54 +52,16 @@ export function SidebarNav() {
     staleTime: 60 * 1000,
   })
 
-  // Snoozed wake badge count (MSW stub — no live endpoint)
-  const { data: wakeData } = useQuery({
-    queryKey: ['snoozed-wake-count'],
-    queryFn: async () => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/bd/leads/snoozed-wake-count`,
-      )
-      if (!res.ok) return { count: 0 }
-      return res.json() as Promise<{ count: number }>
-    },
-    staleTime: 60 * 1000,
-    refetchInterval: 5 * 60 * 1000, // Check every 5 min
-  })
-
-  // Reply tasks count (MSW stub — no live endpoint)
-  const { data: tasksData } = useQuery({
-    queryKey: ['replies-count'],
-    queryFn: async () => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/bd/tasks`,
-      )
-      if (!res.ok) return { tasks: [] }
-      return res.json() as Promise<{ tasks: { category: string }[] }>
-    },
-    staleTime: 60 * 1000,
-  })
-
   const leadsCount = leadsData?.total ?? 0
-  const wakeCount = wakeData?.count ?? 0
-  const repliesCount = tasksData?.tasks?.filter((t) => t.category === 'interested').length ?? 0
 
   return (
     <nav
-      className="flex w-56 flex-col border-r border-border bg-[var(--sidebar)] shrink-0"
+      className="flex w-56 shrink-0 flex-col border-r border-border/70 bg-[var(--color-sidebar)]/95 shadow-2xl shadow-black/20"
       aria-label="Console navigation"
     >
       {/* Brand mark header */}
-      <div className="flex h-14 items-center border-b border-border px-4">
-        <span className="text-base font-semibold tracking-tight">Brynzit</span>
-        {/* BD-08: Wake badge — show when snoozed leads have woken */}
-        {wakeCount > 0 && (
-          <Badge
-            variant="secondary"
-            className="ml-auto text-xs bg-[oklch(0.769_0.188_85.87)/20] text-[oklch(0.769_0.188_85.87)] border-[oklch(0.769_0.188_85.87)/40]"
-          >
-            {wakeCount}
-          </Badge>
-        )}
+      <div className="flex h-14 items-center border-b border-border/70 px-4">
+        <span className="text-base font-semibold tracking-[-0.03em]">Brynzit</span>
       </div>
 
       {/* BD section */}
@@ -112,19 +74,17 @@ export function SidebarNav() {
           const badgeCount =
             item.badgeKey === 'leads-count'
               ? leadsCount
-              : item.badgeKey === 'replies-count'
-                ? repliesCount
-                : 0
+              : 0
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex h-9 items-center gap-2 rounded-lg px-2 text-sm transition-[background-color,color,box-shadow] duration-150',
+                'hover:bg-accent/70 hover:text-accent-foreground',
                 isActive
-                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  ? 'bg-primary/14 text-foreground font-medium shadow-[inset_2px_0_0_var(--color-primary)]'
                   : 'text-muted-foreground',
               )}
             >
@@ -132,7 +92,7 @@ export function SidebarNav() {
               {badgeCount > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-auto min-w-[20px] text-center text-xs text-primary"
+                  className="ml-auto min-w-[20px] border-primary/20 bg-primary/10 text-center text-xs text-primary"
                 >
                   {badgeCount}
                 </Badge>
@@ -154,10 +114,10 @@ export function SidebarNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex h-9 items-center gap-2 rounded-lg px-2 text-sm transition-[background-color,color,box-shadow] duration-150',
+                'hover:bg-accent/70 hover:text-accent-foreground',
                 isActive
-                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  ? 'bg-primary/14 text-foreground font-medium shadow-[inset_2px_0_0_var(--color-primary)]'
                   : 'text-muted-foreground',
               )}
             >
@@ -179,10 +139,10 @@ export function SidebarNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex h-9 items-center gap-2 rounded-lg px-2 text-sm transition-[background-color,color,box-shadow] duration-150',
+                'hover:bg-accent/70 hover:text-accent-foreground',
                 isActive
-                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  ? 'bg-primary/14 text-foreground font-medium shadow-[inset_2px_0_0_var(--color-primary)]'
                   : 'text-muted-foreground',
               )}
             >
@@ -204,10 +164,10 @@ export function SidebarNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex h-9 items-center gap-2 rounded-md px-2 text-sm transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
+                'flex h-9 items-center gap-2 rounded-lg px-2 text-sm transition-[background-color,color,box-shadow] duration-150',
+                'hover:bg-accent/70 hover:text-accent-foreground',
                 isActive
-                  ? 'bg-accent/50 text-foreground font-medium border-l-2 border-primary pl-[6px]'
+                  ? 'bg-primary/14 text-foreground font-medium shadow-[inset_2px_0_0_var(--color-primary)]'
                   : 'text-muted-foreground',
               )}
             >

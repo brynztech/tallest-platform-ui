@@ -6,12 +6,39 @@
 /* apps/web overrides: light-only, editorial, warm palette (Phase 5.1) */
 :root {
   --radius: 0.625rem;
-  /* Warm near-white background — Contrario.ai reference (≈ #FAFAF8) */
+  /* Warm near-white background with a softer editorial palette. */
   --color-background: oklch(0.99 0.003 30);
-  /* Warm amber/terracotta accent — replaces blue-violet "AI-purple" primary */
+  --color-foreground: oklch(0.14 0.01 70);
+  --color-card: oklch(0.998 0.004 64);
+  --color-card-foreground: oklch(0.14 0.01 70);
+  --color-muted: oklch(0.955 0.012 64);
+  --color-muted-foreground: oklch(0.48 0.018 70);
+  --color-border: oklch(0.875 0.018 64);
+  --color-input: oklch(0.86 0.018 64);
+  --color-secondary: oklch(0.94 0.016 64);
+  --color-secondary-foreground: oklch(0.2 0.012 70);
+  --color-accent: oklch(0.94 0.02 58);
+  --color-accent-foreground: oklch(0.2 0.012 70);
+  --color-popover: oklch(0.998 0.004 64);
+  --color-popover-foreground: oklch(0.14 0.01 70);
+  /* Warm amber/terracotta accent - replaces blue-violet "AI-purple" primary. */
   --color-primary: oklch(0.55 0.15 35);
   --color-primary-foreground: oklch(0.985 0 0);
-  /* Focus ring tracks the accent for coherent editorial focus state */
+  --color-brand: oklch(0.55 0.15 35);
   --color-ring: oklch(0.55 0.15 35);
 }
-/* No dark-mode block — removed per POL-07 (light-only, never activated) */
+
+html {
+  background: var(--color-background);
+}
+
+body {
+  min-height: 100vh;
+}
+
+::selection {
+  background: oklch(0.82 0.08 45);
+  color: var(--color-foreground);
+}
+
+/* No dark-mode block - apps/web is light-only for Phase 5. */

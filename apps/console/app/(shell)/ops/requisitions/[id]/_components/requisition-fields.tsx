@@ -14,6 +14,7 @@ import { Label } from '@brynzit/ui/components/ui/label'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
@@ -47,8 +48,7 @@ export function RequisitionFields({ req }: RequisitionFieldsProps) {
     },
   })
 
-  // NOTE: MSW-only — no live PATCH /api/v1/ops/requisitions/{req_id} endpoint (api.d.ts patch?: never)
-  // Uses raw fetch so MSW can intercept the PATCH request in development
+  // Raw fetch until generated OpenAPI types include PATCH /api/v1/ops/requisitions/{req_id}.
   const patchMutation = useMutation({
     mutationFn: async (values: EditReqFormValues) => {
       const skillsArray = values.skills
@@ -141,6 +141,9 @@ export function RequisitionFields({ req }: RequisitionFieldsProps) {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Requisition</DialogTitle>
+            <DialogDescription className="sr-only">
+              Update requisition details, skills, compensation, and target start date.
+            </DialogDescription>
           </DialogHeader>
           <form
             onSubmit={form.handleSubmit((v) => patchMutation.mutate(v))}

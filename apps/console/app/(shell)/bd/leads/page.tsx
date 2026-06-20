@@ -11,6 +11,14 @@ import { LeadDetailPanel } from './_components/lead-detail-panel'
 import { BulkToolbar } from './_components/bulk-toolbar'
 import { ShortcutOverlay } from './_components/shortcut-overlay'
 import { getFocusedIndexForLead } from './_lib/focus-index'
+import {
+  LEAD_STATUS_TABS,
+  canReviewLead,
+  filterLeadsForStatusTab,
+  getQueryStatusForTab,
+  parseLeadStatusTab,
+  type LeadStatusTab,
+} from './_lib/lead-status'
 
 type LeadQueueResponse = components['schemas']['LeadQueueResponse']
 type LeadQueueItem = LeadQueueItemExtended
@@ -27,15 +35,22 @@ const REASON_LABELS: Record<string, string> = {
 
 export default function LeadsPage() {
   const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState<LeadStatusTab>(() =>
+    typeof window === 'undefined'
+      ? 'review_queue'
+      : parseLeadStatusTab(new URLSearchParams(window.location.search).get('status')),
+  )
+  const queryStatus = getQueryStatusForTab(activeTab)
+  const activeTabConfig = LEAD_STATUS_TABS.find((tab) => tab.id === activeTab) ?? LEAD_STATUS_TABS[0]
 
   // ---- Infinite query (cursor pagination) ----
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
-    queryKey: ['leads'],
+    queryKey: ['leads', queryStatus],
     queryFn: async ({ pageParam }) => {
       const { data, error } = await apiClient.GET('/api/v1/bd/leads', {
         params: {
           query: {
-            status: 'review_queue',
+            status: queryStatus,
             cursor: pageParam ?? undefined,
             limit: 50,
           },
@@ -48,8 +63,10 @@ export default function LeadsPage() {
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   })
 
-  const leads: LeadQueueItem[] = data?.pages.flatMap((page) => page.leads) ?? []
+  const fetchedLeads: LeadQueueItem[] = data?.pages.flatMap((page) => page.leads) ?? []
+  const leads = filterLeadsForStatusTab(fetchedLeads, activeTab)
   const totalCount = data?.pages[0]?.total ?? 0
+  const shownCount = leads.length
 
   // ---- UI state ----
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -169,6 +186,17 @@ export default function LeadsPage() {
     setSelectedIds(new Set())
   }
 
+  function handleTabChange(tab: LeadStatusTab) {
+    setActiveTab(tab)
+    setSelectedIds(new Set())
+    setFocusedIndex(0)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('status', tab)
+      window.history.pushState({}, '', url)
+    }
+  }
+
   // ---- Keyboard shortcuts (CUX-03) ----
   const visibleLeads = leads.filter((l) => !leavingIds.has(l.id))
 
@@ -206,11 +234,12 @@ export default function LeadsPage() {
         case 'a': {
           e.preventDefault()
           const lead = visibleLeads[focusedIndex]
-          if (lead) handleAction(lead.id, 'approve')
+          if (lead && canReviewLead(lead)) handleAction(lead.id, 'approve')
           break
         }
         case 'r': {
           e.preventDefault()
+          if (!canReviewLead(visibleLeads[focusedIndex] ?? {})) break
           // Trigger reject popover on focused card via data attribute
           const cardEl = document.querySelector(
             `[data-lead-id="${visibleLeads[focusedIndex]?.id}"] [data-reject-trigger]`,
@@ -220,6 +249,7 @@ export default function LeadsPage() {
         }
         case 's': {
           e.preventDefault()
+          if (!canReviewLead(visibleLeads[focusedIndex] ?? {})) break
           const snoozeEl = document.querySelector(
             `[data-lead-id="${visibleLeads[focusedIndex]?.id}"] [data-snooze-trigger]`,
           )
@@ -240,7 +270,7 @@ export default function LeadsPage() {
         case ' ': {
           e.preventDefault()
           const lead = visibleLeads[focusedIndex]
-          if (lead) {
+          if (lead && canReviewLead(lead)) {
             setSelectedIds((prev) => {
               const next = new Set(prev)
               next.has(lead.id) ? next.delete(lead.id) : next.add(lead.id)
@@ -306,11 +336,11 @@ export default function LeadsPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-[-0.045em]">Lead Queue</h1>
             <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              {totalCount} leads
+              {activeTab === 'processing' ? `${shownCount} shown` : `${totalCount} leads`}
             </span>
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Review ICP fit, approve outreach, or snooze companies for later.
+            {activeTabConfig.description}
           </p>
         </div>
         {selectedIds.size > 0 && (
@@ -327,12 +357,32 @@ export default function LeadsPage() {
 
       {/* Lead cards */}
       <div className="flex w-full max-w-[920px] flex-col gap-2.5 px-5 py-5">
+        <div className="mb-2 flex flex-wrap gap-2">
+          {LEAD_STATUS_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabChange(tab.id)}
+              className={[
+                'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-[background-color,border-color,color,box-shadow]',
+                activeTab === tab.id
+                  ? 'border-primary/55 bg-primary/15 text-foreground shadow-sm shadow-primary/10'
+                  : 'border-border/70 bg-card/50 text-muted-foreground hover:border-primary/30 hover:text-foreground',
+              ].join(' ')}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
         {visibleLeads.length === 0 && !isLoading ? (
           <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-border/60 bg-card/55 py-24 text-center shadow-sm shadow-black/10">
-            <h2 className="text-xl font-semibold tracking-[-0.03em]">Queue is clear</h2>
+            <h2 className="text-xl font-semibold tracking-[-0.03em]">
+              {activeTab === 'review_queue' ? 'Review queue is clear' : `No ${activeTabConfig.label.toLowerCase()}`}
+            </h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-              No leads waiting for review. New leads appear here when the ICP scoring agent processes
-              them.
+              {activeTab === 'review_queue'
+                ? 'Qualified leads appear here after ICP scoring. Suppressed or processing leads are visible in the other tabs.'
+                : 'Try All Leads to inspect every backend status returned by the API.'}
             </p>
           </div>
         ) : (

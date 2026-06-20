@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Clock } from 'lucide-react'
 import { RejectPopover } from './reject-popover'
 import { SnoozePopover } from './snooze-popover'
+import { canReviewLead, getLeadStatusLabel } from '../_lib/lead-status'
 
 type LeadQueueItem = LeadQueueItemExtended
 
@@ -48,6 +49,7 @@ export function LeadCard({
 }: LeadCardProps) {
   const [isRejectOpen, setIsRejectOpen] = useState(false)
   const [isSnoozeOpen, setIsSnoozeOpen] = useState(false)
+  const isReviewable = canReviewLead(lead)
 
   function handleRejectOpenChange(open: boolean) {
     setIsRejectOpen(open)
@@ -99,7 +101,10 @@ export function LeadCard({
         <div onClick={(e) => e.stopPropagation()} className="mt-0.5">
           <Checkbox
             checked={isSelected}
-            onCheckedChange={(checked) => onSelect(lead.id, !!checked)}
+            disabled={!isReviewable}
+            onCheckedChange={(checked) => {
+              if (isReviewable) onSelect(lead.id, !!checked)
+            }}
             aria-label={`Select ${lead.company_name ?? 'lead'}`}
             className="size-4"
           />
@@ -142,6 +147,9 @@ export function LeadCard({
       {/* Row 4: updated date */}
       <div className="ml-7 mt-2.5 flex gap-4 text-xs text-muted-foreground/80">
         <span>{new Date(lead.updated_at).toLocaleDateString()}</span>
+        <Badge variant="outline" className="h-5 rounded-full border-border/70 px-2 text-[11px] font-medium">
+          {getLeadStatusLabel(lead.status)}
+        </Badge>
       </div>
 
       {/* Action bar (stopPropagation to prevent card body click) */}
@@ -149,7 +157,12 @@ export function LeadCard({
         className="mt-3 flex justify-end gap-2 opacity-85 transition-opacity group-hover:opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <Button size="sm" className="rounded-full px-3 shadow-sm shadow-primary/15" onClick={() => onApprove(lead.id)}>
+        <Button
+          size="sm"
+          disabled={!isReviewable}
+          className="rounded-full px-3 shadow-sm shadow-primary/15"
+          onClick={() => onApprove(lead.id)}
+        >
           Approve Lead
         </Button>
         <RejectPopover
@@ -158,7 +171,13 @@ export function LeadCard({
           onOpenChange={handleRejectOpenChange}
           onReject={onReject}
           trigger={
-            <Button size="sm" variant="outline" className="rounded-full bg-background/30 px-3" data-reject-trigger>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!isReviewable}
+              className="rounded-full bg-background/30 px-3"
+              data-reject-trigger
+            >
               Reject Lead
             </Button>
           }
@@ -169,7 +188,14 @@ export function LeadCard({
           onOpenChange={handleSnoozeOpenChange}
           onSnooze={onSnooze}
           trigger={
-            <Button size="sm" variant="ghost" className="rounded-full" aria-label="Snooze lead" data-snooze-trigger>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!isReviewable}
+              className="rounded-full"
+              aria-label="Snooze lead"
+              data-snooze-trigger
+            >
               <Clock className="h-4 w-4" />
             </Button>
           }

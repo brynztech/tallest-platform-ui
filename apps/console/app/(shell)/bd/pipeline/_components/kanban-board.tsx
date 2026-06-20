@@ -48,8 +48,8 @@ const PIPELINE_STATUS_LABELS: Record<string, string> = {
 
 function icpBadgeClass(score: number | null): string {
   if (score === null) return 'bg-muted text-muted-foreground'
-  if (score >= 80) return 'bg-primary text-primary-foreground'
-  if (score >= 60) return 'bg-[oklch(0.769_0.188_85.87)] text-black'
+  if (score >= 80) return 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+  if (score >= 60) return 'bg-[oklch(0.76_0.16_82)] text-black'
   return 'bg-muted text-muted-foreground'
 }
 
@@ -68,7 +68,7 @@ function KanbanCard({ lead }: KanbanCardProps) {
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      className="flex h-14 cursor-grab items-center gap-2 rounded-lg border border-border bg-card px-3 active:cursor-grabbing"
+      className="flex h-14 cursor-grab items-center gap-2 rounded-xl border border-border/70 bg-card/80 px-3 shadow-sm shadow-black/10 transition-[border-color,background-color,box-shadow,transform] hover:-translate-y-px hover:border-primary/25 hover:bg-card hover:shadow-lg hover:shadow-black/15 active:cursor-grabbing"
     >
       <Badge className={cn('shrink-0 px-2 py-0.5 text-xs', icpBadgeClass(lead.icp_score))}>
         {lead.icp_score ?? '—'}
@@ -90,11 +90,11 @@ function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
 
   return (
     <div className="flex min-w-[260px] flex-col gap-2">
-      <div className="flex items-center gap-2 py-1">
+      <div className="flex items-center gap-2 rounded-xl border border-border/40 bg-background/25 px-3 py-2">
         <span className="text-sm font-semibold">
           {PIPELINE_STATUS_LABELS[column.status] ?? column.status}
         </span>
-        <Badge variant="secondary" className="text-xs text-muted-foreground">
+        <Badge variant="secondary" className="border-border/60 bg-secondary/70 text-xs text-muted-foreground">
           {column.count}
         </Badge>
       </div>

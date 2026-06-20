@@ -76,13 +76,14 @@ export default function OnboardingProfilePage() {
 
   return (
     <main className="mx-auto max-w-[560px] px-6 py-12">
+      <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
       <div className="mb-8 space-y-2">
         <p className="text-sm text-muted-foreground">Step 2 of 3</p>
         <Progress value={66} className="h-2" />
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-2xl font-normal text-foreground">Confirm your profile</h1>
+        <h1 className="text-3xl font-light tracking-[-0.035em] text-foreground">Confirm your profile</h1>
         <p className="text-sm text-muted-foreground">
           Review what we parsed and make any corrections before setting your preferences.
         </p>
@@ -168,10 +169,11 @@ export default function OnboardingProfilePage() {
           )}
         </div>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full rounded-full">
           Save & continue
         </Button>
       </form>
+      </div>
     </main>
   )
 }

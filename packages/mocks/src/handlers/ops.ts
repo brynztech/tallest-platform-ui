@@ -278,35 +278,50 @@ export const opsHandlers: HttpHandler[] = [
 
   // 13. GET /api/v1/ops/requisitions/:req_id/shortlist — get shortlist (loosely typed JSONB)
   // NOTE: api.d.ts returns { [key: string]: unknown } — using plain object, no satisfies assertion
-  http.get(`${API_BASE}/api/v1/ops/requisitions/:req_id/shortlist`, () => {
+  // Real backend key is `shortlist`. candidate_name, submission_id, current_title are bonus mock fields.
+  http.get(`${API_BASE}/api/v1/ops/requisitions/:req_id/shortlist`, ({ params }) => {
     return HttpResponse.json({
-      submissions: [
+      requisition_id: params.req_id as string,
+      status: 'matching_complete',
+      shortlist: [
         {
-          submission_id: '00000000-0000-0000-0000-sub000000001',
           candidate_id: '00000000-0000-0000-0000-cand00000001',
           candidate_name: 'Alice Chen',
+          submission_id: '00000000-0000-0000-0000-sub000000001',
           current_title: 'Senior Engineer @ Stripe',
-          fit_score: 92,
+          score: 92,
           rank: 1,
           status: 'shortlisted',
+          rationale: 'Strong Python, FastAPI, and PostgreSQL skills with 7 years of relevant experience. Clean system design background.',
+          top_matching_skills: ['Python', 'FastAPI', 'PostgreSQL'],
+          gaps: [],
+          score_breakdown: { skills: 95, experience: 88, seniority: 90 },
         },
         {
-          submission_id: '00000000-0000-0000-0000-sub000000002',
           candidate_id: '00000000-0000-0000-0000-cand00000002',
           candidate_name: 'David Park',
+          submission_id: '00000000-0000-0000-0000-sub000000002',
           current_title: 'Backend Lead @ Vercel',
-          fit_score: 78,
+          score: 78,
           rank: 2,
           status: 'approved',
+          rationale: 'Excellent TypeScript and distributed systems background. Limited Python exposure but fast learner.',
+          top_matching_skills: ['TypeScript', 'Node.js', 'Redis'],
+          gaps: ['Python experience limited'],
+          score_breakdown: { skills: 80, experience: 75, seniority: 78 },
         },
         {
-          submission_id: '00000000-0000-0000-0000-sub000000003',
           candidate_id: '00000000-0000-0000-0000-cand00000003',
           candidate_name: 'Sara Okonkwo',
+          submission_id: '00000000-0000-0000-0000-sub000000003',
           current_title: 'Staff Engineer @ GitHub',
-          fit_score: 65,
+          score: 65,
           rank: 3,
-          status: 'hold',
+          status: 'shortlisted',
+          rationale: 'Strong infrastructure background. Limited direct product API experience.',
+          top_matching_skills: ['Go', 'Kubernetes', 'PostgreSQL'],
+          gaps: ['No FastAPI background', 'Limited product-side work'],
+          score_breakdown: { skills: 65, experience: 70, seniority: 60 },
         },
       ],
     })

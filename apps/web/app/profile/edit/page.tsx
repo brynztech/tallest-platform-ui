@@ -185,15 +185,16 @@ export default function ProfileEditPage() {
   const score = profile?.completeness_score ?? 0
 
   return (
-    <main className="mx-auto max-w-[640px] px-6 py-12 space-y-8">
+    <main className="mx-auto max-w-[700px] px-6 py-12">
       <div>
         <Link href="/jobs" className="text-sm text-muted-foreground hover:text-foreground">
           &larr; Back to jobs
         </Link>
       </div>
 
+      <div className="mt-6 rounded-[1.75rem] border border-border/70 bg-card/85 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
       <div className="space-y-2">
-        <h1 className="text-2xl font-normal text-foreground">Edit profile</h1>
+        <h1 className="text-3xl font-light tracking-[-0.035em] text-foreground">Edit profile</h1>
         {/* PUB-05: Completeness meter — value from API only, never computed in UI (D-18) */}
         {!isLoading && (
           <div className="space-y-1">
@@ -394,11 +395,12 @@ export default function ProfileEditPage() {
             </div>
           </section>
 
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          <Button type="submit" className="w-full rounded-full" disabled={mutation.isPending}>
             {mutation.isPending ? 'Saving…' : 'Save changes'}
           </Button>
         </form>
       )}
+      </div>
     </main>
   )
 }

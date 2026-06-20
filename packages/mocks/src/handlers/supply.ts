@@ -217,7 +217,7 @@ export const supplyHandlers: HttpHandler[] = [
           candidate_id: '00000000-0000-0000-0000-cand000003',
           match_score: 65,
           match_rationale: null,
-          status: 'hold',
+          status: 'shortlisted',
           supply_notes: null,
           created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
           updated_at: new Date().toISOString(),

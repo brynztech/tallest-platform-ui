@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { components } from '@brynzit/api-client'
+import { apiClient } from '@brynzit/api-client'
 import { SequenceEditor } from './_components/sequence-editor'
-
-type OutreachSequenceResponse = components['schemas']['OutreachSequenceResponse']
+import {
+  getOutreachReviewItemFromLead,
+  type OutreachReviewItem,
+} from './_lib/sequence-list'
 
 export default function OutreachPage() {
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set())
@@ -13,12 +15,22 @@ export default function OutreachPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['outreach-sequences'],
     queryFn: async () => {
-      // MSW-only: no live /api/v1/bd/outreach list endpoint (RESEARCH.md Open Question 3)
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/bd/outreach`,
+      const { data: leadData, error: leadError } = await apiClient.GET('/api/v1/bd/leads', {
+        params: { query: { status: 'outreach_review', limit: 50 } },
+      })
+      if (leadError) throw leadError
+
+      const items = await Promise.all(
+        (leadData.leads ?? []).map(async (lead): Promise<OutreachReviewItem | null> => {
+          const { data: detailData, error: detailError } = await apiClient.GET('/api/v1/bd/leads/{lead_id}', {
+            params: { path: { lead_id: lead.id } },
+          })
+          if (detailError) throw detailError
+          return getOutreachReviewItemFromLead(detailData)
+        }),
       )
-      if (!res.ok) throw new Error('Failed to fetch outreach sequences')
-      return res.json() as Promise<{ sequences: OutreachSequenceResponse[] }>
+
+      return { items: items.filter((item): item is OutreachReviewItem => item !== null) }
     },
   })
 
@@ -38,7 +50,7 @@ export default function OutreachPage() {
     )
   }
 
-  const sequences = (data?.sequences ?? []).filter((s) => !removedIds.has(s.sequence_id))
+  const items = (data?.items ?? []).filter((item) => !removedIds.has(item.sequence.sequence_id))
 
   function handleApproved(id: string) {
     setRemovedIds((prev) => new Set([...prev, id]))
@@ -52,10 +64,10 @@ export default function OutreachPage() {
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Outreach Review</h1>
-        <span className="text-sm text-muted-foreground">{sequences.length} pending</span>
+        <span className="text-sm text-muted-foreground">{items.length} pending</span>
       </div>
 
-      {sequences.length === 0 ? (
+      {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <h2 className="text-xl font-semibold">All reviewed</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -64,11 +76,11 @@ export default function OutreachPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {sequences.map((sequence) => (
+          {items.map((item) => (
             <SequenceEditor
-              key={sequence.sequence_id}
-              sequence={sequence}
-              leadName={undefined}
+              key={item.sequence.sequence_id}
+              sequence={item.sequence}
+              leadName={item.leadName}
               onApproved={handleApproved}
               onRejected={handleRejected}
             />

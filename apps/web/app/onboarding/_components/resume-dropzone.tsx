@@ -20,7 +20,7 @@ export function ResumeDropzone({ file, status, disabled, onChange }: ResumeDropz
     if (status === 'failed') return 'border-destructive/50 bg-destructive/5'
     if (file) return 'border-primary/40 bg-primary/5'
     if (isBusy) return 'border-border/50 bg-muted/30'
-    return 'border-border/70 bg-card hover:bg-muted/50 hover:border-border'
+    return 'border-border/70 bg-background/70 hover:border-primary/30 hover:bg-primary/5'
   }
 
   function getIcon() {
@@ -53,7 +53,7 @@ export function ResumeDropzone({ file, status, disabled, onChange }: ResumeDropz
     <label
       className={cn(
         'flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 text-center',
-        'transition-[color,box-shadow,background-color] duration-150 ease-out',
+        'transition-[color,box-shadow,background-color,border-color] duration-150 ease-out hover:shadow-lg hover:shadow-foreground/[0.04]',
         getStateClass(),
       )}
       onDragEnter={() => !disabled && setIsDragOver(true)}

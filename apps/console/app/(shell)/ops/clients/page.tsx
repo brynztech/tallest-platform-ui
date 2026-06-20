@@ -14,6 +14,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
@@ -159,6 +160,9 @@ export default function ClientsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>New Client</DialogTitle>
+            <DialogDescription className="sr-only">
+              Add a client with optional primary contact details.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit((values) => createMutation.mutate(values))} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

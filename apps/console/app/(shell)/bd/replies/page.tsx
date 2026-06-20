@@ -2,38 +2,16 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '@brynzit/api-client'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
 import { toast } from 'sonner'
-
-// MSW-only stub shape (no live /bd/tasks endpoint — RESEARCH.md Open Question 1)
-// The API returns BDTaskSummary with context_json; we flatten into this interface for rendering.
-interface BDReplyTask {
-  id: string
-  classification: 'interested' | 'ooo' | 'not_now' | 'unsubscribe'
-  company_name: string
-  contact_name: string
-  ai_briefing: string | null
-}
-
-// MSW response shape — context_json contains the reply-specific data
-interface BDTaskRaw {
-  id: string
-  type: string
-  category: string
-  status: string
-  due_at: string | null
-  context_json: {
-    lead_id?: string
-    company_name?: string
-    contact_name?: string
-    classification?: string
-    ai_briefing?: string | null
-    [key: string]: unknown
-  } | null
-  created_at: string
-}
+import {
+  REPLY_LEAD_STATUSES,
+  getReplyTasksFromLead,
+  type BDReplyTask,
+} from './_lib/reply-tasks'
 
 const CLASSIFICATION_LABELS: Record<BDReplyTask['classification'], string> = {
   interested: 'Interested',
@@ -150,33 +128,33 @@ function ReplyCard({ task, onHandled }: ReplyCardProps) {
   )
 }
 
-// Normalise raw BDTaskSummary (context_json shape) into our flat BDReplyTask interface
-function normaliseTask(raw: BDTaskRaw): BDReplyTask | null {
-  const ctx = raw.context_json
-  const classification = (ctx?.classification ?? raw.category) as BDReplyTask['classification']
-  if (!['interested', 'ooo', 'not_now', 'unsubscribe'].includes(classification)) return null
-  return {
-    id: raw.id,
-    classification,
-    company_name: (ctx?.company_name as string) ?? 'Unknown',
-    contact_name: (ctx?.contact_name as string) ?? '',
-    ai_briefing: (ctx?.ai_briefing as string | null) ?? null,
-  }
-}
-
 export default function RepliesPage() {
   const [localHandledIds, setLocalHandledIds] = useState(new Set<string>())
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['bd-tasks'],
     queryFn: async () => {
-      // MSW-only: no live /api/v1/bd/tasks endpoint (RESEARCH.md Open Question 1)
-      // Contract gap documented — Phase 2 uses MSW stub
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/bd/tasks`,
+      const leadPages = await Promise.all(
+        REPLY_LEAD_STATUSES.map(async (status) => {
+          const { data, error } = await apiClient.GET('/api/v1/bd/leads', {
+            params: { query: { status, limit: 50 } },
+          })
+          if (error) throw error
+          return data.leads
+        }),
       )
-      if (!res.ok) throw new Error('Failed to fetch reply tasks')
-      return res.json() as Promise<{ tasks: BDTaskRaw[] }>
+      const leads = leadPages.flat()
+      const fatCards = await Promise.all(
+        leads.map(async (lead) => {
+          const { data, error } = await apiClient.GET('/api/v1/bd/leads/{lead_id}', {
+            params: { path: { lead_id: lead.id } },
+          })
+          if (error) throw error
+          return data
+        }),
+      )
+
+      return { tasks: fatCards.flatMap(getReplyTasksFromLead) }
     },
   })
 
@@ -196,10 +174,7 @@ export default function RepliesPage() {
     )
   }
 
-  const rawTasks = data?.tasks ?? []
-  const tasks = rawTasks
-    .map(normaliseTask)
-    .filter((t): t is BDReplyTask => t !== null)
+  const tasks = (data?.tasks ?? [])
     .filter((t) => !localHandledIds.has(t.id))
     .sort((a, b) => (SORT_PRIORITY[a.classification] ?? 9) - (SORT_PRIORITY[b.classification] ?? 9))
 

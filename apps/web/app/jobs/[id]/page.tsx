@@ -148,15 +148,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   }
 
   return (
-    <main className="mx-auto max-w-[720px] px-6 py-12 space-y-6">
+    <main className="mx-auto max-w-[860px] px-6 py-12">
       <div>
         <Link href="/jobs" className="text-sm text-muted-foreground hover:text-foreground">
           &larr; Back to jobs
         </Link>
       </div>
 
-      <div className="space-y-3">
-        <h1 className="text-2xl font-normal text-foreground">{job.title}</h1>
+      <article className="mt-6 rounded-[1.75rem] border border-border/70 bg-card/85 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
+      <div className="space-y-4">
+        <h1 className="text-4xl font-light leading-tight tracking-[-0.045em] text-foreground">{job.title}</h1>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {job.company_name && <span>{job.company_name}</span>}
@@ -214,7 +215,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         isLoggedIn={isLoggedIn}
         completenessScore={profile?.completeness_score ?? null}
       />
-
+      </article>
     </main>
   )
 }

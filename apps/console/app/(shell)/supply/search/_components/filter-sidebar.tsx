@@ -72,10 +72,10 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
 
   if (isCollapsed) {
     return (
-      <div className="w-10 flex-shrink-0 border-r border-border flex flex-col items-center pt-4">
+      <div className="flex w-10 flex-shrink-0 flex-col items-center border-r border-border/70 bg-background/35 pt-4">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="text-muted-foreground hover:text-foreground transition-colors"
+          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
           aria-label="Expand filter sidebar"
         >
           <ChevronRight className="size-4" />
@@ -85,15 +85,15 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
   }
 
   return (
-    <div className="w-[260px] flex-shrink-0 border-r border-border overflow-y-auto flex flex-col">
+    <div className="flex w-[280px] flex-shrink-0 flex-col overflow-y-auto border-r border-border/70 bg-background/35">
       {/* Sidebar header */}
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+      <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Filters
         </span>
         <button
           onClick={() => setIsCollapsed(true)}
-          className="text-muted-foreground hover:text-foreground transition-colors"
+          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
           aria-label="Collapse filter sidebar"
         >
           <ChevronLeft className="size-4" />
@@ -101,7 +101,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
       </div>
 
       {/* Filter form */}
-      <div className="px-4 pb-4 flex flex-col gap-4 flex-1">
+      <div className="flex flex-1 flex-col gap-4 px-4 pb-4">
         {/* Search query */}
         <div className="flex flex-col gap-1.5">
           <Label className="text-xs font-medium">Search</Label>
@@ -110,7 +110,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             value={liveFilters.q}
             onChange={(e) => updateFilter('q', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="text-sm"
+            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
           />
         </div>
 
@@ -122,7 +122,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             value={liveFilters.title}
             onChange={(e) => updateFilter('title', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="text-sm"
+            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
           />
         </div>
 
@@ -134,7 +134,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             value={liveFilters.skills}
             onChange={(e) => updateFilter('skills', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="text-sm"
+            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
           />
         </div>
 
@@ -146,7 +146,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             value={liveFilters.location}
             onChange={(e) => updateFilter('location', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="text-sm"
+            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
           />
         </div>
 
@@ -157,7 +157,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             value={liveFilters.seniority}
             onValueChange={(val) => updateFilter('seniority', val)}
           >
-            <SelectTrigger className="text-sm">
+            <SelectTrigger className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10">
               <SelectValue placeholder="Any seniority" />
             </SelectTrigger>
             <SelectContent>
@@ -177,7 +177,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             value={String(liveFilters.limit)}
             onValueChange={(val) => updateFilter('limit', parseInt(val, 10))}
           >
-            <SelectTrigger className="text-sm">
+            <SelectTrigger className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -192,10 +192,10 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
       </div>
 
       {/* Sidebar footer */}
-      <div className="px-4 py-3 border-t border-border mt-auto">
+      <div className="mt-auto border-t border-border/70 px-4 py-3">
         <Button
           variant="default"
-          className="w-full"
+          className="w-full rounded-xl shadow-sm shadow-primary/15"
           onClick={handleSubmit}
           disabled={isLoading}
         >

@@ -48,7 +48,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-48px)] max-w-[380px] flex-col justify-center px-6">
+    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-6">
+      <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-light tracking-tight text-foreground">Sign in</h1>
         <p className="text-sm text-muted-foreground">Continue to your Brynzit candidate account.</p>
@@ -91,6 +92,7 @@ export default function LoginPage() {
           Join free
         </Link>
       </p>
+      </div>
     </main>
   )
 }

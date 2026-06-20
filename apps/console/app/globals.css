@@ -3,30 +3,41 @@
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 @import "@brynzit/ui/styles/theme.css";
 
-/* apps/console overrides: dark mode default, compact density */
+/* apps/console overrides: dark mode default, compact density, warm operational palette */
 :root {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --border: oklch(0.269 0 0);
-  --primary: oklch(0.546 0.215 261.3);
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.556 0 0);
-  --sidebar: oklch(0.185 0 0);
-  --radius: 0.375rem;
+  --color-background: oklch(0.13 0.012 62);
+  --color-foreground: oklch(0.94 0.009 64);
+  --color-card: oklch(0.18 0.014 62);
+  --color-card-foreground: oklch(0.94 0.009 64);
+  --color-muted: oklch(0.245 0.014 62);
+  --color-muted-foreground: oklch(0.67 0.014 64);
+  --color-border: oklch(0.285 0.014 62);
+  --color-input: oklch(0.31 0.014 62);
+  --color-secondary: oklch(0.235 0.014 62);
+  --color-secondary-foreground: oklch(0.9 0.009 64);
+  --color-accent: oklch(0.255 0.018 48);
+  --color-accent-foreground: oklch(0.96 0.01 64);
+  --color-popover: oklch(0.18 0.014 62);
+  --color-popover-foreground: oklch(0.94 0.009 64);
+  --color-primary: oklch(0.58 0.15 35);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --color-ring: oklch(0.62 0.14 35);
+  --color-sidebar: oklch(0.115 0.012 62);
+  --radius: 0.625rem;
 }
 
 .light {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.961 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --border: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --sidebar: oklch(0.985 0 0);
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.145 0 0);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.145 0 0);
+  --color-muted: oklch(0.961 0 0);
+  --color-muted-foreground: oklch(0.556 0 0);
+  --color-border: oklch(0.922 0 0);
+  --color-ring: oklch(0.708 0 0);
+  --color-sidebar: oklch(0.985 0 0);
+}
+
+html {
+  background: var(--color-background);
 }

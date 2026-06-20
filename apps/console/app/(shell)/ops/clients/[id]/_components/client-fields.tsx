@@ -12,6 +12,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
@@ -136,6 +137,9 @@ export function ClientFields({ client }: ClientFieldsProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription className="sr-only">
+              Update the client name and primary contact details.
+            </DialogDescription>
           </DialogHeader>
           <form
             onSubmit={handleSubmit((values) => patchMutation.mutate(values))}

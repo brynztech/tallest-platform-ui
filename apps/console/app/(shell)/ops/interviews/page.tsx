@@ -25,7 +25,7 @@ export default function InterviewsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const queryClient = useQueryClient()
 
-  // NOTE: MSW-only — no live GET /api/v1/ops/interviews endpoint (api.d.ts get?: never line 548)
+  // Raw fetch until generated OpenAPI types include GET /api/v1/ops/interviews.
   const {
     data = [],
     isLoading,
@@ -97,9 +97,9 @@ export default function InterviewsPage() {
       <div className="px-4 py-4">
         {data.length === 0 ? (
           <div className="mt-16 flex flex-col items-center gap-2">
-            <h2 className="text-xl font-semibold">No interviews</h2>
+            <h2 className="text-xl font-semibold">No interview logs</h2>
             <p className="text-sm text-muted-foreground">
-              Interviews scheduled from requisition pages will appear here.
+              Interview dates and statuses logged from requisition pages will appear here.
             </p>
           </div>
         ) : (

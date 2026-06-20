@@ -87,7 +87,8 @@ export default function OnboardingResumePage() {
   const isBusy = status === 'uploading' || status === 'processing'
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-48px)] max-w-[560px] flex-col justify-center px-6">
+    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[620px] flex-col justify-center px-6 py-10">
+      <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
       <div className="mb-8 space-y-2">
         <p className="text-sm text-muted-foreground">Step 1 of 3</p>
         <Progress value={33} className="h-2" />
@@ -117,6 +118,7 @@ export default function OnboardingResumePage() {
           </Button>
         </div>
       </form>
+      </div>
     </main>
   )
 }

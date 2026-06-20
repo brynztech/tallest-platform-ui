@@ -50,22 +50,22 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
     filters.role_type || filters.seniority || filters.location || filters.skills || filters.remote
 
   return (
-    <div>
-      <div className="flex h-14 items-center gap-3 border-b border-border bg-background px-6">
+    <div className="rounded-[1.25rem] border border-border/70 bg-card/75 p-3 shadow-sm shadow-foreground/[0.03] backdrop-blur">
+      <div className="flex flex-wrap items-center gap-3">
         <Input
-          className="w-[280px]"
+          className="h-11 w-full rounded-full border-border/80 bg-background/80 px-5 shadow-none md:w-[280px]"
           placeholder="Search roles, skills…"
           value={searchText}
           onChange={e => { setSearchText(e.target.value); onSearchChange(e.target.value) }}
         />
         <Input
-          className="w-[180px]"
+          className="h-11 w-full rounded-full border-border/80 bg-background/80 px-5 shadow-none sm:w-[180px]"
           placeholder="Location"
           value={filters.location}
           onChange={e => handleFilterChange('location', e.target.value)}
         />
         <Input
-          className="w-[180px]"
+          className="h-11 w-full rounded-full border-border/80 bg-background/80 px-5 shadow-none sm:w-[180px]"
           placeholder="Skills"
           value={filters.skills}
           onChange={e => handleFilterChange('skills', e.target.value)}
@@ -74,7 +74,7 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
           value={filters.role_type || 'all'}
           onValueChange={v => handleFilterChange('role_type', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="h-11 w-full rounded-full border-border/80 bg-background/80 px-5 shadow-none sm:w-[140px]">
             <SelectValue placeholder="Role type" />
           </SelectTrigger>
           <SelectContent>
@@ -88,7 +88,7 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
           value={filters.seniority || 'all'}
           onValueChange={v => handleFilterChange('seniority', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className="w-[130px]">
+          <SelectTrigger className="h-11 w-full rounded-full border-border/80 bg-background/80 px-5 shadow-none sm:w-[130px]">
             <SelectValue placeholder="Seniority" />
           </SelectTrigger>
           <SelectContent>
@@ -101,18 +101,19 @@ export function FilterBar({ onSearchChange, onFiltersChange }: FilterBarProps) {
         <Button
           variant={filters.remote ? 'default' : 'outline'}
           size="sm"
+          className="h-11 rounded-full px-5"
           onClick={() => handleFilterChange('remote', !filters.remote)}
         >
           Remote
         </Button>
         {hasActiveFilters && (
-          <button onClick={clearAll} className="ml-auto rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+          <button onClick={clearAll} className="ml-auto rounded-full px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
             Clear all
           </button>
         )}
       </div>
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 px-6 py-2">
+        <div className="flex flex-wrap gap-2 px-1 pt-3">
           {filters.role_type && (
             <Badge variant="secondary" className="h-9 gap-1 rounded-full px-3">
               {ROLE_LABELS[filters.role_type]}

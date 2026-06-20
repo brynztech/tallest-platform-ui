@@ -55,14 +55,15 @@ export function CandidateResultCard({
         if (e.key === 'Enter') onOpenDetail(candidate.candidate_id)
       }}
       className={cn(
-        'relative cursor-pointer rounded-xl border bg-card px-4 py-3 transition-all focus:outline-none',
-        isFocused && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+        'relative cursor-pointer rounded-2xl border border-border/70 bg-card/80 px-4 py-3 shadow-sm shadow-black/10 transition-[border-color,background-color,box-shadow,transform] focus:outline-none',
+        'hover:-translate-y-px hover:border-primary/25 hover:bg-card hover:shadow-lg hover:shadow-black/15',
+        isFocused && 'border-primary/50 ring-2 ring-primary/70 ring-offset-2 ring-offset-background',
       )}
     >
       {/* Row 1: rank badge + name + availability badge */}
       <div className="flex items-start gap-3">
         {rank <= 2 ? (
-          <Badge className="shrink-0 text-xs font-semibold px-1.5 py-0.5 bg-primary text-primary-foreground rounded">
+          <Badge className="shrink-0 rounded-md bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/20">
             #{rank + 1}
           </Badge>
         ) : (

@@ -58,8 +58,9 @@ export function CandidateDetailPanel({
       }),
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({
-        queryKey: ['ops-shortlist'],
+        queryKey: ['supply-shortlist'],
       })
+      queryClient.invalidateQueries({ queryKey: ['ops-shortlist'] })
       if (status === 'approved' && onApprove) onApprove()
       onOpenChange(false)
     },

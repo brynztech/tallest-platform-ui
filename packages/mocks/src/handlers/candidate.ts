@@ -351,10 +351,40 @@ export const candidateHandlers: HttpHandler[] = [
     const url = new URL(request.url)
     const cursor = url.searchParams.get('cursor')
     const q = url.searchParams.get('q')?.toLowerCase()
+    const roleType = url.searchParams.get('role_type')
+    const seniority = url.searchParams.get('seniority')
+    const location = url.searchParams.get('location')?.toLowerCase()
+    const skills = url.searchParams
+      .get('skills')
+      ?.split(',')
+      .map((skill) => skill.trim().toLowerCase())
+      .filter(Boolean)
+    const remote = url.searchParams.get('remote') === 'true'
 
-    const allJobs = q
-      ? MOCK_JOBS.filter((j) => j.title.toLowerCase().includes(q))
-      : MOCK_JOBS
+    const allJobs = MOCK_JOBS.filter((job) => {
+      const searchableText = [
+        job.title,
+        job.company_name,
+        job.description_summary,
+        ...job.skills,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      if (q && !searchableText.includes(q)) return false
+      if (roleType && job.employment_type !== roleType) return false
+      if (seniority && job.seniority !== seniority) return false
+      if (location && !(job.location ?? '').toLowerCase().includes(location)) return false
+      if (remote && !job.remote) return false
+      if (skills?.length) {
+        const jobSkills = job.skills.map((skill) => skill.toLowerCase())
+        if (!skills.every((skill) => jobSkills.some((jobSkill) => jobSkill.includes(skill)))) {
+          return false
+        }
+      }
+      return true
+    })
 
     const offset = cursor === 'cursor-page-2' ? 6 : 0
     const page = allJobs.slice(offset, offset + 6)

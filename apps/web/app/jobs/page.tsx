@@ -16,7 +16,13 @@ export default function JobsPage() {
   const { isLoggedIn } = useCandidateAuth()
   const [searchText, setSearchText] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [filters, setFilters] = useState<JobFilters>({ role_type: '', seniority: '', remote: false })
+  const [filters, setFilters] = useState<JobFilters>({
+    role_type: '',
+    seniority: '',
+    location: '',
+    skills: '',
+    remote: false,
+  })
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
   // 350ms debounce for text search (D-08)
@@ -33,6 +39,8 @@ export default function JobsPage() {
       if (debouncedSearch) params.set('q', debouncedSearch)
       if (filters.role_type) params.set('role_type', filters.role_type)
       if (filters.seniority) params.set('seniority', filters.seniority)
+      if (filters.location) params.set('location', filters.location)
+      if (filters.skills) params.set('skills', filters.skills)
       if (filters.remote) params.set('remote', 'true')
       const res = await fetch(`${API_BASE}/api/v1/public/jobs?${params}`)
       if (!res.ok) throw new Error(`Jobs fetch failed: ${res.status}`)
@@ -60,7 +68,7 @@ export default function JobsPage() {
 
   if (isLoading) {
     return (
-      <div className="px-6 py-6 space-y-6">
+      <div className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
         <FilterBar onSearchChange={setSearchText} onFiltersChange={setFilters} />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -73,7 +81,7 @@ export default function JobsPage() {
 
   if (error) {
     return (
-      <div className="px-6 py-6">
+      <div className="mx-auto max-w-[1180px] px-6 py-8">
         <FilterBar onSearchChange={setSearchText} onFiltersChange={setFilters} />
         <p className="mt-6 text-sm text-destructive">
           Couldn&apos;t load jobs. Check your connection or refresh.
@@ -83,7 +91,14 @@ export default function JobsPage() {
   }
 
   return (
-    <div className="px-6 py-6 space-y-4">
+    <main className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-light tracking-[-0.04em] text-foreground">Open roles</h1>
+        <p className="max-w-[560px] text-sm leading-6 text-muted-foreground">
+          Search a preview of roles Brynzit is matching against. Join to unlock every match and apply.
+        </p>
+      </div>
+
       <FilterBar onSearchChange={setSearchText} onFiltersChange={setFilters} />
 
       {jobs.length === 0 ? (
@@ -94,7 +109,7 @@ export default function JobsPage() {
           </p>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative overflow-hidden rounded-[1.5rem]">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {jobs.map((job, idx) => {
               const isLocked = !isLoggedIn && idx >= VISIBLE_LIMIT
@@ -124,6 +139,6 @@ export default function JobsPage() {
           </Button>
         </div>
       )}
-    </div>
+    </main>
   )
 }

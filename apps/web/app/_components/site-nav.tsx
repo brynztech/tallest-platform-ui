@@ -17,8 +17,8 @@ export function SiteNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex h-12 items-center border-b border-border bg-background px-6">
-      <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
+    <nav className="sticky top-0 z-40 flex h-16 items-center border-b border-border/60 bg-background/85 px-6 backdrop-blur-xl">
+      <Link href="/" className="text-[15px] font-semibold tracking-[-0.03em] text-foreground">
         Brynzit
       </Link>
 
@@ -26,10 +26,10 @@ export function SiteNav() {
         <Link
           href="/jobs"
           className={cn(
-            'text-sm transition-colors duration-150 ease-out',
+            'rounded-full px-3 py-1 text-sm transition-colors duration-150 ease-out',
             pathname === '/jobs' || pathname.startsWith('/jobs/')
-              ? 'text-foreground'
-              : 'text-muted-foreground hover:text-foreground',
+              ? 'bg-secondary text-foreground'
+              : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground',
           )}
         >
           Jobs
@@ -39,7 +39,7 @@ export function SiteNav() {
       <div className="flex items-center gap-2">
         {isLoggedIn ? (
           <>
-            <Link href="/dashboard" className="text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground">
+            <Link href="/dashboard" className="rounded-full px-3 py-1 text-sm text-muted-foreground transition-colors duration-150 ease-out hover:bg-secondary/70 hover:text-foreground">
               Dashboard
             </Link>
             <DropdownMenu>
@@ -70,7 +70,7 @@ export function SiteNav() {
             <Button variant="ghost" size="sm" asChild>
               <Link href="/login">Sign in</Link>
             </Button>
-            <Button variant="default" size="sm" asChild>
+            <Button variant="default" size="sm" className="rounded-full px-4 shadow-sm shadow-primary/15" asChild>
               <Link href="/signup">Join free</Link>
             </Button>
           </>

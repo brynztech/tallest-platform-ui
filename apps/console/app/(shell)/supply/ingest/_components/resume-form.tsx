@@ -9,6 +9,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
 import { UploadCloud } from 'lucide-react'
 import type { IngestJob } from './ingest-job-card'
+import { isResumeParsingComplete } from '../_lib/resume-status'
 
 const MAX_POLL_DURATION_MS = 60_000
 const POLL_INTERVAL_MS = 3_000
@@ -79,22 +80,14 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
         timestamp: new Date(),
       })
 
-      // Start polling if we have a candidate_id
       if (data.candidate_id) {
         startPolling(jobId, data.candidate_id)
       } else {
-        // candidate_id is null — cannot poll, update progress text
         onJobUpdated(jobId, {
-          progressText: 'Parsing resume — awaiting candidate ID',
+          status: 'failed',
+          progressText: 'Resume upload did not return a candidate ID',
         })
-        // Best effort: try task-level polling after short delay if candidate_id eventually resolves
-        // For now, mark as queued and let user re-check
-        setTimeout(() => {
-          onJobUpdated(jobId, {
-            status: 'queued',
-            progressText: 'Resume submitted — processing in background',
-          })
-        }, 2000)
+        toast.error('Resume upload did not return a candidate ID.')
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Resume upload failed — try again.'
@@ -123,8 +116,7 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
 
         const candidate = data as components['schemas']['CandidateProfileResponse']
 
-        // Check if candidate has identity populated (name or email)
-        if (candidate?.name || candidate?.email) {
+        if (isResumeParsingComplete(candidate)) {
           clearInterval(intervalId)
           const displayName = candidate.name ?? candidate.email ?? 'Unknown'
           onJobUpdated(jobId, {

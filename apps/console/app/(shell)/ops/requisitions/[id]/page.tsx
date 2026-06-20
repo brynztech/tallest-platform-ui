@@ -1,8 +1,9 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
+import type { components } from '@brynzit/api-client'
 import { toast } from 'sonner'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { Button } from '@brynzit/ui/components/ui/button'
@@ -15,21 +16,25 @@ import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-s
 import { InterviewsSection } from './_components/interviews-section'
 import { PlacementPanel } from './_components/placement-panel'
 import { PlacementsSection } from './_components/placements-section'
+import { canTriggerCandidateMatch, candidateMatchButtonLabel } from './_lib/match-status'
+
+type SubmissionResponse = components['schemas']['SubmissionResponse']
 
 export default function RequisitionDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  // Next.js 16: params is a Promise in 'use client' pages — unwrap with React.use()
   const { id } = use(params)
 
-  // Shared state for Wave 3 components (shortlist, placement, candidate panel)
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null)
   const [isCandidatePanelOpen, setIsCandidatePanelOpen] = useState(false)
   const [isPlacementOpen, setIsPlacementOpen] = useState(false)
+
+  // Approved candidate — optimistically set on approve action, also derived from shortlist data
   const [approvedCandidateId, setApprovedCandidateId] = useState<string | null>(null)
+  const [approvedCandidateName, setApprovedCandidateName] = useState<string | undefined>(undefined)
 
   const {
     data: req,
@@ -46,7 +51,6 @@ export default function RequisitionDetailPage({
     },
   })
 
-  // Fetch client list to resolve client name from client_id UUID
   const { data: clientsData } = useQuery({
     queryKey: ['ops-clients'],
     queryFn: async () => {
@@ -58,6 +62,47 @@ export default function RequisitionDetailPage({
     enabled: !!req?.client_id,
   })
 
+  // Supply shortlist — same cache key as ShortlistTable; carries real submission ids/statuses.
+  const { data: shortlistEntries = [] } = useQuery({
+    queryKey: ['supply-shortlist', id],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET(
+        '/api/v1/supply/shortlists/{requisition_id}',
+        { params: { path: { requisition_id: id } } },
+      )
+      if (error) throw error
+      return data.submissions
+    },
+    staleTime: 30 * 1000,
+  })
+
+  // Derive approvedCandidateId from the shortlist on load so it survives page refresh
+  useEffect(() => {
+    if (!approvedCandidateId) {
+      const approved = shortlistEntries.find((e) => e.status === 'approved')
+      if (approved?.candidate_id) {
+        setApprovedCandidateId(approved.candidate_id)
+        setApprovedCandidateName(approved.candidate_name ?? undefined)
+      }
+    }
+  }, [shortlistEntries, approvedCandidateId])
+
+  // Candidates available for scheduling interviews / logging placements.
+  // Uses candidate_name when the backend provides it, falls back to short UUID.
+  const shortlistCandidates = useMemo(
+    () =>
+      shortlistEntries
+        .filter(
+          (e): e is SubmissionResponse & { candidate_id: string } =>
+            Boolean(e.candidate_id) && e.status !== 'rejected',
+        )
+        .map((e) => ({
+          id: e.candidate_id,
+          name: e.candidate_name ?? shortId(e.candidate_id),
+        })),
+    [shortlistEntries],
+  )
+
   const queryClient = useQueryClient()
 
   const matchMutation = useMutation({
@@ -66,7 +111,8 @@ export default function RequisitionDetailPage({
         params: { path: { req_id: id } },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ops-shortlist', id] })
+      queryClient.invalidateQueries({ queryKey: ['ops-requisition', id] })
+      queryClient.invalidateQueries({ queryKey: ['supply-shortlist', id] })
       toast('Match triggered — shortlist will refresh shortly.')
     },
     onError: () => {
@@ -110,11 +156,11 @@ export default function RequisitionDetailPage({
         variant="default"
         size="sm"
         className="mb-6 mt-4"
-        disabled={req.status !== 'open' || matchMutation.isPending}
+        disabled={!canTriggerCandidateMatch(req.status) || matchMutation.isPending}
         onClick={() => matchMutation.mutate()}
       >
         <Zap className="mr-1 size-4" />
-        {matchMutation.isPending ? 'Matching…' : 'Trigger Candidate Match'}
+        {candidateMatchButtonLabel(req.status, matchMutation.isPending)}
       </Button>
 
       {/* Section 2: Shortlist */}
@@ -129,7 +175,11 @@ export default function RequisitionDetailPage({
           setSelectedSubmissionId(submissionId)
           setIsCandidatePanelOpen(true)
         }}
-        onApprove={(candidateId) => setApprovedCandidateId(candidateId)}
+        onApprove={(candidateId) => {
+          setApprovedCandidateId(candidateId)
+          const match = shortlistEntries.find((e) => e.candidate_id === candidateId)
+          setApprovedCandidateName(match?.candidate_name ?? undefined)
+        }}
       />
       <CandidateProfileSheet
         candidateId={selectedCandidateId}
@@ -142,25 +192,28 @@ export default function RequisitionDetailPage({
 
       {/* Section 3: Interviews */}
       <Separator className="my-4" />
-      <h2 className="mb-2 text-base font-semibold">Interviews</h2>
-      <InterviewsSection reqId={id} approvedCandidateId={approvedCandidateId} />
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-base font-semibold">Interviews</h2>
+      </div>
+      <InterviewsSection
+        reqId={id}
+        candidates={shortlistCandidates}
+        defaultCandidateId={approvedCandidateId}
+      />
 
-      {/* Log Placement button — visible when approvedCandidateId is set */}
-      {approvedCandidateId && (
+      {/* Section 4: Placements */}
+      <Separator className="my-4" />
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-base font-semibold">Placements</h2>
         <Button
-          variant="default"
+          variant="outline"
           size="sm"
-          className="mb-6 mt-4"
           onClick={() => setIsPlacementOpen(true)}
         >
           <Trophy className="mr-1 size-4" />
           Log Placement
         </Button>
-      )}
-
-      {/* Section 4: Placements */}
-      <Separator className="my-4" />
-      <h2 className="mb-2 text-base font-semibold">Placements</h2>
+      </div>
       <PlacementsSection reqId={id} />
 
       {/* Placement slide-over */}
@@ -170,9 +223,15 @@ export default function RequisitionDetailPage({
         reqId={id}
         clientId={req.client_id ?? ''}
         approvedCandidateId={approvedCandidateId}
+        candidateName={approvedCandidateName}
       />
     </div>
   )
+}
+
+function shortId(id: string) {
+  if (!id) return '—'
+  return `${id.slice(0, 8)}…${id.slice(-4)}`
 }
 
 function RequisitionStatusBadge({ status }: { status: string }) {

@@ -14,6 +14,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
@@ -36,6 +37,10 @@ import { ChevronRight, Plus, Loader2 } from 'lucide-react'
 const createReqSchema = z.object({
   client_id: z.string().min(1, 'Select a client'),
   title: z.string().min(1, 'Title is required'),
+  seniority: z.string().nullable().optional(),
+  skills: z.string().nullable().optional(),
+  compensation_range: z.string().nullable().optional(),
+  target_start_date: z.string().nullable().optional(),
 })
 type CreateReqFormValues = z.infer<typeof createReqSchema>
 
@@ -44,32 +49,21 @@ export default function RequisitionsPage() {
   const queryClient = useQueryClient()
 
   // --- Filter + dialog state ---
-  const [clientFilter, setClientFilter] = useState<string>('all')
+  const [clientFilter, setClientFilter] = useState<string>(
+    () =>
+      typeof window === 'undefined'
+        ? 'all'
+        : new URLSearchParams(window.location.search).get('client_id') ?? 'all',
+  )
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [jdText, setJdText] = useState('')
   const [reqId, setReqId] = useState<string | null>(null)
   const [isParsingJd, setIsParsingJd] = useState(false)
+  const [isSavingReview, setIsSavingReview] = useState(false)
   const [parsePhaseComplete, setParsePhaseComplete] = useState(false)
 
-  // --- Requisitions list query (MSW-only — raw fetch) ---
-  // NOTE: MSW-only — no live GET /api/v1/ops/requisitions endpoint (api.d.ts line 445: get?: never)
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['ops-requisitions', clientFilter],
-    queryFn: async () => {
-      const url = new URL(
-        '/api/v1/ops/requisitions',
-        process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000',
-      )
-      if (clientFilter !== 'all') url.searchParams.set('client_id', clientFilter)
-      const res = await fetch(url.toString())
-      if (!res.ok) throw new Error('Failed to fetch requisitions')
-      return res.json() as Promise<components['schemas']['RequisitionResponse'][]>
-    },
-  })
-  const requisitions = data ?? []
-
-  // --- Clients query (for filter Select and create form) ---
-  const { data: clientsData } = useQuery({
+  // --- Clients query (for filter Select, requisition aggregation, and create form) ---
+  const { data: clientsData, isLoading: isLoadingClients } = useQuery({
     queryKey: ['ops-clients'],
     queryFn: async () => {
       const { data, error } = await apiClient.GET('/api/v1/ops/clients')
@@ -78,6 +72,46 @@ export default function RequisitionsPage() {
     },
   })
   const clients = clientsData ?? []
+
+  const fetchClientRequisitions = async (clientId: string) => {
+    const { data, error } = await apiClient.GET('/api/v1/ops/clients/{client_id}/requisitions', {
+      params: { path: { client_id: clientId } },
+    })
+    if (error) throw error
+    return data ?? []
+  }
+
+  // --- Requisitions list query (real backend: list by client, aggregate for "All") ---
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['ops-requisitions', clientFilter, clients.map((client) => client.id).join(',')],
+    enabled: Boolean(clientsData),
+    queryFn: async () => {
+      if (clientFilter !== 'all') {
+        return fetchClientRequisitions(clientFilter)
+      }
+
+      const lists = await Promise.all(clients.map((client) => fetchClientRequisitions(client.id)))
+      return lists
+        .flat()
+        .sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+    },
+  })
+  const requisitions = data ?? []
+
+  // --- Form ---
+  const form = useForm<CreateReqFormValues>({
+    resolver: zodResolver(createReqSchema),
+    defaultValues: {
+      client_id: '',
+      title: '',
+      seniority: '',
+      skills: '',
+      compensation_range: '',
+      target_start_date: '',
+    },
+  })
 
   // --- useAsyncJob for JD parse ---
   // CRITICAL: statusMap override required — 'open' not in DEFAULT_STATUS_MAP
@@ -109,8 +143,15 @@ export default function RequisitionsPage() {
   useEffect(() => {
     if (phase === 'complete') {
       setParsePhaseComplete(true)
+      if (polledReq) {
+        form.setValue('title', polledReq.title)
+        form.setValue('seniority', polledReq.seniority ?? '')
+        form.setValue('skills', ((polledReq.skills as string[] | null) ?? []).join(', '))
+        form.setValue('compensation_range', polledReq.compensation_range ?? '')
+        form.setValue('target_start_date', polledReq.target_start_date ?? '')
+      }
     }
-  }, [phase])
+  }, [phase, polledReq, form])
 
   // --- Create requisition mutation ---
   const createMutation = useMutation({
@@ -145,14 +186,48 @@ export default function RequisitionsPage() {
     },
   })
 
-  // --- Form ---
-  const form = useForm<CreateReqFormValues>({
-    resolver: zodResolver(createReqSchema),
-    defaultValues: { client_id: '', title: '' },
-  })
   const onSubmit = form.handleSubmit((values) => {
     createMutation.mutate({ client_id: values.client_id, title: values.title })
   })
+
+  async function saveReviewAndNavigate() {
+    if (!reqId) return
+
+    const values = form.getValues()
+    const skills = values.skills
+      ? values.skills
+          .split(',')
+          .map((skill) => skill.trim())
+          .filter(Boolean)
+      : []
+
+    setIsSavingReview(true)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/ops/requisitions/${reqId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: values.title,
+            seniority: values.seniority || null,
+            skills,
+            compensation_range: values.compensation_range || null,
+            target_start_date: values.target_start_date || null,
+          }),
+        },
+      )
+      if (!response.ok) throw new Error(`PATCH failed: ${response.status}`)
+      queryClient.invalidateQueries({ queryKey: ['ops-requisition', reqId] })
+      queryClient.invalidateQueries({ queryKey: ['ops-requisitions'] })
+      router.push(`/ops/requisitions/${reqId}`)
+      setIsCreateOpen(false)
+    } catch {
+      toast.error('Failed to update requisition.')
+    } finally {
+      setIsSavingReview(false)
+    }
+  }
 
   // --- Dialog close reset ---
   function handleDialogOpenChange(open: boolean) {
@@ -167,7 +242,7 @@ export default function RequisitionsPage() {
   }
 
   // --- Loading / error states ---
-  if (isLoading) {
+  if (isLoadingClients || isLoading) {
     return (
       <div className="p-6">
         <p className="text-muted-foreground text-sm">Loading…</p>
@@ -272,6 +347,9 @@ export default function RequisitionsPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>New Requisition</DialogTitle>
+            <DialogDescription className="sr-only">
+              Create a requisition and optionally paste a job description for parsing.
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -362,12 +440,10 @@ export default function RequisitionsPage() {
                       <Skeleton className="h-8 w-full" />
                     </>
                   ) : (
-                    // Phase 3 — Parsed fields animate in (complete or failed).
-                    // These are display-only: values are already saved on the
-                    // requisition record. Edit them from the requisition detail page.
+                    // Phase 3 — Parsed fields animate in and can be corrected before navigating.
                     <>
                       <p className="text-xs text-muted-foreground">
-                        Parsed from JD — review before navigating. Edit from the requisition detail page.
+                        Parsed from JD — review and correct before navigating.
                       </p>
                       <div
                         className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
@@ -376,14 +452,9 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_seniority">Seniority</Label>
                         <Input
                           id="parsed_seniority"
-                          readOnly
-                          value={
-                            phase === 'complete' && polledReq
-                              ? ((polledReq as components['schemas']['RequisitionResponse']).seniority ?? '')
-                              : ''
-                          }
+                          {...form.register('seniority')}
                           placeholder="e.g. senior"
-                          className="mt-1 bg-muted/50"
+                          className="mt-1"
                         />
                       </div>
                       <div
@@ -393,19 +464,9 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_skills">Skills (comma-separated)</Label>
                         <Input
                           id="parsed_skills"
-                          readOnly
-                          value={
-                            phase === 'complete' && polledReq
-                              ? (
-                                  (
-                                    (polledReq as components['schemas']['RequisitionResponse'])
-                                      .skills as string[] | null
-                                  ) ?? []
-                                ).join(', ')
-                              : ''
-                          }
+                          {...form.register('skills')}
                           placeholder="e.g. TypeScript, React, Node.js"
-                          className="mt-1 bg-muted/50"
+                          className="mt-1"
                         />
                       </div>
                       <div
@@ -415,14 +476,9 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_comp">Compensation Range</Label>
                         <Input
                           id="parsed_comp"
-                          readOnly
-                          value={
-                            phase === 'complete' && polledReq
-                              ? ((polledReq as components['schemas']['RequisitionResponse']).compensation_range ?? '')
-                              : ''
-                          }
+                          {...form.register('compensation_range')}
                           placeholder="e.g. $150k–$180k"
-                          className="mt-1 bg-muted/50"
+                          className="mt-1"
                         />
                       </div>
                       <div
@@ -432,13 +488,9 @@ export default function RequisitionsPage() {
                         <Label htmlFor="parsed_start_date">Target Start Date</Label>
                         <Input
                           id="parsed_start_date"
-                          readOnly
-                          value={
-                            phase === 'complete' && polledReq
-                              ? ((polledReq as components['schemas']['RequisitionResponse']).target_start_date ?? '')
-                              : ''
-                          }
-                          className="mt-1 bg-muted/50"
+                          type="date"
+                          {...form.register('target_start_date')}
+                          className="mt-1"
                         />
                       </div>
                     </>
@@ -453,7 +505,7 @@ export default function RequisitionsPage() {
                 type="button"
                 variant="outline"
                 onClick={() => handleDialogOpenChange(false)}
-                disabled={createMutation.isPending || isParsing}
+                disabled={createMutation.isPending || isParsing || isSavingReview}
               >
                 Cancel
               </Button>
@@ -469,15 +521,13 @@ export default function RequisitionsPage() {
                   Parsing JD…
                 </Button>
               ) : (
-                // After parse (complete or failed): show "Go to Requisition"
+                // After parse (complete or failed): save review edits before navigating.
                 <Button
                   type="button"
-                  onClick={() => {
-                    router.push(`/ops/requisitions/${reqId}`)
-                    setIsCreateOpen(false)
-                  }}
+                  onClick={saveReviewAndNavigate}
+                  disabled={isSavingReview}
                 >
-                  Go to Requisition
+                  {isSavingReview ? 'Saving…' : 'Save & Go to Requisition'}
                 </Button>
               )}
             </div>

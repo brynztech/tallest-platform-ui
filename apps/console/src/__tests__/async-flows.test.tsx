@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { getOutreachReviewItemFromLead } from '../../app/(shell)/bd/outreach/_lib/sequence-list'
+import { getReplyTasksFromLead } from '../../app/(shell)/bd/replies/_lib/reply-tasks'
 
 function makeWrapper() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -82,5 +84,107 @@ describe('Outreach sequences (BD-05)', () => {
     expect(mockSequence.steps[1].scheduled_day).toBe(3)
   })
 
+  it('maps live lead fat-card active_sequence into a review sequence item', () => {
+    const item = getOutreachReviewItemFromLead({
+      id: 'lead-1',
+      status: 'outreach_review',
+      canonical_domain: 'acme.com',
+      icp_score: 87,
+      icp_breakdown: null,
+      enrichment_status: 'complete',
+      rejection_reason: null,
+      import_id: null,
+      created_at: '2026-06-16T00:00:00.000Z',
+      updated_at: '2026-06-16T00:00:00.000Z',
+      contact: {
+        id: 'contact-1',
+        name: 'Jane Doe',
+        email: 'jane@acme.com',
+        title: 'VP Engineering',
+        linkedin_url: null,
+        company_name: 'Acme Corp',
+        tech_stack: null,
+        funding_stage: null,
+        headcount: null,
+        open_roles_summary: null,
+        verified: null,
+        last_enriched_at: null,
+      },
+      active_sequence: {
+        id: 'seq-1',
+        status: 'outreach_review',
+        outreach_angle: 'Hiring signal',
+        rejection_notes: null,
+        created_at: '2026-06-16T00:00:00.000Z',
+        updated_at: '2026-06-16T00:00:00.000Z',
+        steps: [
+          {
+            step_index: 1,
+            subject: 'Intro',
+            body: 'Hi',
+            scheduled_day: 0,
+            status: 'draft',
+            original_subject: 'Intro',
+            original_body: 'Hi',
+          },
+        ],
+      },
+      tasks: [],
+    })
+
+    expect(item?.leadName).toBe('Acme Corp')
+    expect(item?.sequence.sequence_id).toBe('seq-1')
+    expect(item?.sequence.lead_id).toBe('lead-1')
+    expect(item?.sequence.steps).toHaveLength(1)
+  })
+
   it.todo('approving a sequence fires POST /outreach/{id}/approve')
+})
+
+describe('Reply tasks (BD-07)', () => {
+  it('maps live lead fat-card tasks into reply task cards', () => {
+    const tasks = getReplyTasksFromLead({
+      id: 'lead-1',
+      status: 'interested',
+      canonical_domain: 'acme.com',
+      icp_score: 87,
+      icp_breakdown: null,
+      enrichment_status: 'complete',
+      rejection_reason: null,
+      import_id: null,
+      created_at: '2026-06-16T00:00:00.000Z',
+      updated_at: '2026-06-16T00:00:00.000Z',
+      contact: {
+        id: 'contact-1',
+        name: 'Jane Doe',
+        email: 'jane@acme.com',
+        title: 'VP Engineering',
+        linkedin_url: null,
+        company_name: 'Acme Corp',
+        tech_stack: null,
+        funding_stage: null,
+        headcount: null,
+        open_roles_summary: null,
+        verified: null,
+        last_enriched_at: null,
+      },
+      active_sequence: null,
+      tasks: [
+        {
+          id: 'task-1',
+          type: 'task',
+          category: 'interested',
+          status: 'urgent',
+          context_json: { company_summary: 'Ready to talk next week.' },
+          due_at: null,
+          created_at: '2026-06-16T00:00:00.000Z',
+        },
+      ],
+    })
+
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].classification).toBe('interested')
+    expect(tasks[0].company_name).toBe('Acme Corp')
+    expect(tasks[0].ai_briefing).toBe('Ready to talk next week.')
+  })
 })

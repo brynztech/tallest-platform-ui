@@ -4,6 +4,7 @@ import React from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
@@ -30,6 +31,9 @@ export function ShortcutOverlay({ open, onOpenChange }: ShortcutOverlayProps) {
       <DialogContent className="max-w-sm bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Keyboard shortcuts</DialogTitle>
+          <DialogDescription className="sr-only">
+            Keyboard commands for navigating and acting on lead queue cards.
+          </DialogDescription>
         </DialogHeader>
         <div className="mt-3 grid grid-cols-[1fr_auto] gap-x-8 gap-y-2">
           {SHORTCUTS.map(({ action, key }) => (

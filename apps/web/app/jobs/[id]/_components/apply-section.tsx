@@ -46,7 +46,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
     return (
       <div className="pt-4">
         <Separator className="mb-4" />
-        <Button asChild className="w-full" size="lg">
+        <Button asChild className="w-full rounded-full shadow-md shadow-primary/15" size="lg">
           <Link href={`/signup?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`}>
             Sign up to apply
           </Link>
@@ -62,7 +62,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
     return (
       <div className="pt-4">
         <Separator className="mb-4" />
-        <Button disabled className="w-full" size="lg" variant="outline">
+        <Button disabled className="w-full rounded-full" size="lg" variant="outline">
           Applied
         </Button>
       </div>
@@ -87,7 +87,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
         </div>
         <Button
           onClick={() => applyMutation.mutate()}
-          className="w-full"
+          className="w-full rounded-full shadow-md shadow-primary/15"
           size="lg"
           disabled={applyMutation.isPending || note.length > 200}
         >
@@ -105,7 +105,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
         Your profile is {score}% complete. Reach 70% to apply in one click.
       </p>
       <Progress value={score} className="h-2 [&>div]:bg-primary" />
-      <Button asChild variant="outline" className="w-full" size="lg">
+      <Button asChild variant="outline" className="w-full rounded-full" size="lg">
         <Link href="/profile/edit">Complete your profile</Link>
       </Button>
     </div>
