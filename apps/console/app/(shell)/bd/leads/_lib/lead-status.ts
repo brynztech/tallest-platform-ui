@@ -51,6 +51,14 @@ export function canReviewLead(lead: { status?: string | null }) {
   return lead.status === 'review_queue'
 }
 
+export function canMoveToReviewLead(lead: { status?: string | null }) {
+  return lead.status === 'suppressed'
+}
+
+export function canSelectLead(lead: { status?: string | null }) {
+  return canReviewLead(lead) || canMoveToReviewLead(lead)
+}
+
 export function getLeadStatusLabel(status: string | null | undefined) {
   if (!status) return 'Unknown'
   return status

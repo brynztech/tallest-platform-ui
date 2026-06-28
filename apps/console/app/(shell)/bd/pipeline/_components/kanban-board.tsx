@@ -41,9 +41,12 @@ const PIPELINE_STATUS_LABELS: Record<string, string> = {
   icp_scored: 'ICP Scored',
   review_queue: 'In Review',
   outreach_approved: 'Outreach Approved',
+  outreach_generation: 'Generating Outreach',
+  outreach_review: 'Outreach Review',
   outreach_sent: 'Outreach Sent',
   interested: 'Replied',
   converted: 'Converted',
+  failed: 'Failed',
 }
 
 function icpBadgeClass(score: number | null): string {

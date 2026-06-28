@@ -10,6 +10,7 @@ const mockBdLeadQueueItems: LeadQueueItemExtended[] = [
   { id: '00000000-0000-0000-0000-000000000004', company_name: 'Fintech Ltd', canonical_domain: 'fintech.co', contact_name: 'Alex Kim', contact_title: 'CEO', contact_email: 'alex@fintech.co', icp_score: 91, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000004', open_roles_count: 7, open_roles_summary: '7 open roles (Sales, Eng)', suggested_angle: 'Series B just closed — headcount plan live, talent team under pressure.' },
   { id: '00000000-0000-0000-0000-000000000005', company_name: 'Growthbase', canonical_domain: 'growthbase.com', contact_name: 'Maya Patel', contact_title: 'Founder', contact_email: 'maya@growthbase.com', icp_score: 68, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000005', open_roles_count: 1, open_roles_summary: '1 open role (Design)', suggested_angle: 'First design hire — founder-led recruiting, high friction expected.' },
   { id: '00000000-0000-0000-0000-000000000006', company_name: 'Horizon Labs', canonical_domain: 'horizonlabs.ai', contact_name: 'Chris Wu', contact_title: 'VP Sales', contact_email: 'chris@horizonlabs.ai', icp_score: 83, status: 'review_queue', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000006', open_roles_count: 3, open_roles_summary: '3 open roles (Sales)', suggested_angle: 'AE pipeline stalled — missed quota two quarters, VP Sales owns the fix.' },
+  { id: '00000000-0000-0000-0000-000000000007', company_name: 'SignalWorks', canonical_domain: 'signalworks.ai', contact_name: 'Nora Shah', contact_title: 'Head of Talent', contact_email: 'nora@signalworks.ai', icp_score: 79, status: 'outreach_generation', icp_breakdown: null, enrichment_status: 'complete', rejection_reason: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), contact_id: '00000000-0000-0000-0001-000000000007', open_roles_count: 5, open_roles_summary: '5 open roles (Engineering)', suggested_angle: 'Generating outreach sequence.' },
 ]
 
 const mockBdLeadCompanyDetails: Record<
@@ -52,6 +53,12 @@ const mockBdLeadCompanyDetails: Record<
     tech_stack: 'Python, React, BigQuery',
     icp_breakdown: { company_size: 0.82, industry_fit: 0.86, tech_stack: 0.8, timing: 0.84 },
   },
+  '00000000-0000-0000-0000-000000000007': {
+    funding_stage: 'Series A',
+    headcount: 110,
+    tech_stack: 'Python, React, Kubernetes',
+    icp_breakdown: { company_size: 0.78, industry_fit: 0.8, tech_stack: 0.79, timing: 0.81 },
+  },
 }
 
 export function getMockBdLeadDetail(
@@ -87,7 +94,17 @@ export function getMockBdLeadDetail(
       verified: true,
       last_enriched_at: new Date().toISOString(),
     },
-    active_sequence: null,
+    active_sequence: lead.status === 'outreach_generation'
+      ? {
+          id: '00000000-0000-0000-0002-000000000007',
+          status: 'generating',
+          outreach_angle: null,
+          rejection_notes: null,
+          steps: [],
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        }
+      : null,
     tasks: [],
   }
 }
@@ -120,16 +137,20 @@ export const bdHandlers: HttpHandler[] = [
   http.get(`${API_BASE}/api/v1/bd/leads`, ({ request }) => {
     const url = new URL(request.url)
     const cursor = url.searchParams.get('cursor')
+    const status = url.searchParams.get('status')
     // Page 1 (no cursor): first 5 mock leads. Page 2 (with cursor): next 5.
     // LeadQueueItemExtended adds open_roles_count/summary + suggested_angle per
     // .planning/contracts/bd-lead-queue-item-fat-card.yaml (BD-01 / ROADMAP SC1).
     // These fields are absent from the live api.d.ts until the backend ships them.
-    const page1 = mockBdLeadQueueItems.slice(0, 5)
-    const page2 = mockBdLeadQueueItems.slice(5)
+    const filteredItems = status && status !== 'all'
+      ? mockBdLeadQueueItems.filter((lead) => lead.status === status)
+      : mockBdLeadQueueItems
+    const page1 = filteredItems.slice(0, 5)
+    const page2 = filteredItems.slice(5)
     return HttpResponse.json({
       leads: cursor ? page2 : page1,
-      next_cursor: cursor ? null : 'cursor-page-2',
-      total: 6,
+      next_cursor: !cursor && filteredItems.length > 5 ? 'cursor-page-2' : null,
+      total: filteredItems.length,
     } satisfies components['schemas']['LeadQueueResponse'])
   }),
 
@@ -206,9 +227,12 @@ export const bdHandlers: HttpHandler[] = [
         { status: 'icp_scored', count: 8, leads: [{ id: '00000000-0000-0000-0000-pipeline002', company_name: 'Beta', icp_score: 72, canonical_domain: 'beta.io', contact_name: null, contact_title: null, updated_at: new Date().toISOString(), created_at: new Date().toISOString() }] },
         { status: 'review_queue', count: 6, leads: [] },
         { status: 'outreach_approved', count: 4, leads: [] },
+        { status: 'outreach_generation', count: 1, leads: [] },
+        { status: 'outreach_review', count: 0, leads: [] },
         { status: 'outreach_sent', count: 9, leads: [] },
         { status: 'interested', count: 2, leads: [{ id: '00000000-0000-0000-0000-pipeline003', company_name: 'Gamma', icp_score: 91, canonical_domain: 'gamma.co', contact_name: null, contact_title: null, updated_at: new Date().toISOString(), created_at: new Date().toISOString() }] },
         { status: 'converted', count: 3, leads: [] },
+        { status: 'failed', count: 0, leads: [] },
       ],
     } satisfies components['schemas']['demand__schemas__lead_queue__PipelineResponse'])
   }),

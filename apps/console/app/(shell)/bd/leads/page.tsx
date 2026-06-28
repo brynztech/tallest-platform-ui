@@ -119,7 +119,7 @@ export default function LeadsPage() {
 
   function handleAction(
     leadId: string,
-    action: 'approve' | 'reject' | 'snooze',
+    action: 'approve' | 'reject' | 'snooze' | 'move_to_review',
     extra?: { reason?: string; dueAt?: string },
   ) {
     // Optimistic exit animation
@@ -131,6 +131,8 @@ export default function LeadsPage() {
     let toastMessage = ''
     if (action === 'approve') {
       toastMessage = `Approved — ${companyName}`
+    } else if (action === 'move_to_review') {
+      toastMessage = `Moved to review — ${companyName}`
     } else if (action === 'reject') {
       toastMessage = `Rejected — ${extra?.reason ? (REASON_LABELS[extra.reason] ?? extra.reason) : 'reason'}`
     } else {
@@ -347,6 +349,7 @@ export default function LeadsPage() {
           <div className="ml-auto">
             <BulkToolbar
               selectedIds={[...selectedIds]}
+              mode={activeTab === 'suppressed' ? 'suppressed' : 'review'}
               onClearSelection={() => setSelectedIds(new Set())}
               onBulkStart={handleBulkStart}
               onBulkSettled={handleBulkSettled}
@@ -405,6 +408,7 @@ export default function LeadsPage() {
                 openLeadDetail(id)
               }}
               onApprove={(id) => handleAction(id, 'approve')}
+              onMoveToReview={(id) => handleAction(id, 'move_to_review')}
               onReject={(id, reason) => handleAction(id, 'reject', { reason })}
               onSnooze={(id, dueAt) => handleAction(id, 'snooze', { dueAt })}
               onPopoverOpenChange={setAnyPopoverOpen}

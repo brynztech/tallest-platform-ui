@@ -30,6 +30,7 @@ const REJECTION_REASONS = Object.keys(REASON_LABELS)
 
 interface BulkToolbarProps {
   selectedIds: string[]
+  mode?: 'review' | 'suppressed'
   onClearSelection: () => void
   onBulkStart: (ids: string[]) => void // Sets cards to pending state
   onBulkSettled: () => void // Clears pending + selection
@@ -37,6 +38,7 @@ interface BulkToolbarProps {
 
 export function BulkToolbar({
   selectedIds,
+  mode = 'review',
   onClearSelection,
   onBulkStart,
   onBulkSettled,
@@ -61,7 +63,7 @@ export function BulkToolbar({
     },
   })
 
-  function handleBulkAction(action: 'approve' | 'reject' | 'snooze') {
+  function handleBulkAction(action: 'approve' | 'reject' | 'snooze' | 'move_to_review') {
     if (action === 'reject' && !bulkRejectReason) {
       toast.error('Select a rejection reason for all leads.')
       return
@@ -78,7 +80,8 @@ export function BulkToolbar({
 
     // Show the toast BEFORE firing the mutation so the "Undo" button can cancel
     // it. Mirror the same delayed-fire pattern used by single-lead actions (D-06).
-    const toastId = toast(`Bulk action: ${action} ${selectedIds.length} leads`, {
+    const actionLabel = action === 'move_to_review' ? 'move to review' : action
+    const toastId = toast(`Bulk action: ${actionLabel} ${selectedIds.length} leads`, {
       action: {
         label: 'Undo',
         onClick: () => {
@@ -104,34 +107,42 @@ export function BulkToolbar({
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2">
       <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
-      <Button size="sm" onClick={() => handleBulkAction('approve')}>
-        Approve All
-      </Button>
-      <div className="flex items-center gap-2">
-        <Select value={bulkRejectReason} onValueChange={setBulkRejectReason}>
-          <SelectTrigger className="h-8 w-40 text-sm">
-            <SelectValue placeholder="Rejection reason…" />
-          </SelectTrigger>
-          <SelectContent>
-            {REJECTION_REASONS.map((r) => (
-              <SelectItem key={r} value={r}>
-                {REASON_LABELS[r]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => handleBulkAction('reject')}
-          disabled={!bulkRejectReason}
-        >
-          Reject All
+      {mode === 'suppressed' ? (
+        <Button size="sm" onClick={() => handleBulkAction('move_to_review')}>
+          Move Selected to Review
         </Button>
-      </div>
-      <Button size="sm" variant="ghost" onClick={() => handleBulkAction('snooze')}>
-        Snooze All (1 week)
-      </Button>
+      ) : (
+        <>
+          <Button size="sm" onClick={() => handleBulkAction('approve')}>
+            Approve All
+          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={bulkRejectReason} onValueChange={setBulkRejectReason}>
+              <SelectTrigger className="h-8 w-40 text-sm">
+                <SelectValue placeholder="Rejection reason…" />
+              </SelectTrigger>
+              <SelectContent>
+                {REJECTION_REASONS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {REASON_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleBulkAction('reject')}
+              disabled={!bulkRejectReason}
+            >
+              Reject All
+            </Button>
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => handleBulkAction('snooze')}>
+            Snooze All (1 week)
+          </Button>
+        </>
+      )}
       <button
         className="ml-auto text-xs text-muted-foreground hover:text-foreground"
         onClick={onClearSelection}

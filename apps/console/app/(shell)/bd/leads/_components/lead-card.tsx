@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { Clock } from 'lucide-react'
 import { RejectPopover } from './reject-popover'
 import { SnoozePopover } from './snooze-popover'
-import { canReviewLead, getLeadStatusLabel } from '../_lib/lead-status'
+import { canMoveToReviewLead, canReviewLead, canSelectLead, getLeadStatusLabel } from '../_lib/lead-status'
 
 type LeadQueueItem = LeadQueueItemExtended
 
@@ -29,6 +29,7 @@ interface LeadCardProps {
   onSelect: (id: string, checked: boolean) => void
   onOpenDetail: (id: string) => void
   onApprove: (id: string) => void
+  onMoveToReview: (id: string) => void
   onReject: (id: string, reason: string) => void
   onSnooze: (id: string, dueAt: string) => void
   onPopoverOpenChange?: (open: boolean) => void
@@ -43,6 +44,7 @@ export function LeadCard({
   onSelect,
   onOpenDetail,
   onApprove,
+  onMoveToReview,
   onReject,
   onSnooze,
   onPopoverOpenChange,
@@ -50,6 +52,8 @@ export function LeadCard({
   const [isRejectOpen, setIsRejectOpen] = useState(false)
   const [isSnoozeOpen, setIsSnoozeOpen] = useState(false)
   const isReviewable = canReviewLead(lead)
+  const isMoveableToReview = canMoveToReviewLead(lead)
+  const isSelectable = canSelectLead(lead)
 
   function handleRejectOpenChange(open: boolean) {
     setIsRejectOpen(open)
@@ -101,9 +105,9 @@ export function LeadCard({
         <div onClick={(e) => e.stopPropagation()} className="mt-0.5">
           <Checkbox
             checked={isSelected}
-            disabled={!isReviewable}
+            disabled={!isSelectable}
             onCheckedChange={(checked) => {
-              if (isReviewable) onSelect(lead.id, !!checked)
+              if (isSelectable) onSelect(lead.id, !!checked)
             }}
             aria-label={`Select ${lead.company_name ?? 'lead'}`}
             className="size-4"
@@ -157,14 +161,24 @@ export function LeadCard({
         className="mt-3 flex justify-end gap-2 opacity-85 transition-opacity group-hover:opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <Button
-          size="sm"
-          disabled={!isReviewable}
-          className="rounded-full px-3 shadow-sm shadow-primary/15"
-          onClick={() => onApprove(lead.id)}
-        >
-          Approve Lead
-        </Button>
+        {isMoveableToReview ? (
+          <Button
+            size="sm"
+            className="rounded-full px-3 shadow-sm shadow-primary/15"
+            onClick={() => onMoveToReview(lead.id)}
+          >
+            Move to Review
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            disabled={!isReviewable}
+            className="rounded-full px-3 shadow-sm shadow-primary/15"
+            onClick={() => onApprove(lead.id)}
+          >
+            Approve Lead
+          </Button>
+        )}
         <RejectPopover
           leadId={lead.id}
           open={isRejectOpen}

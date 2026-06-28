@@ -1155,7 +1155,7 @@ export interface components {
         };
         /**
          * BulkActionRequest
-         * @description D-06 (BD-REVIEW-02): bulk approve, reject, or snooze a set of leads.
+         * @description D-06 (BD-REVIEW-02): bulk approve, reject, snooze, or move suppressed leads back to review.
          *
          *     - action="approve": sets CompanyLead.status -> outreach_approved (requires status==review_queue)
          *     - action="reject": dual-write -- CompanyLead.rejection_reason + SuppressedLead row (D-08);
@@ -1168,7 +1168,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "approve" | "reject" | "snooze";
+            action: "approve" | "reject" | "snooze" | "move_to_review";
             /** Lead Ids */
             lead_ids: string[];
             /** Rejection Reason */
