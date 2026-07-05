@@ -18,6 +18,12 @@ out/
 .env.local
 .env.*.local
 
+# Terraform local state and machine-specific inputs
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/terraform.tfvars
+
 # Turborepo
 .turbo/
 

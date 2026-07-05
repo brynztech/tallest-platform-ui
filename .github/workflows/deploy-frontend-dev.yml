@@ -1,0 +1,135 @@
+name: Deploy Frontend Dev
+
+on:
+  push:
+    branches:
+      - frontend-dev
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-dev-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy frontend dev EC2
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - name: Configure SSH key
+        env:
+          FRONTEND_DEV_SSH_KEY: ${{ secrets.FRONTEND_DEV_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$FRONTEND_DEV_SSH_KEY" > ~/.ssh/frontend-dev
+          chmod 600 ~/.ssh/frontend-dev
+
+      - name: Add EC2 host key
+        env:
+          FRONTEND_DEV_HOST: ${{ secrets.FRONTEND_DEV_HOST }}
+        run: |
+          set -euo pipefail
+          ssh-keyscan -H "$FRONTEND_DEV_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy apps
+        env:
+          FRONTEND_DEV_HOST: ${{ secrets.FRONTEND_DEV_HOST }}
+          FRONTEND_DEV_SSH_USER: ${{ secrets.FRONTEND_DEV_SSH_USER || 'ubuntu' }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.DEV_NEXT_PUBLIC_API_URL }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/frontend-dev "$FRONTEND_DEV_SSH_USER@$FRONTEND_DEV_HOST" \
+            "FRONTEND_BRANCH=frontend-dev NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          REPO_URL="https://github.com/bhuvan777/talent-platform-ui.git"
+          APP_DIR="/opt/brynzit/talent-platform-ui"
+          PNPM_HOME="/home/ubuntu/.local/share/pnpm"
+
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl git
+
+          if ! command -v node >/dev/null 2>&1; then
+            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+          fi
+
+          corepack enable
+          corepack prepare pnpm@11.6.0 --activate
+
+          sudo mkdir -p /opt/brynzit
+          sudo chown -R "$USER:$USER" /opt/brynzit
+
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone "$REPO_URL" "$APP_DIR"
+          fi
+
+          cd "$APP_DIR"
+          git fetch origin "$FRONTEND_BRANCH"
+          git checkout "$FRONTEND_BRANCH"
+          git reset --hard "origin/$FRONTEND_BRANCH"
+
+          cat > apps/web/.env.production <<EOF
+          NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+          NEXT_PUBLIC_API_MOCKING=disabled
+          EOF
+
+          cat > apps/console/.env.production <<EOF
+          NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+          NEXT_PUBLIC_API_MOCKING=disabled
+          EOF
+
+          pnpm install --frozen-lockfile
+          pnpm --filter @brynzit/web build
+          pnpm --filter @brynzit/console build
+
+          sudo tee /etc/systemd/system/brynzit-web.service >/dev/null <<'EOF'
+          [Unit]
+          Description=Brynzit public web app
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/opt/brynzit/talent-platform-ui
+          Environment=NODE_ENV=production
+          Environment=PNPM_HOME=/home/ubuntu/.local/share/pnpm
+          Environment=PATH=/home/ubuntu/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin
+          ExecStart=/usr/bin/env bash -lc 'pnpm --filter @brynzit/web start -- -p 3000'
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          sudo tee /etc/systemd/system/brynzit-console.service >/dev/null <<'EOF'
+          [Unit]
+          Description=Brynzit console app
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/opt/brynzit/talent-platform-ui
+          Environment=NODE_ENV=production
+          Environment=PNPM_HOME=/home/ubuntu/.local/share/pnpm
+          Environment=PATH=/home/ubuntu/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin
+          ExecStart=/usr/bin/env bash -lc 'pnpm --filter @brynzit/console start -- -p 3001'
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable brynzit-web brynzit-console
+          sudo systemctl restart brynzit-web brynzit-console
+
+          sleep 5
+          curl -fsS http://localhost:3000 >/dev/null
+          curl -fsS http://localhost:3001 >/dev/null
+          REMOTE

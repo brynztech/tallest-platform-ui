@@ -1,0 +1,14 @@
+key_name = "brynzit-dev-key"
+
+# Replace with your current IP/CIDR before planning.
+ssh_allowed_cidrs = ["203.0.113.10/32"]
+
+# Dev app ports are public by default because there are no domains or load balancers yet.
+frontend_allowed_cidrs = ["0.0.0.0/0"]
+backend_allowed_cidrs  = ["0.0.0.0/0"]
+
+frontend_instance_type = "t3.small"
+backend_instance_type  = "t3.medium"
+
+frontend_root_volume_size_gb = 30
+backend_root_volume_size_gb  = 80
