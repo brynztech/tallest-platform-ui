@@ -10,6 +10,9 @@ concurrency:
   group: frontend-dev-deploy
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy frontend dev EC2
@@ -37,16 +40,18 @@ jobs:
         env:
           FRONTEND_DEV_HOST: ${{ secrets.FRONTEND_DEV_HOST }}
           FRONTEND_DEV_SSH_USER: ${{ secrets.FRONTEND_DEV_SSH_USER || 'ubuntu' }}
+          GITHUB_TOKEN: ${{ github.token }}
           NEXT_PUBLIC_API_URL: ${{ secrets.DEV_NEXT_PUBLIC_API_URL }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/frontend-dev "$FRONTEND_DEV_SSH_USER@$FRONTEND_DEV_HOST" \
-            "FRONTEND_BRANCH=frontend-dev NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' bash -s" <<'REMOTE'
+            "FRONTEND_BRANCH=frontend-dev GITHUB_TOKEN='$GITHUB_TOKEN' NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' bash -s" <<'REMOTE'
           set -euo pipefail
 
           REPO_URL="https://github.com/bhuvan777/talent-platform-ui.git"
           APP_DIR="/opt/brynzit/talent-platform-ui"
           PNPM_HOME="/home/ubuntu/.local/share/pnpm"
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
 
           sudo apt-get update
           sudo apt-get install -y ca-certificates curl git
@@ -56,18 +61,18 @@ jobs:
             sudo apt-get install -y nodejs
           fi
 
-          corepack enable
-          corepack prepare pnpm@11.6.0 --activate
+          sudo corepack enable
+          sudo corepack prepare pnpm@11.6.0 --activate
 
           sudo mkdir -p /opt/brynzit
           sudo chown -R "$USER:$USER" /opt/brynzit
 
           if [ ! -d "$APP_DIR/.git" ]; then
-            git clone "$REPO_URL" "$APP_DIR"
+            git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $AUTH_HEADER" clone "$REPO_URL" "$APP_DIR"
           fi
 
           cd "$APP_DIR"
-          git fetch origin "$FRONTEND_BRANCH"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $AUTH_HEADER" fetch origin "$FRONTEND_BRANCH"
           git checkout "$FRONTEND_BRANCH"
           git reset --hard "origin/$FRONTEND_BRANCH"
 
