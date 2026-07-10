@@ -1,6 +1,5 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@brynzit/ui/components/ui/tabs'
 import { AdminOverviewTab } from './admin-overview-tab'
@@ -21,20 +20,7 @@ export function AdminContent() {
   // WR-06: whitelist tab values so arbitrary URL params can't be injected
   const activeTab = (VALID_TABS as readonly string[]).includes(rawTab) ? rawTab : 'overview'
 
-  const isPromptsDirtyRef = useRef(false)
-  const handlePromptsDirtyChange = useCallback((dirty: boolean) => {
-    isPromptsDirtyRef.current = dirty
-  }, [])
-
   function handleTabChange(value: string) {
-    // CR-03: guard in-app tab navigation when prompt editor has unsaved changes
-    if (isPromptsDirtyRef.current && activeTab === 'prompts') {
-      const shouldDiscard = window.confirm(
-        'You have unsaved prompt changes. Discard them and switch tabs?',
-      )
-      if (!shouldDiscard) return
-      isPromptsDirtyRef.current = false
-    }
     router.push(`${pathname}?tab=${value}`)
   }
 
@@ -68,8 +54,8 @@ export function AdminContent() {
         <TabsContent value="pipeline">
           <AdminPipelineTab />
         </TabsContent>
-        <TabsContent value="prompts">
-          <AdminPromptsTab onDirtyChange={handlePromptsDirtyChange} />
+        <TabsContent value="prompts" forceMount>
+          <AdminPromptsTab />
         </TabsContent>
         <TabsContent value="candidates">
           <AdminCandidatesTab />

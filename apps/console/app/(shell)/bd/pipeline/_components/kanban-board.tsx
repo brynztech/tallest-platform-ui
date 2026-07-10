@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
+  DragOverlay,
 } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import {
   SortableContext,
   sortableKeyboardCoordinates,
@@ -65,7 +66,7 @@ interface KanbanCardProps {
 }
 
 function KanbanCard({ lead }: KanbanCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
   })
 
@@ -75,8 +76,24 @@ function KanbanCard({ lead }: KanbanCardProps) {
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      className="flex h-14 cursor-grab items-center gap-2 rounded-xl border border-border/70 bg-card/80 px-3 shadow-sm shadow-black/10 transition-[border-color,background-color,box-shadow,transform] hover:-translate-y-px hover:border-primary/25 hover:bg-card hover:shadow-lg hover:shadow-black/15 active:cursor-grabbing"
+      className={cn(
+        'flex h-14 cursor-grab items-center gap-2 rounded-xl border border-border/70 bg-card/80 px-3 shadow-sm shadow-black/10 transition-[border-color,background-color,box-shadow,transform,opacity] hover:-translate-y-px hover:border-primary/25 hover:bg-card hover:shadow-lg hover:shadow-black/15 active:cursor-grabbing',
+        isDragging && 'opacity-40',
+      )}
     >
+      <Badge className={cn('shrink-0 px-2 py-0.5 text-xs', icpBadgeClass(lead.icp_score))}>
+        {lead.icp_score ?? '—'}
+      </Badge>
+      <span className="flex-1 truncate text-sm font-semibold">
+        {lead.company_name ?? 'Unknown'}
+      </span>
+    </div>
+  )
+}
+
+function KanbanCardDragOverlay({ lead }: KanbanCardProps) {
+  return (
+    <div className="flex h-14 cursor-grabbing items-center gap-2 rounded-xl border border-primary/30 bg-card px-3 shadow-xl shadow-black/20 ring-1 ring-primary/20">
       <Badge className={cn('shrink-0 px-2 py-0.5 text-xs', icpBadgeClass(lead.icp_score))}>
         {lead.icp_score ?? '—'}
       </Badge>
@@ -103,7 +120,7 @@ function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
           {PIPELINE_STATUS_LABELS[column.status] ?? column.status}
         </span>
         <Badge variant="secondary" className="border-border/60 bg-secondary/70 text-xs text-muted-foreground">
-          {column.count}
+          {leads.length}
         </Badge>
       </div>
       <SortableContext items={leadIds} strategy={verticalListSortingStrategy}>
@@ -144,67 +161,37 @@ export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveL
     Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])),
   )
 
+  // Track the active (dragged) lead so DragOverlay can render it
+  const [activeLead, setActiveLead] = useState<KanbanLeadItem | null>(null)
+
   // Track whether a drag is in progress so we don't clobber an in-flight drag
   // with a background refetch from PipelinePage's 15-second polling interval.
-  const [isDragging, setIsDragging] = useState(false)
+  const isDraggingRef = useRef(false)
 
   // Sync local state when the parent delivers fresh polling data.
   // useState's initialiser only runs on mount, so without this effect the
   // board ignores all subsequent prop updates and polling is effectively useless.
   useEffect(() => {
-    if (!isDragging) {
+    if (!isDraggingRef.current) {
       setColumns(Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])))
     }
-  }, [initialColumns, isDragging])
+  }, [initialColumns])
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      // Require 8px of movement before a drag starts — prevents accidental
+      // drags when the user just wants to click a card.
+      activationConstraint: { distance: 8 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    // Find which column contains the dragged item
-    const sourceEntry = Object.entries(columns).find(([, leads]) =>
-      leads.some((l) => l.id === active.id),
-    )
-    if (!sourceEntry) return
-
-    const [sourceStatus, colLeads] = sourceEntry
-    const targetStatus = findTargetStatus(String(over.id))
-    if (!targetStatus) return
-
-    if (targetStatus !== sourceStatus) {
-      const action = SUPPORTED_MOVES[sourceStatus]?.[targetStatus]
-      if (!action || !onMoveLead) {
-        toast.info('That pipeline move is not supported from this board yet.')
-        return
-      }
-
-      const lead = colLeads.find((l) => l.id === active.id)
-      if (!lead) return
-
-      setColumns((prev) => ({
-        ...prev,
-        [sourceStatus]: (prev[sourceStatus] ?? []).filter((l) => l.id !== active.id),
-        [targetStatus]: [lead, ...(prev[targetStatus] ?? [])],
-      }))
-      onMoveLead(String(active.id), action)
-      return
+  function findLeadById(id: string): KanbanLeadItem | undefined {
+    for (const leads of Object.values(columns)) {
+      const found = leads.find((l) => l.id === id)
+      if (found) return found
     }
-
-    const oldIndex = colLeads.findIndex((l) => l.id === active.id)
-    const newIndex = colLeads.findIndex((l) => l.id === over.id)
-
-    if (oldIndex === -1 || newIndex === -1) return
-
-    // Visual-only reorder — no API call fired
-    setColumns((prev) => ({
-      ...prev,
-      [sourceStatus]: arrayMove(colLeads, oldIndex, newIndex),
-    }))
+    return undefined
   }
 
   function findTargetStatus(overId: string) {
@@ -214,16 +201,94 @@ export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveL
     return Object.entries(columns).find(([, leads]) => leads.some((l) => l.id === overId))?.[0] ?? null
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    isDraggingRef.current = true
+    const lead = findLeadById(String(event.active.id))
+    setActiveLead(lead ?? null)
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const sourceStatus = findTargetStatus(String(active.id))
+    const targetStatus = findTargetStatus(String(over.id))
+
+    if (!sourceStatus || !targetStatus || sourceStatus === targetStatus) return
+
+    // Move the card into the target column visually during drag
+    setColumns((prev) => {
+      const lead = (prev[sourceStatus] ?? []).find((l) => l.id === active.id)
+      if (!lead) return prev
+
+      const overIndex = (prev[targetStatus] ?? []).findIndex((l) => l.id === over.id)
+      const insertAt = overIndex >= 0 ? overIndex : (prev[targetStatus] ?? []).length
+
+      const newTarget = [...(prev[targetStatus] ?? [])]
+      newTarget.splice(insertAt, 0, lead)
+
+      return {
+        ...prev,
+        [sourceStatus]: (prev[sourceStatus] ?? []).filter((l) => l.id !== active.id),
+        [targetStatus]: newTarget,
+      }
+    })
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    isDraggingRef.current = false
+    setActiveLead(null)
+
+    if (!over || active.id === over.id) return
+
+    const sourceStatus = findTargetStatus(String(active.id))
+    const targetStatus = findTargetStatus(String(over.id))
+
+    if (!sourceStatus || !targetStatus) return
+
+    if (targetStatus !== sourceStatus) {
+      // Cross-column move — check API support
+      const action = SUPPORTED_MOVES[sourceStatus]?.[targetStatus]
+      if (!action || !onMoveLead) {
+        toast.info('That pipeline move is not supported from this board yet.')
+        // Revert optimistic update from onDragOver
+        setColumns(Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])))
+        return
+      }
+      onMoveLead(String(active.id), action)
+      return
+    }
+
+    // Same-column reorder — visual only, no API call
+    const colLeads = columns[sourceStatus] ?? []
+    const oldIndex = colLeads.findIndex((l) => l.id === active.id)
+    const newIndex = colLeads.findIndex((l) => l.id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+
+    setColumns((prev) => ({
+      ...prev,
+      [sourceStatus]: arrayMove(colLeads, oldIndex, newIndex),
+    }))
+  }
+
+  function handleDragCancel() {
+    isDraggingRef.current = false
+    setActiveLead(null)
+    // Revert any optimistic updates from onDragOver
+    setColumns(Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])))
+  }
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={() => !isMoving && setIsDragging(true)}
-      onDragEnd={(event) => {
-        setIsDragging(false)
-        if (!isMoving) handleDragEnd(event)
-      }}
-      onDragCancel={() => setIsDragging(false)}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={!isMoving ? handleDragOver : undefined}
+      onDragEnd={!isMoving ? handleDragEnd : handleDragCancel}
+      onDragCancel={handleDragCancel}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {initialColumns.map((col) => (
@@ -234,6 +299,9 @@ export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveL
           />
         ))}
       </div>
+      <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
+        {activeLead ? <KanbanCardDragOverlay lead={activeLead} /> : null}
+      </DragOverlay>
     </DndContext>
   )
 }
