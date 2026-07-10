@@ -8,6 +8,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
 import { UploadCloud } from 'lucide-react'
 import type { IngestJob } from './ingest-job-card'
+import { createClientId } from '../_lib/client-id'
 
 interface CsvFormProps {
   onJobAdded: (job: IngestJob) => void
@@ -54,7 +55,7 @@ export function CsvForm({ onJobAdded }: CsvFormProps) {
       setFile(null)
       toast.success(`Imported ${data.imported} candidates.`)
       onJobAdded({
-        id: crypto.randomUUID(),
+        id: createClientId(),
         type: 'csv',
         label: 'CSV Import',
         status: 'done',

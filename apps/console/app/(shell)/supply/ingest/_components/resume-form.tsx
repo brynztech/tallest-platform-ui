@@ -9,6 +9,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
 import { UploadCloud } from 'lucide-react'
 import type { IngestJob } from './ingest-job-card'
+import { createClientId } from '../_lib/client-id'
 import { isResumeParsingComplete } from '../_lib/resume-status'
 
 const MAX_POLL_DURATION_MS = 60_000
@@ -64,7 +65,7 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
       }
 
       const data = (await res.json()) as components['schemas']['ResumeUploadResponse']
-      const jobId = crypto.randomUUID()
+      const jobId = createClientId()
       const fileName = file.name
 
       setFile(null)

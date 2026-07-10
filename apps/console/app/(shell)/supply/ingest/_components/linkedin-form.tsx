@@ -11,6 +11,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import type { IngestJob } from './ingest-job-card'
+import { createClientId } from '../_lib/client-id'
 
 const schema = z.object({
   linkedin_url: z
@@ -48,7 +49,7 @@ export function LinkedInForm({ onJobAdded }: LinkedInFormProps) {
       reset()
       toast.success(`Candidate added: ${result?.name ?? 'unknown'}.`)
       onJobAdded({
-        id: crypto.randomUUID(),
+        id: createClientId(),
         type: 'linkedin',
         label: 'LinkedIn',
         status: 'done',

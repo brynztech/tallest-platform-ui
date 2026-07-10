@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createClientId } from '../../app/(shell)/supply/ingest/_lib/client-id'
 import { isResumeParsingComplete } from '../../app/(shell)/supply/ingest/_lib/resume-status'
 
 describe('Supply — Ingest (SUP-03)', () => {
@@ -33,6 +34,22 @@ describe('Supply — Ingest (SUP-03)', () => {
         },
       }),
     ).toBe(true)
+  })
+  it('creates a local job id when crypto.randomUUID is unavailable', () => {
+    const originalCrypto = globalThis.crypto
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: {},
+    })
+
+    try {
+      expect(createClientId()).toMatch(/^job-[a-z0-9]+-[a-z0-9]+$/)
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: originalCrypto,
+      })
+    }
   })
   it.todo('Zod validates linkedin_url format before submit')
 })
