@@ -8,6 +8,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import {
@@ -22,6 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { cn } from '@brynzit/ui/lib/utils'
+import { toast } from 'sonner'
 
 type KanbanLeadItem = {
   id: string
@@ -35,6 +37,8 @@ type KanbanColumn = {
   count: number
   leads: KanbanLeadItem[]
 }
+
+type PipelineMoveAction = 'approve' | 'move_to_review'
 
 const PIPELINE_STATUS_LABELS: Record<string, string> = {
   discovered: 'Discovered',
@@ -90,6 +94,7 @@ interface KanbanColumnProps {
 
 function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
   const leadIds = leads.map((l) => l.id)
+  const { setNodeRef, isOver } = useDroppable({ id: column.status })
 
   return (
     <div className="flex min-w-[260px] flex-col gap-2">
@@ -102,7 +107,13 @@ function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
         </Badge>
       </div>
       <SortableContext items={leadIds} strategy={verticalListSortingStrategy}>
-        <div className="flex min-h-[60px] flex-col gap-1.5">
+        <div
+          ref={setNodeRef}
+          className={cn(
+            'flex min-h-[60px] flex-col gap-1.5 rounded-xl border border-transparent p-1 transition-colors',
+            isOver && 'border-primary/40 bg-primary/5',
+          )}
+        >
           {leads.map((lead) => (
             <KanbanCard key={lead.id} lead={lead} />
           ))}
@@ -114,9 +125,20 @@ function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
 
 export interface KanbanBoardProps {
   columns: KanbanColumn[]
+  isMoving?: boolean
+  onMoveLead?: (leadId: string, action: PipelineMoveAction) => void
 }
 
-export function KanbanBoard({ columns: initialColumns }: KanbanBoardProps) {
+const SUPPORTED_MOVES: Record<string, Partial<Record<string, PipelineMoveAction>>> = {
+  review_queue: {
+    outreach_approved: 'approve',
+  },
+  suppressed: {
+    review_queue: 'move_to_review',
+  },
+}
+
+export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveLead }: KanbanBoardProps) {
   // Local state for visual-only reordering — no API persistence (visual drag only)
   const [columns, setColumns] = useState<Record<string, KanbanLeadItem[]>>(
     Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])),
@@ -150,7 +172,29 @@ export function KanbanBoard({ columns: initialColumns }: KanbanBoardProps) {
     )
     if (!sourceEntry) return
 
-    const [colStatus, colLeads] = sourceEntry
+    const [sourceStatus, colLeads] = sourceEntry
+    const targetStatus = findTargetStatus(String(over.id))
+    if (!targetStatus) return
+
+    if (targetStatus !== sourceStatus) {
+      const action = SUPPORTED_MOVES[sourceStatus]?.[targetStatus]
+      if (!action || !onMoveLead) {
+        toast.info('That pipeline move is not supported from this board yet.')
+        return
+      }
+
+      const lead = colLeads.find((l) => l.id === active.id)
+      if (!lead) return
+
+      setColumns((prev) => ({
+        ...prev,
+        [sourceStatus]: (prev[sourceStatus] ?? []).filter((l) => l.id !== active.id),
+        [targetStatus]: [lead, ...(prev[targetStatus] ?? [])],
+      }))
+      onMoveLead(String(active.id), action)
+      return
+    }
+
     const oldIndex = colLeads.findIndex((l) => l.id === active.id)
     const newIndex = colLeads.findIndex((l) => l.id === over.id)
 
@@ -159,16 +203,26 @@ export function KanbanBoard({ columns: initialColumns }: KanbanBoardProps) {
     // Visual-only reorder — no API call fired
     setColumns((prev) => ({
       ...prev,
-      [colStatus]: arrayMove(colLeads, oldIndex, newIndex),
+      [sourceStatus]: arrayMove(colLeads, oldIndex, newIndex),
     }))
+  }
+
+  function findTargetStatus(overId: string) {
+    if (Object.prototype.hasOwnProperty.call(columns, overId)) {
+      return overId
+    }
+    return Object.entries(columns).find(([, leads]) => leads.some((l) => l.id === overId))?.[0] ?? null
   }
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={(event) => { setIsDragging(false); handleDragEnd(event) }}
+      onDragStart={() => !isMoving && setIsDragging(true)}
+      onDragEnd={(event) => {
+        setIsDragging(false)
+        if (!isMoving) handleDragEnd(event)
+      }}
       onDragCancel={() => setIsDragging(false)}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">

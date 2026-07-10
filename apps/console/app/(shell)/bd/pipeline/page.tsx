@@ -1,10 +1,13 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
+import type { components } from '@brynzit/api-client'
 import { KanbanBoard } from './_components/kanban-board'
+import { toast } from 'sonner'
 
 export default function PipelinePage() {
+  const queryClient = useQueryClient()
   const { data, isLoading, error } = useQuery({
     queryKey: ['pipeline'],
     queryFn: async () => {
@@ -14,6 +17,24 @@ export default function PipelinePage() {
     },
     // Poll every 15 seconds for live pipeline counts (BD-06)
     refetchInterval: 15_000,
+  })
+
+  const moveMutation = useMutation({
+    mutationFn: (body: components['schemas']['BulkActionRequest']) =>
+      apiClient.POST('/api/v1/bd/leads/bulk-action', { body }),
+    onSuccess: (response) => {
+      if (response.data?.failed) {
+        toast.error('Move failed for this lead.')
+      } else {
+        toast.success('Lead moved.')
+      }
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+    onError: () => {
+      toast.error('Move failed — pipeline restored.')
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] })
+    },
   })
 
   if (isLoading) {
@@ -38,7 +59,16 @@ export default function PipelinePage() {
         <h1 className="text-xl font-semibold">Pipeline</h1>
       </div>
       {data?.columns && (
-        <KanbanBoard columns={data.columns} />
+        <KanbanBoard
+          columns={data.columns}
+          isMoving={moveMutation.isPending}
+          onMoveLead={(leadId, action) => {
+            moveMutation.mutate({
+              action,
+              lead_ids: [leadId],
+            })
+          }}
+        />
       )}
     </div>
   )

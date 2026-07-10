@@ -3,7 +3,6 @@
 import { useCallback, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@brynzit/ui/components/ui/tabs'
-import { toast } from 'sonner'
 import { AdminOverviewTab } from './admin-overview-tab'
 import { AdminCostsTab } from './admin-costs-tab'
 import { AdminEventsTab } from './admin-events-tab'
@@ -30,17 +29,11 @@ export function AdminContent() {
   function handleTabChange(value: string) {
     // CR-03: guard in-app tab navigation when prompt editor has unsaved changes
     if (isPromptsDirtyRef.current && activeTab === 'prompts') {
-      toast('Unsaved prompt changes — save or discard before switching tabs.', {
-        duration: 5000,
-        action: {
-          label: 'Discard & switch',
-          onClick: () => {
-            isPromptsDirtyRef.current = false
-            router.push(`${pathname}?tab=${value}`)
-          },
-        },
-      })
-      return
+      const shouldDiscard = window.confirm(
+        'You have unsaved prompt changes. Discard them and switch tabs?',
+      )
+      if (!shouldDiscard) return
+      isPromptsDirtyRef.current = false
     }
     router.push(`${pathname}?tab=${value}`)
   }
