@@ -10,14 +10,11 @@ import { cn } from '@brynzit/ui/lib/utils'
 import { toast } from 'sonner'
 import { RotateCcw, Save } from 'lucide-react'
 
-// NOTE: No GET /monitoring/prompts list endpoint exists. These names are hardcoded.
-// Verify against live backend PROMPT_REGISTRY before going to production.
-const KNOWN_PROMPTS = [
-  'icp_scoring',
-  'outreach_generation',
-  'jd_parse',
-  'engagement_generation',
-]
+type PromptListItem = {
+  name: string
+  path: string
+  versions: string[]
+}
 
 interface AdminPromptsTabProps {
   onDirtyChange?: (dirty: boolean) => void
@@ -27,6 +24,20 @@ export function AdminPromptsTab({ onDirtyChange }: AdminPromptsTabProps = {}) {
   const [selectedPromptName, setSelectedPromptName] = useState<string | null>(null)
   const [editedContent, setEditedContent] = useState('')
   const queryClient = useQueryClient()
+
+  const { data: prompts = [], isLoading: isLoadingPrompts } = useQuery({
+    queryKey: ['prompts'],
+    queryFn: async () => {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/monitoring/prompts`,
+      )
+      if (!response.ok) {
+        throw new Error(`Failed to load prompts (${response.status})`)
+      }
+      return (await response.json()) as PromptListItem[]
+    },
+    staleTime: 5 * 60 * 1000,
+  })
 
   const { data: promptData, isLoading } = useQuery({
     queryKey: ['prompt', selectedPromptName],
@@ -77,6 +88,7 @@ export function AdminPromptsTab({ onDirtyChange }: AdminPromptsTabProps = {}) {
     onSuccess: () => {
       toast.success('Prompt saved.')
       queryClient.invalidateQueries({ queryKey: ['prompt', selectedPromptName] })
+      queryClient.invalidateQueries({ queryKey: ['prompts'] })
     },
     onError: () => toast.error('Failed to save prompt — try again.'),
   })
@@ -114,7 +126,13 @@ export function AdminPromptsTab({ onDirtyChange }: AdminPromptsTabProps = {}) {
           </span>
         </div>
         <div className="flex flex-col">
-          {KNOWN_PROMPTS.map((name) => {
+          {isLoadingPrompts && (
+            <span className="px-3 py-3 text-sm text-muted-foreground">Loading prompts…</span>
+          )}
+          {!isLoadingPrompts && prompts.length === 0 && (
+            <span className="px-3 py-3 text-sm text-muted-foreground">No prompts registered.</span>
+          )}
+          {prompts.map(({ name, path }) => {
             const isActive = selectedPromptName === name
             const showDot = isActive && isDirty
             return (
@@ -129,7 +147,10 @@ export function AdminPromptsTab({ onDirtyChange }: AdminPromptsTabProps = {}) {
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                 )}
               >
-                <span className="flex-1 truncate text-sm">{name}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">{name}</span>
+                  <span className="block truncate text-xs text-muted-foreground/75">{path}</span>
+                </span>
                 {showDot && (
                   <span className="size-1.5 flex-shrink-0 rounded-full bg-[oklch(0.769_0.188_85.87)]" />
                 )}
@@ -151,6 +172,11 @@ export function AdminPromptsTab({ onDirtyChange }: AdminPromptsTabProps = {}) {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-semibold">{selectedPromptName}</h2>
+                {prompts.find((prompt) => prompt.name === selectedPromptName)?.path && (
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">
+                    {prompts.find((prompt) => prompt.name === selectedPromptName)?.path}
+                  </p>
+                )}
                 {promptData?.versions && promptData.versions.length > 0 && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     Versions: {promptData.versions.join(', ')}
