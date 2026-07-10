@@ -20,6 +20,13 @@ function icpBadgeClass(score: number | null) {
   return 'bg-muted text-muted-foreground'
 }
 
+type IcpSignalBreakdown = {
+  score?: unknown
+  weight?: unknown
+  source?: unknown
+  delta?: unknown
+}
+
 interface LeadDetailPanelProps {
   leadId: string | null
   isOpen: boolean
@@ -206,10 +213,12 @@ export function LeadDetailPanel({
                       ICP Breakdown
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {Object.entries(data.icp_breakdown as Record<string, number>).map(([key, val]) => (
+                      {Object.entries(data.icp_breakdown as Record<string, IcpSignalBreakdown>).map(([key, val]) => (
                         <div key={key} className="flex items-center justify-between gap-3 text-sm">
                           <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
-                          <span className="font-semibold">{Math.round(Number(val) * 100)}%</span>
+                          <span className="text-right font-semibold">
+                            {formatIcpBreakdownValue(val)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -222,4 +231,21 @@ export function LeadDetailPanel({
       </SheetContent>
     </Sheet>
   )
+}
+
+function formatIcpBreakdownValue(value: IcpSignalBreakdown) {
+  const delta = toNumber(value?.delta)
+  if (delta !== null) return `${delta > 0 ? '+' : ''}${delta} pts`
+
+  const score = toNumber(value?.score)
+  if (score === null) return '—'
+
+  const weight = toNumber(value?.weight)
+  if (weight === null) return `${Math.round(score)}%`
+
+  return `${Math.round(score)}% · ${(score * weight).toFixed(1)} pts`
+}
+
+function toNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
