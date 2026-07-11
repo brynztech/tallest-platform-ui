@@ -17,14 +17,15 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable,
-  arrayMove,
 } from '@dnd-kit/sortable'
 // IMPORTANT: Import from '@dnd-kit/sortable' — NOT '@dnd-kit/react/sortable'
 // @dnd-kit/react is the 0.5.x pre-release rewrite; use stable v6 + v7 sortable API
 import { CSS } from '@dnd-kit/utilities'
 import { Badge } from '@brynzit/ui/components/ui/badge'
+import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
 import { toast } from 'sonner'
+import { X } from 'lucide-react'
 
 type KanbanLeadItem = {
   id: string
@@ -63,9 +64,11 @@ function icpBadgeClass(score: number | null): string {
 
 interface KanbanCardProps {
   lead: KanbanLeadItem
+  onCardClick?: (lead: KanbanLeadItem) => void
+  onCardReject?: (lead: KanbanLeadItem) => void
 }
 
-function KanbanCard({ lead }: KanbanCardProps) {
+function KanbanCard({ lead, onCardClick, onCardReject }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
   })
@@ -76,17 +79,32 @@ function KanbanCard({ lead }: KanbanCardProps) {
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
       {...listeners}
+      // onClick fires only on a click (no drag), because the 8px activationConstraint
+      // means any real drag never completes as a click gesture.
+      onClick={() => onCardClick?.(lead)}
       className={cn(
-        'flex h-14 cursor-grab items-center gap-2 rounded-xl border border-border/70 bg-card/80 px-3 shadow-sm shadow-black/10 transition-[border-color,background-color,box-shadow,transform,opacity] hover:-translate-y-px hover:border-primary/25 hover:bg-card hover:shadow-lg hover:shadow-black/15 active:cursor-grabbing',
+        'group flex h-14 cursor-pointer items-center gap-2 rounded-xl border border-border/70 bg-card/80 px-3 shadow-sm shadow-black/10 transition-[border-color,background-color,box-shadow,transform,opacity] hover:-translate-y-px hover:border-primary/25 hover:bg-card hover:shadow-lg hover:shadow-black/15',
         isDragging && 'opacity-40',
       )}
     >
-      <Badge className={cn('shrink-0 px-2 py-0.5 text-xs', icpBadgeClass(lead.icp_score))}>
-        {lead.icp_score ?? '—'}
+      <Badge className={cn('shrink-0 px-2 py-0.5 text-xs tabular-nums', icpBadgeClass(lead.icp_score))}>
+        {lead.icp_score !== null ? Math.round(lead.icp_score) : '—'}
       </Badge>
       <span className="flex-1 truncate text-sm font-semibold">
         {lead.company_name ?? 'Unknown'}
       </span>
+      {/* Quick reject — only visible on hover, stops propagation so it doesn't open the sheet */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 shrink-0 rounded-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+        onClick={(e) => {
+          e.stopPropagation()
+          onCardReject?.(lead)
+        }}
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
     </div>
   )
 }
@@ -94,8 +112,8 @@ function KanbanCard({ lead }: KanbanCardProps) {
 function KanbanCardDragOverlay({ lead }: KanbanCardProps) {
   return (
     <div className="flex h-14 cursor-grabbing items-center gap-2 rounded-xl border border-primary/30 bg-card px-3 shadow-xl shadow-black/20 ring-1 ring-primary/20">
-      <Badge className={cn('shrink-0 px-2 py-0.5 text-xs', icpBadgeClass(lead.icp_score))}>
-        {lead.icp_score ?? '—'}
+      <Badge className={cn('shrink-0 px-2 py-0.5 text-xs tabular-nums', icpBadgeClass(lead.icp_score))}>
+        {lead.icp_score !== null ? Math.round(lead.icp_score) : '—'}
       </Badge>
       <span className="flex-1 truncate text-sm font-semibold">
         {lead.company_name ?? 'Unknown'}
@@ -107,9 +125,11 @@ function KanbanCardDragOverlay({ lead }: KanbanCardProps) {
 interface KanbanColumnProps {
   column: KanbanColumn
   leads: KanbanLeadItem[]
+  onCardClick?: (lead: KanbanLeadItem) => void
+  onCardReject?: (lead: KanbanLeadItem) => void
 }
 
-function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
+function KanbanColumnComponent({ column, leads, onCardClick, onCardReject }: KanbanColumnProps) {
   const leadIds = leads.map((l) => l.id)
   const { setNodeRef, isOver } = useDroppable({ id: column.status })
 
@@ -132,7 +152,12 @@ function KanbanColumnComponent({ column, leads }: KanbanColumnProps) {
           )}
         >
           {leads.map((lead) => (
-            <KanbanCard key={lead.id} lead={lead} />
+            <KanbanCard
+              key={lead.id}
+              lead={lead}
+              onCardClick={onCardClick}
+              onCardReject={onCardReject}
+            />
           ))}
         </div>
       </SortableContext>
@@ -144,7 +169,11 @@ export interface KanbanBoardProps {
   columns: KanbanColumn[]
   isMoving?: boolean
   onMoveLead?: (leadId: string, action: PipelineMoveAction) => void
+  onCardClick?: (lead: KanbanLeadItem) => void
+  onCardReject?: (lead: KanbanLeadItem) => void
 }
+
+export type { KanbanLeadItem }
 
 const SUPPORTED_MOVES: Record<string, Partial<Record<string, PipelineMoveAction>>> = {
   review_queue: {
@@ -155,7 +184,7 @@ const SUPPORTED_MOVES: Record<string, Partial<Record<string, PipelineMoveAction>
   },
 }
 
-export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveLead }: KanbanBoardProps) {
+export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveLead, onCardClick, onCardReject }: KanbanBoardProps) {
   // Local state for visual-only reordering — no API persistence (visual drag only)
   const [columns, setColumns] = useState<Record<string, KanbanLeadItem[]>>(
     Object.fromEntries(initialColumns.map((col) => [col.status, col.leads])),
@@ -261,17 +290,8 @@ export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveL
       return
     }
 
-    // Same-column reorder — visual only, no API call
-    const colLeads = columns[sourceStatus] ?? []
-    const oldIndex = colLeads.findIndex((l) => l.id === active.id)
-    const newIndex = colLeads.findIndex((l) => l.id === over.id)
-
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
-
-    setColumns((prev) => ({
-      ...prev,
-      [sourceStatus]: arrayMove(colLeads, oldIndex, newIndex),
-    }))
+    // Same-column drop — no-op. There is no API endpoint to persist within-column order,
+    // so allowing visual reordering would be misleading (it reverts on every poll/refresh).
   }
 
   function handleDragCancel() {
@@ -296,6 +316,8 @@ export function KanbanBoard({ columns: initialColumns, isMoving = false, onMoveL
             key={col.status}
             column={col}
             leads={columns[col.status] ?? col.leads}
+            onCardClick={onCardClick}
+            onCardReject={onCardReject}
           />
         ))}
       </div>
