@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@brynzit/ui/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@brynzit/ui/components/ui/tabs'
 import { AdminOverviewTab } from './admin-overview-tab'
 import { AdminCostsTab } from './admin-costs-tab'
 import { AdminEventsTab } from './admin-events-tab'
@@ -11,6 +11,11 @@ import { AdminPromptsTab } from './admin-prompts-tab'
 import { AdminCandidatesTab } from './admin-candidates-tab'
 
 const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates'] as const
+type AdminTab = (typeof VALID_TABS)[number]
+
+function isAdminTab(value: string): value is AdminTab {
+  return (VALID_TABS as readonly string[]).includes(value)
+}
 
 export function AdminContent() {
   const searchParams = useSearchParams()
@@ -18,10 +23,32 @@ export function AdminContent() {
   const pathname = usePathname()
   const rawTab = searchParams.get('tab') ?? 'overview'
   // WR-06: whitelist tab values so arbitrary URL params can't be injected
-  const activeTab = (VALID_TABS as readonly string[]).includes(rawTab) ? rawTab : 'overview'
+  const activeTab: AdminTab = isAdminTab(rawTab) ? rawTab : 'overview'
 
   function handleTabChange(value: string) {
+    if (!isAdminTab(value)) return
     router.push(`${pathname}?tab=${value}`)
+  }
+
+  function renderActiveTab() {
+    switch (activeTab) {
+      case 'overview':
+        return <AdminOverviewTab onNavigate={handleTabChange} />
+      case 'costs':
+        return <AdminCostsTab />
+      case 'events':
+        return <AdminEventsTab />
+      case 'quotas':
+        return <AdminQuotasTab />
+      case 'pipeline':
+        return <AdminPipelineTab />
+      case 'prompts':
+        return <AdminPromptsTab />
+      case 'candidates':
+        return <AdminCandidatesTab />
+      default:
+        return <AdminOverviewTab onNavigate={handleTabChange} />
+    }
   }
 
   return (
@@ -39,28 +66,8 @@ export function AdminContent() {
           <TabsTrigger value="prompts">Prompts</TabsTrigger>
           <TabsTrigger value="candidates">Candidates</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview">
-          <AdminOverviewTab onNavigate={handleTabChange} />
-        </TabsContent>
-        <TabsContent value="costs">
-          <AdminCostsTab />
-        </TabsContent>
-        <TabsContent value="events">
-          <AdminEventsTab />
-        </TabsContent>
-        <TabsContent value="quotas">
-          <AdminQuotasTab />
-        </TabsContent>
-        <TabsContent value="pipeline">
-          <AdminPipelineTab />
-        </TabsContent>
-        <TabsContent value="prompts">
-          <AdminPromptsTab />
-        </TabsContent>
-        <TabsContent value="candidates">
-          <AdminCandidatesTab />
-        </TabsContent>
       </Tabs>
+      {renderActiveTab()}
     </div>
   )
 }
