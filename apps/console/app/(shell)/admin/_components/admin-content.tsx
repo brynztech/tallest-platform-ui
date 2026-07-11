@@ -54,7 +54,7 @@ export function AdminContent() {
         <TabsContent value="pipeline">
           <AdminPipelineTab />
         </TabsContent>
-        <TabsContent value="prompts" forceMount>
+        <TabsContent value="prompts">
           <AdminPromptsTab />
         </TabsContent>
         <TabsContent value="candidates">
