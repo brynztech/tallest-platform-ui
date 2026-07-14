@@ -15,9 +15,9 @@ export function TopNav() {
   )
 
   return (
-    <header className="border-border/70 bg-background/95 flex h-14 shrink-0 items-center border-b px-4 backdrop-blur">
+    <header className="flex h-14 shrink-0 items-center border-b border-border/70 bg-white/90 px-4 shadow-sm shadow-slate-200/70 backdrop-blur">
       <Link href="/dashboard" className="flex min-w-[210px] items-center gap-2">
-        <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg text-sm font-semibold">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20">
           B
         </span>
         <span className="flex min-w-0 flex-col">
@@ -29,7 +29,7 @@ export function TopNav() {
       </Link>
 
       {isInternalOps && (
-        <span className="ml-3 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+        <span className="ml-3 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           Internal Ops
         </span>
       )}
@@ -59,14 +59,14 @@ export function TopNav() {
         <button
           type="button"
           aria-label="Notifications"
-          className="border-border bg-card text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-8 items-center justify-center rounded-lg border transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2"
+          className="flex size-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground shadow-sm shadow-slate-200/60 transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Bell className="size-4" />
         </button>
         <button
           type="button"
           aria-label="Recruiter profile"
-          className="border-border bg-card text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-8 items-center justify-center rounded-full border transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2"
+          className="flex size-8 items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm shadow-slate-200/60 transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <UserCircle className="size-5" />
         </button>

@@ -3,6 +3,18 @@ import type { HttpHandler } from 'msw'
 import type { components } from '@brynzit/api-client'
 import { API_BASE } from '../base-url'
 
+const requisitionOverrides: Record<string, Partial<components['schemas']['RequisitionResponse']>> = {}
+
+function withRequisitionOverride(
+  requisition: components['schemas']['RequisitionResponse'],
+): components['schemas']['RequisitionResponse'] {
+  return {
+    ...requisition,
+    ...(requisitionOverrides[requisition.id] ?? {}),
+    id: requisition.id,
+  }
+}
+
 // Ops domain MSW handlers.
 // All 19 handlers covering clients, requisitions, interviews, and placements.
 // MSW-only handlers are marked with: // NOTE: MSW-only — no live backend endpoint
@@ -75,7 +87,7 @@ export const opsHandlers: HttpHandler[] = [
 
   // 5. GET /api/v1/ops/clients/:client_id/requisitions — list requisitions for a client
   http.get(`${API_BASE}/api/v1/ops/clients/:client_id/requisitions`, ({ params }) => {
-    return HttpResponse.json([
+    return HttpResponse.json(([
       {
         id: '00000000-0000-0000-0000-req000000001',
         client_id: params.client_id as string,
@@ -104,7 +116,7 @@ export const opsHandlers: HttpHandler[] = [
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-    ] satisfies components['schemas']['RequisitionResponse'][])
+    ] satisfies components['schemas']['RequisitionResponse'][]).map(withRequisitionOverride))
   }),
 
   // 6. GET /api/v1/ops/clients/:client_id/notes — list notes for a client
@@ -182,7 +194,8 @@ export const opsHandlers: HttpHandler[] = [
         updated_at: new Date().toISOString(),
       },
     ]
-    const filtered = clientId ? allReqs.filter((r) => r.client_id === clientId) : allReqs
+    const overridden = allReqs.map(withRequisitionOverride)
+    const filtered = clientId ? overridden.filter((r) => r.client_id === clientId) : overridden
     return HttpResponse.json(filtered)
   }),
 
@@ -217,7 +230,7 @@ export const opsHandlers: HttpHandler[] = [
         const id = params.req_id as string
         parsePollCounts[id] = (parsePollCounts[id] ?? 0) + 1
         const isParsed = parsePollCounts[id] >= 2
-        return HttpResponse.json({
+        return HttpResponse.json(withRequisitionOverride({
           id,
           client_id: '00000000-0000-0000-0000-client000001',
           title: 'Senior Backend Engineer',
@@ -230,7 +243,7 @@ export const opsHandlers: HttpHandler[] = [
           shortlist: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        } satisfies components['schemas']['RequisitionResponse'])
+        } satisfies components['schemas']['RequisitionResponse']))
       }),
     ]
   })(),
@@ -254,21 +267,27 @@ export const opsHandlers: HttpHandler[] = [
   // 11b. PATCH /api/v1/ops/requisitions/:req_id — update requisition fields
   // NOTE: MSW-only — no live PATCH /api/v1/ops/requisitions/{req_id} endpoint (api.d.ts patch?: never)
   http.patch(`${API_BASE}/api/v1/ops/requisitions/:req_id`, async ({ params, request }) => {
-    const body = await request.json() as Partial<components['schemas']['CreateRequisitionRequest']>
-    return HttpResponse.json({
-      id: params.req_id as string,
-      client_id: body.client_id ?? null,
-      title: body.title ?? 'Updated Requisition',
+    const body = await request.json() as Partial<components['schemas']['CreateRequisitionRequest']> & {
+      intake_details?: unknown
+    }
+    const id = params.req_id as string
+    const previous = requisitionOverrides[id] ?? {}
+    const updated: components['schemas']['RequisitionResponse'] = {
+      id,
+      client_id: body.client_id ?? previous.client_id ?? null,
+      title: body.title ?? previous.title ?? 'Updated Requisition',
       status: 'open',
-      skills: body.skills ?? [],
-      seniority: body.seniority ?? null,
-      compensation_range: body.compensation_range ?? null,
-      target_start_date: body.target_start_date ?? null,
-      intake_details: null,
+      skills: body.skills ?? previous.skills ?? [],
+      seniority: body.seniority ?? previous.seniority ?? null,
+      compensation_range: body.compensation_range ?? previous.compensation_range ?? null,
+      target_start_date: body.target_start_date ?? previous.target_start_date ?? null,
+      intake_details: body.intake_details ?? previous.intake_details ?? null,
       shortlist: null,
-      created_at: new Date().toISOString(),
+      created_at: previous.created_at ?? new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    } satisfies components['schemas']['RequisitionResponse'])
+    } satisfies components['schemas']['RequisitionResponse']
+    requisitionOverrides[updated.id] = updated
+    return HttpResponse.json(updated)
   }),
 
   // 12. POST /api/v1/ops/requisitions/:req_id/match — trigger candidate matching (202 async)

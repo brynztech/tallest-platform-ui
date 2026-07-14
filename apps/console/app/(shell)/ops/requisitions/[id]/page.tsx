@@ -11,6 +11,7 @@ import { Badge } from '@brynzit/ui/components/ui/badge'
 import Link from 'next/link'
 import { Trophy, Zap } from 'lucide-react'
 import { RequisitionFields } from './_components/requisition-fields'
+import { HiringProcessPanel } from './_components/hiring-process-panel'
 import { ShortlistTable } from './_components/shortlist-table'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
 import { InterviewsSection } from './_components/interviews-section'
@@ -150,6 +151,7 @@ export default function RequisitionDetailPage({
 
       {/* Section 1: Requisition Fields */}
       <RequisitionFields req={req} />
+      <HiringProcessPanel req={req} />
 
       {/* Trigger Match button */}
       <Button

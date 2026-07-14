@@ -17,6 +17,7 @@ import { Separator } from '@brynzit/ui/components/ui/separator'
 import { toast } from 'sonner'
 import { X, Sparkles, MapPin, Code2, Mail, CheckCircle, ExternalLink, Download, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CandidateRelationshipSection } from './candidate-relationship-section'
 
 interface CandidateProfileSheetProps {
   candidateId: string | null
@@ -66,7 +67,7 @@ export function CandidateProfileSheet({
   isOpen,
   onOpenChange,
   source = 'search',
-  requisitionId: _requisitionId,
+  requisitionId,
 }: CandidateProfileSheetProps) {
   const queryClient = useQueryClient()
 
@@ -520,6 +521,11 @@ export function CandidateProfileSheet({
                   </div>
                 </>
               )}
+
+              <CandidateRelationshipSection
+                candidateId={candidateId}
+                requisitionId={requisitionId}
+              />
             </>
           ) : null}
         </div>

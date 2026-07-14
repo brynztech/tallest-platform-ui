@@ -77,11 +77,11 @@ export function LeadCard({
         if (e.key === 'Enter') onOpenDetail(lead.id)
       }}
       className={cn(
-        'group relative cursor-pointer rounded-[1.35rem] border border-border/60 bg-card/75 px-4 py-3.5 shadow-sm shadow-black/10 backdrop-blur',
+        'group relative cursor-pointer rounded-[1.35rem] border border-border/70 bg-white/85 px-4 py-3.5 shadow-sm shadow-slate-200/70 backdrop-blur',
         'transition-[border-color,background-color,box-shadow,transform,opacity] duration-150 ease-out',
-        'hover:-translate-y-px hover:border-primary/30 hover:bg-card/95 hover:shadow-xl hover:shadow-black/20 focus:outline-none',
+        'hover:-translate-y-px hover:border-primary/30 hover:bg-white hover:shadow-lg hover:shadow-slate-200/80 focus:outline-none',
         isFocused &&
-          'border-primary/70 bg-[oklch(0.205_0.02_50_/_0.92)] shadow-[0_18px_55px_oklch(0_0_0_/_0.24),inset_3px_0_0_var(--color-primary)]',
+          'border-primary/60 bg-primary/5 shadow-[0_18px_48px_oklch(0.72_0.05_261_/_0.18),inset_3px_0_0_var(--color-primary)]',
         isLeaving && 'animate-out slide-out-to-right-4 fade-out duration-200 opacity-0 pointer-events-none',
         isProcessing && !isLeaving && 'opacity-50 pointer-events-none',
       )}

@@ -127,6 +127,82 @@ export const supplyHandlers: HttpHandler[] = [
     )
   }),
 
+  // --- Candidate Relationship Memory ---
+  // NOTE: MSW-only contract proposal — shared future surface for console + candidate web.
+  http.get(`${API_BASE}/api/v1/supply/candidates/:candidate_id/relationship`, ({ params }) => {
+    const candidateId = params.candidate_id as string
+    const now = new Date()
+    const cooldown = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 45).toISOString()
+    const isFirstCandidate = candidateId.endsWith('001')
+
+    return HttpResponse.json({
+      relationship: {
+        candidate_id: candidateId,
+        status: isFirstCandidate ? 'paused' : 'active',
+        contact_preference: isFirstCandidate ? 'Email only, no WhatsApp.' : 'Email first.',
+        last_contacted_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+        next_allowed_contact_at: isFirstCandidate ? cooldown : null,
+        recruiter_notes: isFirstCandidate
+          ? 'Candidate is strong, but prefers fewer check-ins. Share only roles with clear remote fit.'
+          : 'Responsive candidate. Open to thoughtful referrals for senior backend roles.',
+      },
+      submissions: [
+        {
+          id: `history-${candidateId}-1`,
+          candidate_id: candidateId,
+          client_id: '00000000-0000-0000-0000-client000001',
+          client_name: 'Acme Corp',
+          requisition_id: '00000000-0000-0000-0000-req000000001',
+          role_title: 'Senior Backend Engineer',
+          current_stage_name: isFirstCandidate ? 'Technical Interview' : 'Client Screen',
+          status: isFirstCandidate ? 'rejected' : 'in_process',
+          rejection_reason: isFirstCandidate
+            ? 'Client wanted deeper distributed systems experience for this specific backend role.'
+            : null,
+          rejection_stage: isFirstCandidate ? 'Technical Interview' : null,
+          rejected_at: isFirstCandidate
+            ? new Date(now.getTime() - 1000 * 60 * 60 * 24 * 20).toISOString()
+            : null,
+          rejected_by: isFirstCandidate ? 'client' : null,
+          cooldown_until: isFirstCandidate ? cooldown : null,
+          created_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+          updated_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+        },
+      ],
+      timeline: [
+        {
+          id: `timeline-${candidateId}-1`,
+          candidate_id: candidateId,
+          event_type: 'submitted',
+          title: 'Submitted to Acme Corp',
+          body: 'Profile was submitted for Senior Backend Engineer.',
+          visibility: 'candidate',
+          occurred_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+        },
+        {
+          id: `timeline-${candidateId}-2`,
+          candidate_id: candidateId,
+          event_type: isFirstCandidate ? 'rejected' : 'stage_changed',
+          title: isFirstCandidate ? 'Rejected at Technical Interview' : 'Advanced to Client Screen',
+          body: isFirstCandidate
+            ? 'Internal note includes client-specific feedback and cooldown.'
+            : 'Candidate moved forward in the client process.',
+          visibility: 'internal',
+          occurred_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+        },
+        {
+          id: `timeline-${candidateId}-3`,
+          candidate_id: candidateId,
+          event_type: 'availability_changed',
+          title: 'Availability updated',
+          body: 'Candidate prefers remote-first opportunities.',
+          visibility: 'candidate',
+          occurred_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+        },
+      ],
+    })
+  }),
+
   // --- Candidate Profile ---
 
   // 5. GET /api/v1/supply/candidates/:candidate_id — full candidate profile

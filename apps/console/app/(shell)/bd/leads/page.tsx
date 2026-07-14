@@ -331,9 +331,9 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_28%_0%,oklch(0.24_0.05_38_/_0.28),transparent_34%)]">
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_28%_0%,oklch(0.9_0.035_261_/_0.45),transparent_36%)]">
       {/* Sticky toolbar */}
-      <div className="sticky top-0 z-10 flex min-h-16 items-center gap-4 border-b border-border/60 bg-background/82 px-6 py-3 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 flex min-h-16 items-center gap-4 border-b border-border/70 bg-white/85 px-6 py-3 shadow-sm shadow-slate-200/60 backdrop-blur-xl">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-[-0.045em]">Lead Queue</h1>

@@ -3,6 +3,7 @@ import * as mocks from '@brynzit/mocks'
 import * as recruiterPortal from '../../app/(shell)/_lib/recruiter-portal'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { dedupeRequisitionsById } from '../../app/(shell)/_lib/recruiter-data'
 
 const {
   RECRUITER_ROUTE_ALIASES,
@@ -182,7 +183,7 @@ describe('Recruiter route implementations', () => {
       jobs: [/fetchOpsClients/, /fetchRequisitionsForClients/],
       clients: [/fetchOpsClients/, /fetchRequisitionsForClients/],
       submit: [/supply\/ingest|LinkedInForm|ResumeForm/, /fetchOpsClients|requisitions/],
-      pipeline: [/fetchPipelineSubmissions/, /fetchOpsClients|requisitions/],
+      pipeline: [/fetchPipelineSubmissions/, /getHiringProcess/, /fetchOpsClients|requisitions/],
       matchmaker: [/supply\/candidates\/search|CandidateSearchWorkspace/],
       calendar: [/fetchOpsInterviews|ops\/interviews/],
       messages: [/fetchClientNotes/, /fetchOpsClients/],
@@ -196,5 +197,41 @@ describe('Recruiter route implementations', () => {
         expect(source).toMatch(pattern)
       }
     }
+  })
+})
+
+describe('Recruiter data helpers', () => {
+  it('deduplicates requisitions by id before feeding route selectors', async () => {
+    const clientA = {
+      id: 'client-a',
+      name: 'Client A',
+      primary_contact_name: null,
+      primary_contact_email: null,
+      status: 'active',
+      created_at: '2026-07-01T00:00:00.000Z',
+    }
+    const clientB = { ...clientA, id: 'client-b', name: 'Client B' }
+    const baseReq = {
+      id: 'req-1',
+      client_id: 'client-a',
+      title: 'Frontend Engineer',
+      status: 'open',
+      skills: [],
+      seniority: null,
+      compensation_range: null,
+      target_start_date: null,
+      intake_details: null,
+      shortlist: null,
+      created_at: '2026-07-01T00:00:00.000Z',
+      updated_at: '2026-07-01T00:00:00.000Z',
+    }
+
+    const requisitions = dedupeRequisitionsById([
+      { ...baseReq, client: clientA },
+      { ...baseReq, client_id: 'client-b', client: clientB },
+    ])
+
+    expect(requisitions).toHaveLength(1)
+    expect(requisitions[0].client?.name).toBe('Client A')
   })
 })

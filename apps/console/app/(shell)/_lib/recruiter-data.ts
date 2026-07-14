@@ -52,8 +52,15 @@ export async function fetchClientRequisitions(client: OpsClient): Promise<Requis
 
 export async function fetchRequisitionsForClients(clients: OpsClient[]) {
   const requisitionLists = await Promise.all(clients.map((client) => fetchClientRequisitions(client)))
-  return requisitionLists
-    .flat()
+  return dedupeRequisitionsById(requisitionLists.flat())
+}
+
+export function dedupeRequisitionsById(requisitions: RequisitionWithClient[]) {
+  const uniqueById = new Map<string, RequisitionWithClient>()
+  for (const requisition of requisitions) {
+    if (!uniqueById.has(requisition.id)) uniqueById.set(requisition.id, requisition)
+  }
+  return [...uniqueById.values()]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 

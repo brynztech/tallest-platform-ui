@@ -64,7 +64,7 @@ export function LeadDetailPanel({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-[560px] max-w-[92vw] overflow-y-auto border-l border-border/70 bg-[oklch(0.17_0.014_62)] p-0 shadow-2xl shadow-black/35 sm:max-w-[560px]"
+        className="w-[560px] max-w-[92vw] overflow-y-auto border-l border-border/70 bg-card p-0 shadow-2xl shadow-slate-300/60 sm:max-w-[560px]"
       >
         {isLoading && <SheetTitle className="sr-only">Lead detail</SheetTitle>}
         <SheetDescription className="sr-only">
@@ -146,7 +146,7 @@ export function LeadDetailPanel({
           ) : data ? (
             <>
               {/* Contact section */}
-              <div className="rounded-[1.25rem] border border-border/55 bg-background/28 p-4 shadow-sm shadow-black/10">
+              <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4 shadow-sm shadow-slate-200/70">
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   Contact
                 </h3>
@@ -172,7 +172,7 @@ export function LeadDetailPanel({
               </div>
               {/* Company info */}
               {(data.contact.tech_stack || data.contact.funding_stage || data.contact.headcount) && (
-                <div className="rounded-[1.25rem] border border-border/55 bg-background/28 p-4 shadow-sm shadow-black/10">
+                <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4 shadow-sm shadow-slate-200/70">
                   <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Company
                   </h3>
@@ -208,7 +208,7 @@ export function LeadDetailPanel({
               {data.icp_breakdown && (
                 <>
                   <Separator className="bg-border/60" />
-                  <div className="rounded-[1.25rem] border border-border/55 bg-background/28 p-4 shadow-sm shadow-black/10">
+                  <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4 shadow-sm shadow-slate-200/70">
                     <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       ICP Breakdown
                     </h3>
