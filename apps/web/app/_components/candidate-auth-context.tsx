@@ -1,17 +1,30 @@
 'use client'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useAuth, useUser } from '@clerk/nextjs'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 type CandidateAuth = {
   isLoggedIn: boolean
-  candidate: { id: string; email: string } | null
-  signIn: (token: string, candidate: { id: string; email: string }) => void
+  candidate: CandidateIdentity | null
+  signIn: (token: string, candidate: CandidateIdentity) => void
   signOut: () => void
+}
+
+type CandidateIdentity = {
+  id: string
+  email: string
+  clerk_user_id?: string
 }
 
 const CandidateAuthContext = createContext<CandidateAuth>(null!)
 
-export function CandidateAuthProvider({ children }: { children: React.ReactNode }) {
-  const [candidate, setCandidate] = useState<{ id: string; email: string } | null>(null)
+export function CandidateAuthProvider({
+  children,
+  enableClerk = false,
+}: {
+  children: React.ReactNode
+  enableClerk?: boolean
+}) {
+  const [candidate, setCandidate] = useState<CandidateIdentity | null>(null)
 
   useEffect(() => {
     // T-05-03: try/catch guards against prototype pollution via corrupt localStorage
@@ -22,23 +35,65 @@ export function CandidateAuthProvider({ children }: { children: React.ReactNode 
     }
   }, [])
 
-  function signIn(token: string, data: { id: string; email: string }) {
+  const signIn = useCallback((token: string, data: CandidateIdentity) => {
     localStorage.setItem('candidate_access_token', token)
     localStorage.setItem('candidate_data', JSON.stringify(data))
     setCandidate(data)
-  }
+  }, [])
 
-  function signOut() {
+  const signOut = useCallback(() => {
     localStorage.removeItem('candidate_access_token')
     localStorage.removeItem('candidate_data')
     setCandidate(null)
-  }
+  }, [])
 
   return (
     <CandidateAuthContext.Provider value={{ isLoggedIn: !!candidate, candidate, signIn, signOut }}>
-      {children}
+      {enableClerk ? (
+        <ClerkCandidateSessionBridge signIn={signIn} signOut={signOut}>
+          {children}
+        </ClerkCandidateSessionBridge>
+      ) : (
+        children
+      )}
     </CandidateAuthContext.Provider>
   )
+}
+
+function ClerkCandidateSessionBridge({
+  children,
+  signIn,
+  signOut,
+}: {
+  children: React.ReactNode
+  signIn: CandidateAuth['signIn']
+  signOut: CandidateAuth['signOut']
+}) {
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth()
+  const { user } = useUser()
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (!isSignedIn || !userId) {
+      signOut()
+      return
+    }
+
+    let cancelled = false
+    getToken().then((token) => {
+      if (cancelled || !token) return
+      signIn(token, {
+        id: userId,
+        clerk_user_id: userId,
+        email: user?.primaryEmailAddress?.emailAddress ?? '',
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [getToken, isLoaded, isSignedIn, signIn, signOut, user, userId])
+
+  return children
 }
 
 export function useCandidateAuth() {

@@ -7,6 +7,7 @@ import { Separator } from '@brynzit/ui/components/ui/separator'
 import { MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
+import { candidateAuthHeaders } from '../../_lib/candidate-api'
 import { ApplySection } from './_components/apply-section'
 import type { PublicJobItem, CandidateProfile } from '../../_lib/candidate-types'
 
@@ -61,7 +62,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const { data: profile } = useQuery({
     queryKey: ['candidate-profile'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/v1/candidate/profile`)
+      const res = await fetch(`${API_BASE}/api/v1/candidate/profile`, {
+        headers: candidateAuthHeaders(),
+      })
       if (!res.ok) throw new Error('Profile fetch failed')
       return res.json() as Promise<CandidateProfile>
     },

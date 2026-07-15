@@ -92,7 +92,8 @@ describe('WebProviders (CandidateAuthProvider integration)', () => {
   })
 
   it('wraps children with CandidateAuthProvider inside QueryClientProvider', () => {
-    expect(src).toContain('<CandidateAuthProvider>')
+    expect(src).toContain('<CandidateAuthProvider')
+    expect(src).toContain('enableClerk={!!clerkPublishableKey}')
   })
 })
 

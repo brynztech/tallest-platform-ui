@@ -8,6 +8,7 @@ import { Textarea } from '@brynzit/ui/components/ui/textarea'
 import { Progress } from '@brynzit/ui/components/ui/progress'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { Separator } from '@brynzit/ui/components/ui/separator'
+import { candidateJsonHeaders } from '../../../_lib/candidate-api'
 import type { CandidateApplication } from '../../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -28,7 +29,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
     mutationFn: async () => {
       const res = await fetch(`${API_BASE}/api/v1/candidate/applications`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: candidateJsonHeaders(),
         body: JSON.stringify({ job_id: jobId, ...(note.trim() ? { note: note.trim() } : {}) }),
       })
       if (!res.ok) throw new Error(`Apply failed: ${res.status}`)

@@ -240,9 +240,9 @@ const MOCK_JOBS: PublicJobItem[] = [
 
 const MOCK_PROFILE: CandidateProfile = {
   id: 'mock-candidate-id',
-  email: 'alex@example.com',
-  first_name: 'Alex',
-  last_name: 'Chen',
+  email: 'demo@brynzit.local',
+  first_name: 'Demo',
+  last_name: 'Candidate',
   headline: 'Frontend Engineer with 5 years in React and TypeScript',
   location: 'San Francisco, CA',
   remote_preference: 'hybrid',
@@ -256,8 +256,8 @@ const MOCK_PROFILE: CandidateProfile = {
 }
 
 const MOCK_PROFILE_SNAPSHOT: Partial<CandidateProfile> = {
-  first_name: 'Alex',
-  last_name: 'Chen',
+  first_name: 'Demo',
+  last_name: 'Candidate',
   headline: 'Senior Frontend Engineer',
   skills: ['TypeScript', 'React', 'Node.js', 'GraphQL'],
   github_url: 'https://github.com/alexchen',

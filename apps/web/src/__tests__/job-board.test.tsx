@@ -88,15 +88,28 @@ describe('Anonymous gating (JOB-06)', () => {
     expect(jobCardSrc).toContain('isLocked')
   })
 
-  it('LockedJobsOverlay contains Join for free link to /signup', () => {
+  it('LockedJobsOverlay contains resume scan link to /signup', () => {
     const overlaySrc = readFile('jobs/_components/locked-jobs-overlay.tsx')
-    expect(overlaySrc).toContain('Join for free')
-    expect(overlaySrc).toContain('href="/signup"')
+    expect(overlaySrc).toContain('Upload resume to reveal matches')
+    expect(overlaySrc).toContain('href="/signup?intent=resume_scan"')
   })
 
   it('job board passes isLocked based on VISIBLE_LIMIT and !isLoggedIn', () => {
     expect(jobPageSrc).toContain('isLocked')
     expect(jobPageSrc).toContain('isLoggedIn')
+  })
+
+  it('job board invites anonymous candidates to upload a resume for AI-ranked matches', () => {
+    expect(jobPageSrc).toContain('Upload your resume')
+    expect(jobPageSrc).toContain('Reveal your best-fit roles')
+    expect(jobPageSrc).toContain('/signup?intent=resume_scan')
+  })
+
+  it('locked overlay uses resume-first value copy and preserves resume scan intent', () => {
+    const overlaySrc = readFile('jobs/_components/locked-jobs-overlay.tsx')
+    expect(overlaySrc).toContain('Find out which jobs are worth your time')
+    expect(overlaySrc).toContain('Upload your resume')
+    expect(overlaySrc).toContain('/signup?intent=resume_scan')
   })
 })
 
@@ -138,8 +151,8 @@ describe('FilterBar (D-07, D-08)', () => {
 describe('LockedJobsOverlay component', () => {
   const src = readFile('jobs/_components/locked-jobs-overlay.tsx')
 
-  it('shows Join for free CTA', () => {
-    expect(src).toContain('Join for free')
+  it('shows resume reveal CTA', () => {
+    expect(src).toContain('Upload resume to reveal matches')
   })
 
   it('links to /signup', () => {

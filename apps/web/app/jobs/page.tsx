@@ -93,11 +93,33 @@ export default function JobsPage() {
   return (
     <main className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
       <div className="space-y-2">
-        <h1 className="text-3xl font-light tracking-[-0.04em] text-foreground">Open roles</h1>
+        <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Public preview</p>
+        <h1 className="text-3xl font-light tracking-[-0.04em] text-foreground">Find roles worth your time</h1>
         <p className="max-w-[560px] text-sm leading-6 text-muted-foreground">
-          Search a preview of roles Brynzit is matching against. Join to unlock every match and apply.
+          Search live opportunities now. Upload your resume when you are ready and Brynzit will
+          rank the roles where you have the strongest signal.
         </p>
       </div>
+
+      {!isLoggedIn && (
+        <section className="overflow-hidden rounded-[1.75rem] border border-primary/10 bg-card/85 p-6 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-[640px] space-y-2">
+              <p className="text-sm font-medium text-primary">Reveal your best-fit roles</p>
+              <h2 className="text-2xl font-light tracking-[-0.035em] text-foreground">
+                Upload your resume. Let the AI scan show which jobs are actually worth applying to.
+              </h2>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Browse the preview, then create a free profile to run your resume through Brynzit&apos;s
+                parser, unlock match strength, and skip roles that waste your time.
+              </p>
+            </div>
+            <Button asChild className="shrink-0 rounded-full px-6 shadow-md shadow-primary/15">
+              <a href="/signup?intent=resume_scan">Upload resume to rank matches</a>
+            </Button>
+          </div>
+        </section>
+      )}
 
       <FilterBar onSearchChange={setSearchText} onFiltersChange={setFilters} />
 

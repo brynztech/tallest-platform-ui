@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
+import { candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfileUpdate } from '../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -66,7 +67,7 @@ export default function OnboardingPreferencesPage() {
 
     const response = await fetch(`${API_BASE}/api/v1/candidate/profile`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: candidateJsonHeaders(),
       body: JSON.stringify(body),
     })
 

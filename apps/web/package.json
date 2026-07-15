@@ -12,38 +12,41 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@brynzit/api-client": "workspace:*",
+    "@brynzit/hooks": "workspace:*",
+    "@brynzit/mocks": "workspace:*",
+    "@brynzit/ui": "workspace:*",
+    "@clerk/nextjs": "^7.5.18",
+    "@hookform/resolvers": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "lucide-react": "catalog:",
     "next": "catalog:",
+    "next-themes": "^0.4.6",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "@tanstack/react-query": "catalog:",
-    "@brynzit/ui": "workspace:*",
-    "@brynzit/api-client": "workspace:*",
-    "@brynzit/mocks": "workspace:*",
-    "@brynzit/hooks": "workspace:*",
-    "react-hook-form": "catalog:",
-    "@hookform/resolvers": "catalog:",
-    "zod": "catalog:",
     "react-dropzone": "^15.0.0",
+    "react-hook-form": "catalog:",
     "sonner": "^2.0.7",
-    "lucide-react": "catalog:",
-    "next-themes": "^0.4.6"
+    "zod": "catalog:"
   },
   "msw": {
-    "workerDirectory": ["public"]
+    "workerDirectory": [
+      "public"
+    ]
   },
   "devDependencies": {
     "@brynzit/config": "workspace:*",
-    "typescript": "catalog:",
-    "eslint": "catalog:",
     "@playwright/test": "catalog:",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "@types/node": "catalog:",
     "@tailwindcss/postcss": "^4.3.1",
-    "vitest": "catalog:",
-    "@vitejs/plugin-react": "^4.7.0",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "^14.6.1",
-    "jsdom": "^26.1.0"
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "catalog:",
+    "jsdom": "^26.1.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -9,6 +9,8 @@ import { Label } from '@brynzit/ui/components/ui/label'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const DEMO_EMAIL = 'demo@brynzit.local'
+const DEMO_PASSWORD = 'demo-password'
 
 function safeRedirect(value: string | null): string | null {
   if (!value) return null
@@ -19,8 +21,8 @@ function safeRedirect(value: string | null): string | null {
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useCandidateAuth()
-  const [email, setEmail] = useState('alex@example.com')
-  const [password, setPassword] = useState('password')
+  const [email, setEmail] = useState(DEMO_EMAIL)
+  const [password, setPassword] = useState(DEMO_PASSWORD)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -53,6 +55,14 @@ export default function LoginPage() {
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-light tracking-tight text-foreground">Sign in</h1>
         <p className="text-sm text-muted-foreground">Continue to your Brynzit candidate account.</p>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
+        <p className="font-medium text-foreground">Demo user</p>
+        <p className="mt-1">
+          Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
+          <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">

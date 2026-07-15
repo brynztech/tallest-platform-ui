@@ -1,8 +1,11 @@
 'use client'
 
+import { ClerkProvider } from '@clerk/nextjs'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MSWProvider } from './msw-provider'
 import { CandidateAuthProvider } from './candidate-auth-context'
+
+const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,13 +20,23 @@ const queryClient = new QueryClient({
 })
 
 export function WebProviders({ children }: { children: React.ReactNode }) {
+  const app = (
+    <QueryClientProvider client={queryClient}>
+      <CandidateAuthProvider enableClerk={!!clerkPublishableKey}>
+        {children}
+      </CandidateAuthProvider>
+    </QueryClientProvider>
+  )
+
   return (
     <MSWProvider>
-      <QueryClientProvider client={queryClient}>
-        <CandidateAuthProvider>
-          {children}
-        </CandidateAuthProvider>
-      </QueryClientProvider>
+      {clerkPublishableKey ? (
+        <ClerkProvider publishableKey={clerkPublishableKey}>
+          {app}
+        </ClerkProvider>
+      ) : (
+        app
+      )}
     </MSWProvider>
   )
 }

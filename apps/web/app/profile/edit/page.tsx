@@ -30,6 +30,7 @@ import {
   CommandList,
 } from '@brynzit/ui/components/ui/command'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
+import { candidateAuthHeaders, candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfile, CandidateProfileUpdate } from '../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -102,7 +103,9 @@ export default function ProfileEditPage() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ['candidate-profile'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/v1/candidate/profile`)
+      const res = await fetch(`${API_BASE}/api/v1/candidate/profile`, {
+        headers: candidateAuthHeaders(),
+      })
       if (!res.ok) throw new Error('Profile fetch failed')
       return res.json() as Promise<CandidateProfile>
     },
@@ -156,7 +159,7 @@ export default function ProfileEditPage() {
       }
       const res = await fetch(`${API_BASE}/api/v1/candidate/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: candidateJsonHeaders(),
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error(`PUT failed: ${res.status}`)

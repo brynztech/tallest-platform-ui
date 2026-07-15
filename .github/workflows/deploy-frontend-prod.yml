@@ -41,10 +41,11 @@ jobs:
           FRONTEND_PROD_HOST: ${{ secrets.FRONTEND_PROD_HOST }}
           FRONTEND_PROD_SSH_USER: ${{ secrets.FRONTEND_PROD_SSH_USER || 'ubuntu' }}
           NEXT_PUBLIC_API_URL: ${{ secrets.PROD_NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PROD_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/frontend-prod "$FRONTEND_PROD_SSH_USER@$FRONTEND_PROD_HOST" \
-            "FRONTEND_BRANCH=frontend-prod NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' bash -s" <<'REMOTE'
+            "FRONTEND_BRANCH=frontend-prod NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY='$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY' bash -s" <<'REMOTE'
           set -euo pipefail
 
           REPO_URL="https://github.com/bhuvan777/talent-platform-ui.git"
@@ -75,6 +76,7 @@ jobs:
 
           cat > apps/web/.env.production <<EOF
           NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
           NEXT_PUBLIC_API_MOCKING=disabled
           EOF
 

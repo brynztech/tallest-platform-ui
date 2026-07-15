@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Progress } from '@brynzit/ui/components/ui/progress'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
+import { candidateAuthHeaders } from '../../_lib/candidate-api'
 import type { ResumeParseStatus } from '../../_lib/candidate-types'
 import { ResumeDropzone } from '../_components/resume-dropzone'
 
@@ -17,16 +18,20 @@ export default function OnboardingResumePage() {
   const [parseId, setParseId] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'failed'>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [isResumeScanIntent, setIsResumeScanIntent] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn) router.replace('/signup')
+    setIsResumeScanIntent(localStorage.getItem('candidate_onboarding_intent') === 'resume_scan')
   }, [isLoggedIn, router])
 
   useEffect(() => {
     if (!parseId) return
 
     const timer = window.setInterval(async () => {
-      const response = await fetch(`${API_BASE}/api/v1/candidate/profile/resume/status/${parseId}`)
+      const response = await fetch(`${API_BASE}/api/v1/candidate/profile/resume/status/${parseId}`, {
+        headers: candidateAuthHeaders(),
+      })
       if (!response.ok) {
         setStatus('failed')
         setError('Resume parsing failed. You can continue manually.')
@@ -68,6 +73,7 @@ export default function OnboardingResumePage() {
 
     const response = await fetch(`${API_BASE}/api/v1/candidate/profile/resume`, {
       method: 'POST',
+      headers: candidateAuthHeaders(),
       body: formData,
     })
 
@@ -97,7 +103,10 @@ export default function OnboardingResumePage() {
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-normal text-foreground">Upload your resume</h1>
         <p className="text-sm text-muted-foreground">
-          We'll parse it to prefill your profile. PDF, DOC, and DOCX are supported.
+          {isResumeScanIntent
+            ? "We'll parse it to reveal your strongest-fit roles and prefill your profile."
+            : "We'll parse it to prefill your profile."}{' '}
+          PDF, DOC, and DOCX are supported.
         </p>
       </div>
 
