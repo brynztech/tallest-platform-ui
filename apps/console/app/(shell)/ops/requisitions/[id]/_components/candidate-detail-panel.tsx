@@ -69,7 +69,7 @@ export function CandidateDetailPanel({
     },
   })
 
-  const candidate = data as components['schemas']['CandidateProfileResponse'] | undefined
+  const candidate = data as components['schemas']['supply__schemas__candidates__CandidateProfileResponse'] | undefined
   const talentPool = candidate?.talent_pool
   const skills = talentPool?.skills ?? []
   const fitScore = talentPool?.total_years_experience

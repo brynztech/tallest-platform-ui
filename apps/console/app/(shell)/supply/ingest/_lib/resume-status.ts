@@ -1,6 +1,6 @@
 import type { components } from '@brynzit/api-client'
 
-type CandidateProfile = components['schemas']['CandidateProfileResponse']
+type CandidateProfile = components['schemas']['supply__schemas__candidates__CandidateProfileResponse']
 
 export function isResumeParsingComplete(candidate: CandidateProfile | null | undefined): boolean {
   return Boolean(

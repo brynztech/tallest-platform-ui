@@ -115,7 +115,7 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
           return
         }
 
-        const candidate = data as components['schemas']['CandidateProfileResponse']
+        const candidate = data as components['schemas']['supply__schemas__candidates__CandidateProfileResponse']
 
         if (isResumeParsingComplete(candidate)) {
           clearInterval(intervalId)

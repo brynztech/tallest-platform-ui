@@ -105,7 +105,7 @@ export function CandidateProfileSheet({
       // the old value, causing the success path to never fire (CR-01).
       await queryClient.refetchQueries({ queryKey: ['supply-candidate', candidateId] })
       const cached = queryClient.getQueryData(['supply-candidate', candidateId]) as
-        | components['schemas']['CandidateProfileResponse']
+        | components['schemas']['supply__schemas__candidates__CandidateProfileResponse']
         | undefined
       const tp = cached?.talent_pool
       if (tp?.email_verified !== null || tp?.github_public_repos !== null) {
@@ -151,7 +151,7 @@ export function CandidateProfileSheet({
   const bookmarkMutation = useMutation({
     mutationFn: () => {
       if (!candidateId) return Promise.resolve()
-      const name = (data as components['schemas']['CandidateProfileResponse'] | undefined)?.name
+      const name = (data as components['schemas']['supply__schemas__candidates__CandidateProfileResponse'] | undefined)?.name
       return bookmarked
         ? deleteBookmark({ userId: actingUser.id, candidateId })
         : addBookmark({ userId: actingUser.id, candidateId, candidateName: name ?? undefined })
@@ -184,7 +184,7 @@ export function CandidateProfileSheet({
 
   function handleShortlistAction(newStatus: 'approved' | 'hold' | 'passed') {
     if (!submissionId) return
-    const candidate = data as components['schemas']['CandidateProfileResponse'] | undefined
+    const candidate = data as components['schemas']['supply__schemas__candidates__CandidateProfileResponse'] | undefined
     const name = candidate?.name ?? 'Candidate'
     const toastMsg =
       newStatus === 'approved'
@@ -223,7 +223,7 @@ export function CandidateProfileSheet({
     })
   }
 
-  const candidate = data as components['schemas']['CandidateProfileResponse'] | undefined
+  const candidate = data as components['schemas']['supply__schemas__candidates__CandidateProfileResponse'] | undefined
   const talentPool = candidate?.talent_pool
   const skills = talentPool?.skills ?? []
   const needsEnrichment =

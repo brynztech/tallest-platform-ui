@@ -235,7 +235,7 @@ export const supplyHandlers: HttpHandler[] = [
         resume_file_path: isUnenriched ? null : '/resumes/david-park-2026.pdf',
         extraction_method: isUnenriched ? null : 'pdf',
       },
-    } satisfies components['schemas']['CandidateProfileResponse'])
+    } satisfies components['schemas']['supply__schemas__candidates__CandidateProfileResponse'])
   }),
 
   // 6. POST /api/v1/supply/candidates/:candidate_id/enrich — trigger enrichment (202)
