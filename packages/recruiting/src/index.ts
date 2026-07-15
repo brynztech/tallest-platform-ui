@@ -38,3 +38,5 @@ export {
   rankSuggestions,
   recommendationFromScore,
 } from './matchmaker'
+export type { PipelineSummary } from './pipeline-summary'
+export { summarizePipeline } from './pipeline-summary'
