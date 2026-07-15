@@ -30,3 +30,11 @@ export type { Bookmark } from './bookmarks'
 export { isBookmarked, removeBookmark, upsertBookmark } from './bookmarks'
 export type { AssignmentFilter } from './assignments'
 export { isAssigned, visibleByAssignment } from './assignments'
+export type { MatchStrength, MatchSuggestion } from './matchmaker'
+export {
+  MATCH_ADVANCE_THRESHOLD,
+  MATCH_STRONG_THRESHOLD,
+  matchStrength,
+  rankSuggestions,
+  recommendationFromScore,
+} from './matchmaker'

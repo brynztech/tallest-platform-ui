@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { Trophy, Zap } from 'lucide-react'
 import { RequisitionFields } from './_components/requisition-fields'
 import { HiringProcessPanel } from './_components/hiring-process-panel'
+import { MatchmakerPanel } from './_components/matchmaker-panel'
 import { ShortlistTable } from './_components/shortlist-table'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
 import { InterviewsSection } from './_components/interviews-section'
@@ -167,6 +168,14 @@ export default function RequisitionDetailPage({
 
       {/* Section 2: Shortlist */}
       <Separator className="mb-4" />
+      <MatchmakerPanel
+        reqId={id}
+        onCandidateSelect={(candidateId, submissionId) => {
+          setSelectedCandidateId(candidateId)
+          setSelectedSubmissionId(submissionId)
+          setIsCandidatePanelOpen(true)
+        }}
+      />
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-base font-semibold">Shortlist</h2>
       </div>
