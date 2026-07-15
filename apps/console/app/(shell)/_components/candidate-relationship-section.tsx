@@ -5,6 +5,7 @@ import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import {
+  candidateMemorySummary,
   candidateRelationshipQueryKeys,
   fetchCandidateRelationship,
   formatRelationshipDate,
@@ -65,10 +66,22 @@ function RelationshipMemory({
   requisitionId?: string | null
 }) {
   const guard = relationshipGuardForTarget({ bundle, clientId, requisitionId })
+  const memory = candidateMemorySummary(bundle)
   const recentTimeline = bundle.timeline.slice(0, 4)
 
   return (
     <div className="flex flex-col gap-4">
+      {memory.total > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant="outline">{memory.total} submissions</Badge>
+          {memory.active > 0 && <Badge variant="secondary">{memory.active} active</Badge>}
+          {memory.rejected > 0 && <Badge variant="outline">{memory.rejected} rejected</Badge>}
+          {memory.placed > 0 && (
+            <Badge className="bg-[oklch(0.45_0.15_145)] text-white">{memory.placed} placed</Badge>
+          )}
+        </div>
+      )}
+
       <div className="rounded-lg border bg-muted/20 p-3">
         <div className="flex items-start gap-2">
           {guard.level === 'clear' ? (

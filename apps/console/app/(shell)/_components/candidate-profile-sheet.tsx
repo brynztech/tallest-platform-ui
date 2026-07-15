@@ -15,9 +15,12 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { toast } from 'sonner'
-import { X, Sparkles, MapPin, Code2, Mail, CheckCircle, ExternalLink, Download, Zap } from 'lucide-react'
+import { X, Sparkles, MapPin, Code2, Mail, CheckCircle, ExternalLink, Download, Zap, Bookmark, BookmarkCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useCan, useActingUser } from '@brynzit/identity'
+import { isBookmarked } from '@brynzit/recruiting'
 import { CandidateRelationshipSection } from './candidate-relationship-section'
+import { addBookmark, bookmarkQueryKeys, deleteBookmark, fetchBookmarks } from '../_lib/bookmarks'
 
 interface CandidateProfileSheetProps {
   candidateId: string | null
@@ -70,6 +73,9 @@ export function CandidateProfileSheet({
   requisitionId,
 }: CandidateProfileSheetProps) {
   const queryClient = useQueryClient()
+  const can = useCan()
+  const canBookmark = can('candidate.bookmark')
+  const actingUser = useActingUser()
 
   // ---- Candidate query ----
   const { data, isLoading } = useQuery({
@@ -131,6 +137,31 @@ export function CandidateProfileSheet({
       }),
     onSuccess: () => setIsEnriching(true),
     onError: () => setEnrichError(true),
+  })
+
+  // ---- Bookmarks (per acting recruiter) ----
+  const { data: bookmarks = [] } = useQuery({
+    queryKey: bookmarkQueryKeys.list(actingUser.id),
+    queryFn: () => fetchBookmarks(actingUser.id),
+    enabled: canBookmark && isOpen,
+    staleTime: 30 * 1000,
+  })
+  const bookmarked = candidateId ? isBookmarked(bookmarks, candidateId) : false
+
+  const bookmarkMutation = useMutation({
+    mutationFn: () => {
+      if (!candidateId) return Promise.resolve()
+      const name = (data as components['schemas']['CandidateProfileResponse'] | undefined)?.name
+      return bookmarked
+        ? deleteBookmark({ userId: actingUser.id, candidateId })
+        : addBookmark({ userId: actingUser.id, candidateId, candidateName: name ?? undefined })
+    },
+    onSuccess: () => {
+      const wasBookmarked = bookmarked
+      queryClient.invalidateQueries({ queryKey: bookmarkQueryKeys.list(actingUser.id) })
+      toast(wasBookmarked ? 'Removed bookmark.' : 'Bookmarked candidate.')
+    },
+    onError: () => toast.error('Could not update bookmark — try again.'),
   })
 
   // ---- Shortlist action mutation (source='shortlist' only) ----
@@ -229,6 +260,23 @@ export function CandidateProfileSheet({
           {/* Enrich button area */}
           {!isLoading && (
             <div className="flex items-center gap-2 shrink-0">
+              {canBookmark && candidateId && (
+                <Button
+                  variant={bookmarked ? 'secondary' : 'outline'}
+                  size="sm"
+                  disabled={bookmarkMutation.isPending}
+                  onClick={() => bookmarkMutation.mutate()}
+                  aria-pressed={bookmarked}
+                  aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark candidate'}
+                >
+                  {bookmarked ? (
+                    <BookmarkCheck className="mr-1 size-4" />
+                  ) : (
+                    <Bookmark className="mr-1 size-4" />
+                  )}
+                  {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                </Button>
+              )}
               {needsEnrichment && !isEnriching && !enrichError && (
                 <Button
                   variant="default"

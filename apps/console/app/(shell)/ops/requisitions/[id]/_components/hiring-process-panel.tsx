@@ -29,6 +29,15 @@ import {
   type HiringStage,
   type HiringStageKind,
 } from '../_lib/hiring-process'
+import {
+  getRequisitionPipeline,
+  hiringKindToStageType,
+  stageTypeLabel,
+  withMediationGate,
+} from '../_lib/requisition-pipeline'
+import { hasInternalGate } from '@brynzit/pipeline'
+import { useCan } from '@brynzit/identity'
+import { Checkbox } from '@brynzit/ui/components/ui/checkbox'
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 
 type RequisitionResponse = components['schemas']['RequisitionResponse']
@@ -45,7 +54,11 @@ const stageKinds: HiringStageKind[] = [
 
 export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
   const queryClient = useQueryClient()
+  const can = useCan()
+  const canConfigure = can('pipeline.configure')
   const hiringProcess = useMemo(() => getHiringProcess(req), [req])
+  const pipeline = useMemo(() => getRequisitionPipeline(req), [req])
+  const mediated = hasInternalGate(pipeline)
   const [isOpen, setIsOpen] = useState(false)
   const [stages, setStages] = useState<EditableStage[]>(() =>
     hiringProcess.stages.map(({ name, kind }) => ({ name, kind })),
@@ -115,15 +128,30 @@ export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
     <div className="mb-4 rounded-lg border border-border bg-card p-4">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold">Hiring Process</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">Hiring Process</h2>
+            <Badge
+              variant={mediated ? 'secondary' : 'outline'}
+              className="text-[11px]"
+              title={
+                mediated
+                  ? 'Submissions route through internal quality review before the client sees them.'
+                  : 'Recruiter submits directly to the client — no internal review step.'
+              }
+            >
+              {mediated ? 'Mediated' : 'Direct'}
+            </Badge>
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Ops owns this per-requisition process. It controls how the recruiter pipeline is
             rendered for this role.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
-          Edit Process
-        </Button>
+        {canConfigure && (
+          <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
+            Edit Process
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -133,6 +161,12 @@ export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
               <span className="text-sm font-medium">{stage.order}. {stage.name}</span>
               <Badge variant="secondary" className="text-[11px]">
                 {stageKindLabel(stage.kind)}
+              </Badge>
+              <Badge
+                variant={hiringKindToStageType(stage.kind) === 'internal_gate' ? 'default' : 'outline'}
+                className="text-[11px]"
+              >
+                {stageTypeLabel(hiringKindToStageType(stage.kind))}
               </Badge>
             </div>
           </div>
@@ -148,6 +182,23 @@ export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
               add as many stages as the client requires.
             </DialogDescription>
           </DialogHeader>
+
+          <label className="mb-1 flex items-center gap-3 rounded-lg border p-3 text-sm">
+            <Checkbox
+              checked={stages.some((stage) => stage.kind === 'internal_review')}
+              onCheckedChange={(checked) =>
+                setStages((current) => withMediationGate(current, checked === true))
+              }
+              aria-label="Route through internal quality review"
+            />
+            <span className="flex flex-col">
+              <span className="font-medium">Route through internal quality review</span>
+              <span className="text-muted-foreground text-xs">
+                When on, submissions need internal (BrynzIT) approval before the client sees them.
+                When off, the recruiter submits directly.
+              </span>
+            </span>
+          </label>
 
           <div className="flex flex-col gap-3">
             {stages.map((stage, index) => (

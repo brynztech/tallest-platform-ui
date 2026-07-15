@@ -43,6 +43,11 @@ export const INTERNAL_OPS_ITEMS: RecruiterRoute[] = [
   { href: '/ops/interviews', label: 'Ops Interviews', activePrefixes: ['/ops/interviews'] },
   { href: '/supply/search', label: 'Supply Search', activePrefixes: ['/supply/search'] },
   { href: '/supply/ingest', label: 'Supply Ingest', activePrefixes: ['/supply/ingest'] },
+  {
+    href: '/ops/quality-review',
+    label: 'Quality Review',
+    activePrefixes: ['/ops/quality-review'],
+  },
   { href: '/admin', label: 'Admin Panel', activePrefixes: ['/admin'] },
 ]
 

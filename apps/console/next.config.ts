@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     '@brynzit/api-client',
     '@brynzit/mocks',
     '@brynzit/hooks',
+    '@brynzit/identity',
+    '@brynzit/pipeline',
+    '@brynzit/recruiting',
   ],
 }
 

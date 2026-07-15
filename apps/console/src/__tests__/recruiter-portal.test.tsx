@@ -44,6 +44,7 @@ describe('Recruiter portal IA', () => {
       'Ops Interviews',
       'Supply Search',
       'Supply Ingest',
+      'Quality Review',
       'Admin Panel',
     ])
     expect(INTERNAL_OPS_ITEMS.find((item) => item.href === '/admin')?.label).toBe('Admin Panel')

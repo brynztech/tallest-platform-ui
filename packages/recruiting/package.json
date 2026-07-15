@@ -1,0 +1,17 @@
+{
+  "name": "@brynzit/recruiting",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@brynzit/pipeline": "workspace:*"
+  },
+  "devDependencies": {
+    "@brynzit/config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

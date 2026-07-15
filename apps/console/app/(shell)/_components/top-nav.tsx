@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, UserCircle } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { INTERNAL_OPS_ITEMS, TOP_NAV_ITEMS } from '../_lib/recruiter-portal'
 import { cn } from '@brynzit/ui/lib/utils'
+import { IdentitySwitcher } from './identity-switcher'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -63,13 +64,7 @@ export function TopNav() {
         >
           <Bell className="size-4" />
         </button>
-        <button
-          type="button"
-          aria-label="Recruiter profile"
-          className="flex size-8 items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm shadow-slate-200/60 transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <UserCircle className="size-5" />
-        </button>
+        <IdentitySwitcher />
       </div>
     </header>
   )

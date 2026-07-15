@@ -1,3 +1,11 @@
+import {
+  checkResubmission,
+  summarizeCandidateMemory,
+  type CandidateMemory,
+  type SubmissionRecord,
+  type SubmissionStatus,
+} from '@brynzit/recruiting'
+
 export type CandidateRelationshipStatus = 'active' | 'paused' | 'do_not_contact' | 'placed'
 
 export type CandidateSubmissionOutcome =
@@ -97,6 +105,53 @@ export function candidateSafeTimeline(events: CandidateTimelineEvent[]) {
   return events.filter((event) => event.visibility === 'candidate')
 }
 
+/**
+ * Map the console's relationship submission history to the shared
+ * `@brynzit/recruiting` `SubmissionRecord` shape, so re-submission decisions and
+ * memory summaries run through the one tested domain implementation.
+ */
+export function toSubmissionRecords(
+  submissions: CandidateSubmissionHistory[],
+): SubmissionRecord[] {
+  return submissions
+    .filter((submission): submission is CandidateSubmissionHistory & { client_id: string } =>
+      Boolean(submission.client_id),
+    )
+    .map((submission) => ({
+      requisitionId: submission.requisition_id ?? submission.id,
+      clientId: submission.client_id,
+      ...(submission.client_name ? { clientName: submission.client_name } : {}),
+      ...(submission.role_title ? { roleTitle: submission.role_title } : {}),
+      status: mapOutcomeToStatus(submission.status, submission.rejected_by),
+      updatedAt: submission.updated_at,
+    }))
+}
+
+function mapOutcomeToStatus(
+  outcome: CandidateSubmissionOutcome,
+  rejectedBy: CandidateSubmissionHistory['rejected_by'],
+): SubmissionStatus {
+  switch (outcome) {
+    case 'submitted':
+      return 'submitted_to_client'
+    case 'in_process':
+      return 'client_interviewing'
+    case 'offer':
+      return 'offer'
+    case 'placed':
+      return 'placed'
+    case 'withdrawn':
+      return 'withdrawn'
+    case 'rejected':
+      return rejectedBy === 'internal' ? 'internal_rejected' : 'client_rejected'
+  }
+}
+
+/** Package-backed summary of a candidate's submission history for display. */
+export function candidateMemorySummary(bundle: CandidateRelationshipBundle): CandidateMemory {
+  return summarizeCandidateMemory(toSubmissionRecords(bundle.submissions))
+}
+
 export function relationshipGuardForTarget({
   bundle,
   clientId,
@@ -135,18 +190,26 @@ export function relationshipGuardForTarget({
     }
   }
 
-  const sameClientRejection = bundle.submissions.find(
+  // Only rejections that are still "in effect" (no cooldown, or cooldown not yet
+  // elapsed) should influence a fresh submission decision.
+  const activeRejections = bundle.submissions.filter(
     (submission) =>
-      clientId &&
-      submission.client_id === clientId &&
       submission.status === 'rejected' &&
       (!submission.cooldown_until || new Date(submission.cooldown_until) > new Date()),
   )
-  if (sameClientRejection) {
+
+  // Delegate the same-client re-submission decision to the shared, tested domain
+  // logic (spec D5). `blocked` maps to a hard block, `warn` to a soft warning.
+  const resubmission = clientId
+    ? checkResubmission(toSubmissionRecords(activeRejections), { clientId })
+    : { level: 'ok' as const, reasons: [] }
+
+  if (resubmission.level !== 'ok') {
+    const record = activeRejections.find((submission) => submission.client_id === clientId)
     return {
-      level: 'warn',
+      level: resubmission.level === 'blocked' ? 'block' : 'warn',
       title: 'Previously rejected by this client',
-      description: `${sameClientRejection.client_name ?? 'This client'} rejected the candidate at ${sameClientRejection.rejection_stage ?? 'a prior stage'}${sameClientRejection.rejection_reason ? `: ${sameClientRejection.rejection_reason}` : '.'}`,
+      description: `${record?.client_name ?? 'This client'} rejected the candidate at ${record?.rejection_stage ?? 'a prior stage'}${record?.rejection_reason ? `: ${record.rejection_reason}` : '.'}`,
     }
   }
 

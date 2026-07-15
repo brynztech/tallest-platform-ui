@@ -4,7 +4,9 @@ import type React from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
+  Bookmark,
   Bot,
+  Briefcase,
   CalendarDays,
   CircleDollarSign,
   ClipboardList,
@@ -24,6 +26,7 @@ import {
   SIDEBAR_STAGE_ITEMS,
 } from '../_lib/recruiter-portal'
 import { cn } from '@brynzit/ui/lib/utils'
+import { useCan } from '@brynzit/identity'
 
 const PRIMARY_ICONS = [Send, UsersRound, LayoutDashboard, CalendarDays, Inbox, Share2, Bot] as const
 const INTERNAL_OPS_ICONS = [
@@ -34,11 +37,17 @@ const INTERNAL_OPS_ICONS = [
   Search,
   UploadCloud,
   ShieldCheck,
+  Bot,
 ] as const
 
 export function SidebarNav() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const can = useCan()
+  const canSeeInternalOps = can('internal_ops.view')
+  const canSeeAdmin = can('admin.view')
+  const canApproveGate = can('submission.approve_gate')
+  const canBookmark = can('candidate.bookmark')
   const isSubmitActive = pathname === '/submit' || pathname.startsWith('/supply/ingest')
 
   return (
@@ -100,7 +109,21 @@ export function SidebarNav() {
         })}
       </div>
 
-      <div className="px-3 py-2">
+      <div className="flex flex-col gap-1 px-3 py-2">
+        <SidebarLink
+          href="/my-roles"
+          label="My Roles"
+          icon={<Briefcase className="size-4" />}
+          isActive={pathname === '/my-roles'}
+        />
+        {canBookmark && (
+          <SidebarLink
+            href="/bookmarks"
+            label="Bookmarks"
+            icon={<Bookmark className="size-4" />}
+            isActive={pathname === '/bookmarks'}
+          />
+        )}
         <SidebarLink
           href="/rewards"
           label="Referrals and Promotions"
@@ -110,28 +133,32 @@ export function SidebarNav() {
         />
       </div>
 
-      <div className="mt-auto flex flex-col gap-1 border-t border-border/70 px-3 py-3">
-        <span className="text-muted-foreground px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide">
-          Internal Ops
-        </span>
-        {INTERNAL_OPS_ITEMS.map((item, index) => {
-          const Icon = INTERNAL_OPS_ICONS[index]
-          const activePrefixes = item.activePrefixes ?? [item.href]
-          const isActive = activePrefixes.some(
-            (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-          )
-          return (
-            <SidebarLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={<Icon className="size-4" />}
-              isActive={isActive}
-              compact
-            />
-          )
-        })}
-      </div>
+      {canSeeInternalOps && (
+        <div className="mt-auto flex flex-col gap-1 border-t border-border/70 px-3 py-3">
+          <span className="text-muted-foreground px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide">
+            Internal Ops
+          </span>
+          {INTERNAL_OPS_ITEMS.map((item, index) => {
+            const Icon = INTERNAL_OPS_ICONS[index]
+            if (item.href === '/admin' && !canSeeAdmin) return null
+            if (item.href === '/ops/quality-review' && !canApproveGate) return null
+            const activePrefixes = item.activePrefixes ?? [item.href]
+            const isActive = activePrefixes.some(
+              (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+            )
+            return (
+              <SidebarLink
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={<Icon className="size-4" />}
+                isActive={isActive}
+                compact
+              />
+            )
+          })}
+        </div>
+      )}
     </nav>
   )
 }
