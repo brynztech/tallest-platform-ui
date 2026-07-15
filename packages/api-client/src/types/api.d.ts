@@ -364,6 +364,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Assignments Endpoint
+         * @description Requisition ids assigned to a user (drives the recruiter 'My Roles' view).
+         */
+        get: operations["get_assignments_endpoint_api_v1_ops_assignments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/clients": {
         parameters: {
             query?: never;
@@ -442,7 +462,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Requisitions Endpoint
+         * @description List requisitions across all clients (optional ?client_id= filter).
+         */
+        get: operations["list_requisitions_endpoint_api_v1_ops_requisitions_get"];
         put?: never;
         /** Create Requisition Endpoint */
         post: operations["create_requisition_endpoint_api_v1_ops_requisitions_post"];
@@ -466,7 +490,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Patch Requisition Endpoint */
+        patch: operations["patch_requisition_endpoint_api_v1_ops_requisitions__req_id__patch"];
         trace?: never;
     };
     "/api/v1/ops/requisitions/{req_id}/parse-jd": {
@@ -545,7 +570,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Interviews Endpoint
+         * @description OPS-04: List interviews for global Ops view or a requisition detail page.
+         */
+        get: operations["list_interviews_endpoint_api_v1_ops_interviews_get"];
         put?: never;
         /**
          * Create Interview Endpoint
@@ -689,6 +718,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/supply/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Candidates
+         * @description Admin candidate list used for cleanup and permanent removal.
+         */
+        get: operations["list_candidates_api_v1_supply_candidates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/supply/resumes/upload": {
         parameters: {
             query?: never;
@@ -702,11 +751,95 @@ export interface paths {
          * Upload Resume
          * @description Upload a resume PDF/DOCX and trigger background parsing.
          *
-         *     Returns 202 immediately with a task_id. Parsing runs as an asyncio background
+         *     Returns 202 immediately with a task_id and candidate_id. Parsing runs as an asyncio background
          *     task via Docling -> Groq -> GPT-4o-mini vision fallback (D-06).
-         *     A new Candidate row is created from the extracted name/email.
+         *     A placeholder Candidate row is created immediately so clients can poll it.
          */
         post: operations["upload_resume_api_v1_supply_resumes_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/bookmarks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bookmarks
+         * @description List the acting user's bookmarked candidates.
+         */
+        get: operations["get_bookmarks_api_v1_supply_bookmarks_get"];
+        put?: never;
+        /**
+         * Create Bookmark
+         * @description Bookmark a candidate for the acting user (idempotent per user+candidate).
+         */
+        post: operations["create_bookmark_api_v1_supply_bookmarks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/bookmarks/{candidate_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Bookmark
+         * @description Remove the acting user's bookmark for a candidate.
+         */
+        delete: operations["delete_bookmark_api_v1_supply_bookmarks__candidate_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/internal-review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Internal Review Queue
+         * @description Submissions awaiting internal approval before the client sees them.
+         */
+        get: operations["internal_review_queue_api_v1_supply_internal_review_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/internal-review-queue/{submission_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Review Decision
+         * @description Approve / reject / hold a submission at the internal gate.
+         */
+        post: operations["internal_review_decision_api_v1_supply_internal_review_queue__submission_id__decision_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -759,6 +892,57 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{requisition_id}/manual-add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manual Add Shortlist Candidate */
+        post: operations["manual_add_shortlist_candidate_api_v1_supply_shortlists__requisition_id__manual_add_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{submission_id}/manual-remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manual Remove Shortlist Candidate */
+        post: operations["manual_remove_shortlist_candidate_api_v1_supply_shortlists__submission_id__manual_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{submission_id}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit Shortlist Candidate Score */
+        patch: operations["edit_shortlist_candidate_score_api_v1_supply_shortlists__submission_id__score_patch"];
         trace?: never;
     };
     "/api/v1/supply/shortlists/{submission_id}": {
@@ -861,6 +1045,32 @@ export interface paths {
         get: operations["get_candidate_api_v1_supply_candidates__candidate_id__get"];
         put?: never;
         post?: never;
+        /**
+         * Delete Candidate
+         * @description Permanently delete a candidate from Admin candidate management.
+         */
+        delete: operations["delete_candidate_api_v1_supply_candidates__candidate_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/candidates/{candidate_id}/relationship": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Candidate Relationship
+         * @description Candidate relationship memory: submission history + timeline (spec D5).
+         *
+         *     Registered before GET /candidates/{candidate_id} to avoid UUID path collision.
+         */
+        get: operations["candidate_relationship_api_v1_supply_candidates__candidate_id__relationship_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -923,6 +1133,75 @@ export interface paths {
          * @description Reject a draft engagement sequence.
          */
         post: operations["reject_sequence_api_v1_supply_engagement__sequence_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/candidate/onboarding/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Onboarding */
+        post: operations["start_onboarding_api_v1_candidate_onboarding_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/candidate/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Profile */
+        get: operations["get_profile_api_v1_candidate_profile_get"];
+        /** Put Profile */
+        put: operations["put_profile_api_v1_candidate_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/candidate/profile/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Resume */
+        post: operations["upload_resume_api_v1_candidate_profile_resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/candidate/profile/resume/status/{parse_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Resume Status */
+        get: operations["get_resume_status_api_v1_candidate_profile_resume_status__parse_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1001,6 +1280,26 @@ export interface paths {
          * @description PLAT-05: CompanyLead + OutreachSequence status counts; failed AgentEvents last 24h. No Temporal.
          */
         get: operations["get_pipeline_api_v1_monitoring_pipeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/monitoring/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Prompts
+         * @description PLAT-06: List all registered prompt templates for the editor.
+         */
+        get: operations["list_prompts_api_v1_monitoring_prompts_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1103,6 +1402,11 @@ export interface components {
              */
             created_at: string;
         };
+        /** AssignmentsResponse */
+        AssignmentsResponse: {
+            /** Requisition Ids */
+            requisition_ids: string[];
+        };
         /** BDTaskSummary */
         BDTaskSummary: {
             /**
@@ -1138,10 +1442,39 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_upload_resume_api_v1_candidate_profile_resume_post */
+        Body_upload_resume_api_v1_candidate_profile_resume_post: {
+            /** File */
+            file: string;
+        };
         /** Body_upload_resume_api_v1_supply_resumes_upload_post */
         Body_upload_resume_api_v1_supply_resumes_upload_post: {
             /** File */
             file: string;
+        };
+        /** BookmarkItem */
+        BookmarkItem: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Candidate Name */
+            candidate_name?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** BookmarkListResponse */
+        BookmarkListResponse: {
+            /** Items */
+            items: components["schemas"]["BookmarkItem"][];
         };
         /** BulkActionError */
         BulkActionError: {
@@ -1155,13 +1488,14 @@ export interface components {
         };
         /**
          * BulkActionRequest
-         * @description D-06 (BD-REVIEW-02): bulk approve, reject, snooze, or move suppressed leads back to review.
+         * @description D-06 (BD-REVIEW-02): bulk approve, reject, or snooze a set of leads.
          *
          *     - action="approve": sets CompanyLead.status -> outreach_approved (requires status==review_queue)
          *     - action="reject": dual-write -- CompanyLead.rejection_reason + SuppressedLead row (D-08);
          *                        rejection_reason field required.
          *     - action="snooze": creates BDTask(type="snooze", category="ooo", due_at=due_at);
          *                        CompanyLead.status unchanged; due_at field required.
+         *     - action="move_to_review": moves suppressed leads back to review_queue.
          */
         BulkActionRequest: {
             /**
@@ -1186,10 +1520,10 @@ export interface components {
             errors: components["schemas"]["BulkActionError"][];
         };
         /**
-         * CandidateProfileResponse
-         * @description Combined Candidate + TalentPool response for GET /supply/candidates/{id}.
+         * CandidateAdminListItem
+         * @description Candidate row for Admin cleanup screens.
          */
-        CandidateProfileResponse: {
+        CandidateAdminListItem: {
             /**
              * Id
              * Format: uuid
@@ -1199,17 +1533,120 @@ export interface components {
             name: string;
             /** Email */
             email?: string | null;
-            /** Linkedin Url */
-            linkedin_url?: string | null;
-            /** Current Company */
-            current_company?: string | null;
             /** Current Title */
             current_title?: string | null;
+            /** Current Company */
+            current_company?: string | null;
             /** Source */
             source: string;
             /** Status */
             status: string;
-            talent_pool?: components["schemas"]["TalentPoolSummary"] | null;
+            /** Skills */
+            skills?: string[];
+            /** Location */
+            location?: string | null;
+            /** Seniority */
+            seniority?: string | null;
+            /** Availability Status */
+            availability_status?: string | null;
+            /** Resume File Path */
+            resume_file_path?: string | null;
+            /** Extraction Method */
+            extraction_method?: string | null;
+        };
+        /**
+         * CandidateAdminListResponse
+         * @description Paginated candidate list for Admin cleanup screens.
+         */
+        CandidateAdminListResponse: {
+            /** Results */
+            results: components["schemas"]["CandidateAdminListItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * CandidateDeleteResponse
+         * @description Summary of a permanent candidate deletion.
+         */
+        CandidateDeleteResponse: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Deleted */
+            deleted: boolean;
+            /** Deleted Talent Pool Rows */
+            deleted_talent_pool_rows: number;
+            /** Deleted Submissions */
+            deleted_submissions: number;
+            /** Deleted Engagement Sequences */
+            deleted_engagement_sequences: number;
+            /** Deleted Alerts */
+            deleted_alerts: number;
+            /** Updated Requisition Shortlists */
+            updated_requisition_shortlists: number;
+            /** Updated Matching Histories */
+            updated_matching_histories: number;
+        };
+        /**
+         * CandidateOnboardingStartRequest
+         * @description Optional Clerk profile hints supplied by the frontend after signup.
+         */
+        CandidateOnboardingStartRequest: {
+            /** Email */
+            email?: string | null;
+            /** Full Name */
+            full_name?: string | null;
+        };
+        /** CandidateProfileUpdate */
+        CandidateProfileUpdate: {
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Headline */
+            headline?: string | null;
+            /** Skills */
+            skills?: string[] | null;
+            /** Location */
+            location?: string | null;
+            /** Remote Preference */
+            remote_preference?: ("remote_only" | "hybrid" | "onsite" | "flexible") | null;
+            /** Seniority */
+            seniority?: ("junior" | "mid" | "senior" | "staff" | "principal") | null;
+            /** Linkedin Url */
+            linkedin_url?: string | null;
+            /** Github Url */
+            github_url?: string | null;
+        };
+        /** CandidateRelationshipBundle */
+        CandidateRelationshipBundle: {
+            relationship: components["schemas"]["RelationshipInfo"];
+            /** Submissions */
+            submissions: components["schemas"]["SubmissionHistoryItem"][];
+            /** Timeline */
+            timeline: components["schemas"]["TimelineEvent"][];
+        };
+        /** CandidateResumeUploadResponse */
+        CandidateResumeUploadResponse: {
+            /** Parse Id */
+            parse_id: string;
+            /**
+             * Status
+             * @default processing
+             * @enum {string}
+             */
+            status: "processing" | "complete" | "failed";
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
         };
         /**
          * CandidateSearchResult
@@ -1324,6 +1761,18 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["CostBreakdownRow"][];
         };
+        /** CreateBookmarkRequest */
+        CreateBookmarkRequest: {
+            /** User Id */
+            user_id: string;
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Note */
+            note?: string | null;
+        };
         /** CreateClientRequest */
         CreateClientRequest: {
             /** Name */
@@ -1413,6 +1862,16 @@ export interface components {
             skipped_malformed: number;
             /** Candidate Ids */
             candidate_ids: string[];
+        };
+        /** DeleteBookmarkResponse */
+        DeleteBookmarkResponse: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Removed */
+            removed: boolean;
         };
         /**
          * EngagementSequenceResponse
@@ -1543,6 +2002,47 @@ export interface components {
             status: string;
             /** Message */
             message: string;
+        };
+        /** InternalReviewItem */
+        InternalReviewItem: {
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Candidate Id */
+            candidate_id?: string | null;
+            /** Candidate Name */
+            candidate_name?: string | null;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Role Title */
+            role_title?: string | null;
+            /** Client Id */
+            client_id?: string | null;
+            /** Client Name */
+            client_name?: string | null;
+            /** Ai Recommendation */
+            ai_recommendation: string;
+            /** Ai Score */
+            ai_score?: number | null;
+            /** Ai Rationale */
+            ai_rationale?: string | null;
+            /** Submitted By */
+            submitted_by?: string | null;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+        };
+        /** InternalReviewQueueResponse */
+        InternalReviewQueueResponse: {
+            /** Items */
+            items: components["schemas"]["InternalReviewItem"][];
         };
         /** InterviewResponse */
         InterviewResponse: {
@@ -1689,6 +2189,12 @@ export interface components {
             contact_email: string | null;
             /** Company Name */
             company_name: string | null;
+            /** Open Roles Count */
+            open_roles_count?: number | null;
+            /** Open Roles Summary */
+            open_roles_summary?: string | null;
+            /** Suggested Angle */
+            suggested_angle?: string | null;
         };
         /** LeadQueueResponse */
         LeadQueueResponse: {
@@ -1698,6 +2204,37 @@ export interface components {
             next_cursor?: string | null;
             /** Total */
             total: number;
+        };
+        /**
+         * ManualAddShortlistRequest
+         * @description Manually add a candidate with required human scoring feedback.
+         */
+        ManualAddShortlistRequest: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Reason */
+            reason: string;
+            /** Score */
+            score: number;
+            score_overrides: components["schemas"]["ShortlistScoreComponents"];
+            /** Rationale */
+            rationale: string;
+            /** Top Matching Skills */
+            top_matching_skills?: string[];
+            /** Gaps */
+            gaps?: string[];
+        };
+        /**
+         * ManualRemoveShortlistRequest
+         * @description Remove a shortlisted candidate with required human scoring feedback.
+         */
+        ManualRemoveShortlistRequest: {
+            /** Reason */
+            reason: string;
+            score_overrides: components["schemas"]["ShortlistScoreComponents"];
         };
         /** NoteResponse */
         NoteResponse: {
@@ -1833,6 +2370,23 @@ export interface components {
             /** Steps */
             steps: components["schemas"]["PatchStepItem"][];
         };
+        /** PatchRequisitionRequest */
+        PatchRequisitionRequest: {
+            /** Title */
+            title?: string | null;
+            /** Seniority */
+            seniority?: string | null;
+            /** Skills */
+            skills?: string[] | null;
+            /** Compensation Range */
+            compensation_range?: string | null;
+            /** Target Start Date */
+            target_start_date?: string | null;
+            /** Intake Details */
+            intake_details?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** PatchStepItem */
         PatchStepItem: {
             /** Step Index */
@@ -1891,6 +2445,15 @@ export interface components {
             /** Versions */
             versions: string[];
         };
+        /** PromptListItem */
+        PromptListItem: {
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Versions */
+            versions: string[];
+        };
         /** PromptSaveRequest */
         PromptSaveRequest: {
             /** Content */
@@ -1928,6 +2491,24 @@ export interface components {
             /** Reasons */
             reasons: string[];
         };
+        /** RelationshipInfo */
+        RelationshipInfo: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Status */
+            status: string;
+            /** Contact Preference */
+            contact_preference?: string | null;
+            /** Last Contacted At */
+            last_contacted_at?: string | null;
+            /** Next Allowed Contact At */
+            next_allowed_contact_at?: string | null;
+            /** Recruiter Notes */
+            recruiter_notes?: string | null;
+        };
         /** RequisitionResponse */
         RequisitionResponse: {
             /**
@@ -1964,6 +2545,15 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ResumeParseStatusResponse */
+        ResumeParseStatusResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "processing" | "complete" | "failed";
+            profile_snapshot?: components["schemas"]["candidate__schemas__CandidateProfileResponse"] | null;
+        };
         /**
          * ResumeUploadResponse
          * @description Response for POST /supply/resumes/upload (202 Accepted).
@@ -1981,6 +2571,44 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** ReviewDecisionRequest */
+        ReviewDecisionRequest: {
+            /** Action */
+            action: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** ReviewDecisionResponse */
+        ReviewDecisionResponse: {
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Action */
+            action: string;
+            /** Status */
+            status: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * ScoreEditShortlistRequest
+         * @description Edit shortlist score with required human scoring feedback.
+         */
+        ScoreEditShortlistRequest: {
+            /** Reason */
+            reason: string;
+            /** Score */
+            score: number;
+            score_overrides: components["schemas"]["ShortlistScoreComponents"];
+            /** Rationale */
+            rationale?: string | null;
+            /** Top Matching Skills */
+            top_matching_skills?: string[] | null;
+            /** Gaps */
+            gaps?: string[] | null;
+        };
         /**
          * ShortlistResponse
          * @description Response for GET /supply/shortlists/{requisition_id}.
@@ -1996,6 +2624,24 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * ShortlistScoreComponents
+         * @description Human-rated score components used for shortlist training data.
+         */
+        ShortlistScoreComponents: {
+            /** Semantic Similarity */
+            semantic_similarity: number;
+            /** Skill Exact */
+            skill_exact: number;
+            /** Skill Cluster */
+            skill_cluster: number;
+            /** Seniority Fit */
+            seniority_fit: number;
+            /** Domain Match */
+            domain_match: number;
+            /** Signal Composite */
+            signal_composite: number;
+        };
         /** SkippedRow */
         SkippedRow: {
             /** Row */
@@ -2006,6 +2652,48 @@ export interface components {
             reason: string;
             /** Existing Lead Id */
             existing_lead_id?: string | null;
+        };
+        /** SubmissionHistoryItem */
+        SubmissionHistoryItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Candidate Id */
+            candidate_id?: string | null;
+            /** Client Id */
+            client_id?: string | null;
+            /** Client Name */
+            client_name?: string | null;
+            /** Requisition Id */
+            requisition_id?: string | null;
+            /** Role Title */
+            role_title?: string | null;
+            /** Current Stage Name */
+            current_stage_name?: string | null;
+            /** Status */
+            status: string;
+            /** Rejection Reason */
+            rejection_reason?: string | null;
+            /** Rejection Stage */
+            rejection_stage?: string | null;
+            /** Rejected At */
+            rejected_at?: string | null;
+            /** Rejected By */
+            rejected_by?: string | null;
+            /** Cooldown Until */
+            cooldown_until?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * SubmissionResponse
@@ -2101,6 +2789,29 @@ export interface components {
             /** Extraction Method */
             extraction_method?: string | null;
         };
+        /** TimelineEvent */
+        TimelineEvent: {
+            /** Id */
+            id: string;
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Event Type */
+            event_type: string;
+            /** Title */
+            title: string;
+            /** Body */
+            body?: string | null;
+            /** Visibility */
+            visibility: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2113,6 +2824,40 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** CandidateProfileResponse */
+        candidate__schemas__CandidateProfileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Headline */
+            headline?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Remote Preference */
+            remote_preference?: ("remote_only" | "hybrid" | "onsite" | "flexible") | null;
+            /** Seniority */
+            seniority?: string | null;
+            /** Skills */
+            skills?: string[];
+            /** Github Url */
+            github_url?: string | null;
+            /** Linkedin Url */
+            linkedin_url?: string | null;
+            /** Resume Url */
+            resume_url?: string | null;
+            /** Completeness Score */
+            completeness_score: number;
+            /** Enrichment Status */
+            enrichment_status?: string | null;
         };
         /** OutreachStepResponse */
         demand__outreach_config__OutreachStepResponse: {
@@ -2165,6 +2910,32 @@ export interface components {
             };
             /** Failed Agent Events 24H */
             failed_agent_events_24h: number;
+        };
+        /**
+         * CandidateProfileResponse
+         * @description Combined Candidate + TalentPool response for GET /supply/candidates/{id}.
+         */
+        supply__schemas__candidates__CandidateProfileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email?: string | null;
+            /** Linkedin Url */
+            linkedin_url?: string | null;
+            /** Current Company */
+            current_company?: string | null;
+            /** Current Title */
+            current_title?: string | null;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            talent_pool?: components["schemas"]["TalentPoolSummary"] | null;
         };
     };
     responses: never;
@@ -2657,6 +3428,37 @@ export interface operations {
             };
         };
     };
+    get_assignments_endpoint_api_v1_ops_assignments_get: {
+        parameters: {
+            query: {
+                user_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_clients_endpoint_api_v1_ops_clients_get: {
         parameters: {
             query?: never;
@@ -2873,6 +3675,37 @@ export interface operations {
             };
         };
     };
+    list_requisitions_endpoint_api_v1_ops_requisitions_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_requisition_endpoint_api_v1_ops_requisitions_post: {
         parameters: {
             query?: never;
@@ -2916,6 +3749,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_requisition_endpoint_api_v1_ops_requisitions__req_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchRequisitionRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3025,6 +3893,38 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_interviews_endpoint_api_v1_ops_interviews_get: {
+        parameters: {
+            query?: {
+                requisition_id?: string | null;
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3298,6 +4198,39 @@ export interface operations {
             };
         };
     };
+    list_candidates_api_v1_supply_candidates_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateAdminListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_resume_api_v1_supply_resumes_upload_post: {
         parameters: {
             query?: never;
@@ -3318,6 +4251,158 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResumeUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bookmarks_api_v1_supply_bookmarks_get: {
+        parameters: {
+            query: {
+                user_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookmarkListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_bookmark_api_v1_supply_bookmarks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBookmarkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookmarkItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_bookmark_api_v1_supply_bookmarks__candidate_id__delete: {
+        parameters: {
+            query: {
+                user_id: string;
+            };
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteBookmarkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_review_queue_api_v1_supply_internal_review_queue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalReviewQueueResponse"];
+                };
+            };
+        };
+    };
+    internal_review_decision_api_v1_supply_internal_review_queue__submission_id__decision_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDecisionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3385,6 +4470,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShortlistResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manual_add_shortlist_candidate_api_v1_supply_shortlists__requisition_id__manual_add_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requisition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualAddShortlistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manual_remove_shortlist_candidate_api_v1_supply_shortlists__submission_id__manual_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualRemoveShortlistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_shortlist_candidate_score_api_v1_supply_shortlists__submission_id__score_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreEditShortlistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3549,7 +4739,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CandidateProfileResponse"];
+                    "application/json": components["schemas"]["supply__schemas__candidates__CandidateProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_candidate_api_v1_supply_candidates__candidate_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    candidate_relationship_api_v1_supply_candidates__candidate_id__relationship_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateRelationshipBundle"];
                 };
             };
             /** @description Validation Error */
@@ -3649,6 +4901,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EngagementSequenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_onboarding_api_v1_candidate_onboarding_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CandidateOnboardingStartRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["candidate__schemas__CandidateProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profile_api_v1_candidate_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["candidate__schemas__CandidateProfileResponse"];
+                };
+            };
+        };
+    };
+    put_profile_api_v1_candidate_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["candidate__schemas__CandidateProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_resume_api_v1_candidate_profile_resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_resume_api_v1_candidate_profile_resume_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResumeUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_resume_status_api_v1_candidate_profile_resume_status__parse_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parse_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeParseStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3763,6 +5165,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["platform__monitoring_router__PipelineResponse"];
+                };
+            };
+        };
+    };
+    list_prompts_api_v1_monitoring_prompts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromptListItem"][];
                 };
             };
         };
