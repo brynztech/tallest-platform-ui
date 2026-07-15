@@ -124,14 +124,21 @@ describe('layout.tsx (Pitfall 5 + Pitfall 3)', () => {
   })
 })
 
-describe('Dashboard placeholder (D-14)', () => {
+describe('Candidate dashboard (D-14)', () => {
   const src = readFile('dashboard/page.tsx')
 
-  it('exists with coming soon message', () => {
-    expect(src).toContain('coming soon')
+  it('fetches candidate applications with auth headers', () => {
+    expect(src).toContain('/api/v1/candidate/applications')
+    expect(src).toContain('candidateAuthHeaders')
+    expect(src).toContain('CandidateApplicationsResponse')
   })
 
   it('has a link back to /jobs', () => {
     expect(src).toContain('href="/jobs"')
+  })
+
+  it('renders application status and substep copy', () => {
+    expect(src).toContain('substep_label')
+    expect(src).toContain('Application tracker')
   })
 })

@@ -33,6 +33,14 @@ describe('Login (PUB-02)', () => {
   it.todo('calls POST /candidate/auth/login and stores token on success')
   it.todo('shows 401 toast on wrong password')
   it.todo('redirects to redirect param if present after successful login')
+
+  it('uses Clerk sign-in when Clerk is configured and preserves demo fallback', () => {
+    const src = readFile('login/page.tsx')
+    expect(src).toContain('SignInButton')
+    expect(src).toContain('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY')
+    expect(src).toContain('Continue to dashboard')
+    expect(src).toContain('demo@brynzit.local')
+  })
 })
 
 describe('CandidateAuthContext (PUB-02)', () => {
