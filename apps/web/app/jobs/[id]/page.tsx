@@ -25,32 +25,47 @@ function safeHref(url: string | null | undefined): string | undefined {
   return undefined
 }
 
-function formatComp(min: number | null, max: number | null): string | null {
-  if (!min) return null
-  const fmt = (n: number) => `$${(n / 1000).toFixed(0)}k`
-  return max && max !== min ? `${fmt(min)}–${fmt(max)}` : fmt(min)
-}
-
+// schema.org employmentType vocabulary.
 const EMPLOYMENT_TYPE_MAP: Record<PublicJobItem['employment_type'], string> = {
   full_time: 'FULL_TIME',
   part_time: 'PART_TIME',
   contract: 'CONTRACTOR',
+  internship: 'INTERN',
+  temporary: 'TEMPORARY',
 }
 
 const EMPLOYMENT_LABELS: Record<PublicJobItem['employment_type'], string> = {
   full_time: 'Full-time',
   part_time: 'Part-time',
   contract: 'Contract',
+  internship: 'Internship',
+  temporary: 'Temporary',
+}
+
+const REMOTE_LABELS: Record<'onsite' | 'hybrid' | 'remote', string> = {
+  onsite: 'On-site',
+  hybrid: 'Hybrid',
+  remote: 'Remote',
+}
+
+const PERIOD_UNIT: Record<'year' | 'month' | 'hour', string> = {
+  year: 'YEAR',
+  month: 'MONTH',
+  hour: 'HOUR',
 }
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { isLoggedIn } = useCandidateAuth()
+  const { isLoggedIn, token } = useCandidateAuth()
 
   const { data: job, isLoading, error } = useQuery({
-    queryKey: ['public-job', id],
+    queryKey: ['public-job', id, isLoggedIn],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/v1/public/jobs/${id}`)
+      // Sending the token yields this candidate's match strength and reasons for
+      // the role; without it the endpoint still serves the job, unpersonalized.
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = `Bearer ${token}`
+      const res = await fetch(`${API_BASE}/api/v1/public/jobs/${id}`, { headers })
       if (!res.ok) throw new Error(`Job fetch failed: ${res.status}`)
       return res.json() as Promise<PublicJobItem>
     },
@@ -95,15 +110,18 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         address: job.location ?? 'Remote',
       },
     }
-    if (job.compensation_min) {
+    // Only emit baseSalary when the currency and period are actually known.
+    // This previously hardcoded USD/YEAR, which would publish an INR salary to
+    // Google as dollars — a ~85x misstatement in indexed structured data.
+    if (job.compensation_min && job.compensation_currency && job.compensation_period) {
       jsonLd.baseSalary = {
         '@type': 'MonetaryAmount',
-        currency: 'USD',
+        currency: job.compensation_currency,
         value: {
           '@type': 'QuantitativeValue',
           minValue: job.compensation_min,
           maxValue: job.compensation_max ?? job.compensation_min,
-          unitText: 'YEAR',
+          unitText: PERIOD_UNIT[job.compensation_period],
         },
       }
     }
@@ -170,8 +188,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               {job.location}
             </span>
           )}
-          {formatComp(job.compensation_min, job.compensation_max) && (
-            <span className="text-foreground">{formatComp(job.compensation_min, job.compensation_max)}</span>
+          {/* Backend-formatted and currency-qualified; never reformat it here. */}
+          {job.compensation_label && (
+            <span className="text-foreground">{job.compensation_label}</span>
           )}
         </div>
 
@@ -182,7 +201,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               {job.seniority.charAt(0).toUpperCase() + job.seniority.slice(1)}
             </Badge>
           )}
-          {job.remote && <Badge variant="secondary">Remote</Badge>}
+          {job.remote_mode && (
+            <Badge variant="secondary">{REMOTE_LABELS[job.remote_mode]}</Badge>
+          )}
+          {job.openings > 1 && <Badge variant="outline">{job.openings} openings</Badge>}
           {/* Match badge — logged-in only (JOB-05) */}
           {isLoggedIn && job.match_strength === 'strong' && (
             <Badge variant="default">Strong match</Badge>
@@ -192,12 +214,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           )}
         </div>
 
-        {job.skills.length > 0 && (
+        {(job.skills_display?.length ? job.skills_display : job.skills).length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {job.skills.map(skill => (
+            {(job.skills_display?.length ? job.skills_display : job.skills).map(skill => (
               <Badge key={skill} variant="outline">{skill}</Badge>
             ))}
           </div>
+        )}
+
+        {isLoggedIn && job.match_reasons?.length > 0 && job.match_strength !== 'none' && (
+          <ul className="space-y-1 text-sm text-muted-foreground">
+            {job.match_reasons.map(reason => (
+              <li key={reason}>· {reason}</li>
+            ))}
+          </ul>
         )}
       </div>
 
@@ -213,11 +243,40 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </div>
       )}
 
-      <ApplySection
-        jobId={job.id}
-        isLoggedIn={isLoggedIn}
-        completenessScore={profile?.completeness_score ?? null}
-      />
+      {/* A scraped posting lives on the employer's own ATS — we cannot submit an
+          application on the candidate's behalf, so we send them there and say so
+          plainly rather than collecting an application we cannot deliver. Our own
+          client requisitions use the internal apply flow. */}
+      {job.job_kind === 'scraped' ? (
+        <div className="space-y-3 pt-2">
+          {safeHref(job.source_url) ? (
+            <>
+              <a
+                href={safeHref(job.source_url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground shadow-md shadow-primary/15 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Apply on {job.company_name ?? 'company site'}
+              </a>
+              <p className="text-sm text-muted-foreground">
+                This role is posted on the employer&apos;s own careers site. You will apply there
+                directly, so Brynzit cannot track this application in your dashboard.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This posting has no application link available.
+            </p>
+          )}
+        </div>
+      ) : (
+        <ApplySection
+          jobId={job.id}
+          isLoggedIn={isLoggedIn}
+          completenessScore={profile?.completeness_score ?? null}
+        />
+      )}
       </article>
     </main>
   )

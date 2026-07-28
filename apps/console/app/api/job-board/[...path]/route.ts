@@ -1,0 +1,114 @@
+/**
+ * Server-side proxy for the backend's job-board admin API.
+ *
+ * Why a proxy rather than calling the backend directly from the browser: those
+ * endpoints require `X-Admin-Token`, and anything the browser bundle can read is
+ * public. Route handlers run on the server, so the token comes from server-only
+ * env and never reaches the client. The console talks to same-origin
+ * `/api/job-board/*` and holds no credential at all.
+ *
+ * The console has no per-user auth in v1 (trusted-network internal tool), so this
+ * deliberately does not authenticate the caller — it inherits whatever network
+ * boundary protects the console. That is the same posture as the rest of the
+ * console, and the point where Okta would slot in later.
+ */
+import { NextRequest, NextResponse } from 'next/server'
+
+const BACKEND_URL =
+  process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+// Server-only: no NEXT_PUBLIC_ prefix, so Next.js will not inline it into the
+// client bundle.
+const ADMIN_TOKEN = process.env.ADMIN_API_TOKEN ?? ''
+
+/** Methods this proxy will forward. Anything else is refused rather than passed
+ *  through, so the proxy cannot become a general-purpose backend tunnel. */
+const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+
+async function forward(request: NextRequest, path: string[]): Promise<NextResponse> {
+  if (!ALLOWED_METHODS.has(request.method)) {
+    return NextResponse.json({ detail: 'Method not allowed' }, { status: 405 })
+  }
+
+  if (!ADMIN_TOKEN) {
+    // Fail loudly and specifically. Without this the backend returns a bare 503
+    // and an operator has no idea which side is misconfigured.
+    return NextResponse.json(
+      {
+        detail:
+          'ADMIN_API_TOKEN is not set for the console server. Add it to the ' +
+          "console's environment (it must match the backend's ADMIN_API_TOKEN).",
+      },
+      { status: 503 },
+    )
+  }
+
+  // Rebuilt from the matched segments rather than passed through raw, so a
+  // crafted path cannot escape the /job-board prefix.
+  const suffix = path.map(encodeURIComponent).join('/')
+  const query = request.nextUrl.search
+  const target = `${BACKEND_URL}/api/v1/job-board/${suffix}${query}`
+
+  const headers: Record<string, string> = { 'X-Admin-Token': ADMIN_TOKEN }
+  const contentType = request.headers.get('content-type')
+  if (contentType) headers['Content-Type'] = contentType
+
+  let body: string | undefined
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    body = await request.text()
+  }
+
+  try {
+    const response = await fetch(target, {
+      method: request.method,
+      headers,
+      body,
+      // Admin reads must reflect the live crawl, so never serve a cached page.
+      cache: 'no-store',
+    })
+
+    const text = await response.text()
+    return new NextResponse(text, {
+      status: response.status,
+      headers: {
+        'Content-Type': response.headers.get('content-type') ?? 'application/json',
+      },
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        detail: `Could not reach the backend at ${BACKEND_URL}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      },
+      { status: 502 },
+    )
+  }
+}
+
+type RouteContext = { params: Promise<{ path: string[] }> }
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
+}
+
+export async function PUT(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
+}
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
+}

@@ -1,0 +1,160 @@
+/**
+ * Typed client for the job-board admin API.
+ *
+ * Every call goes through the console's own `/api/job-board/*` route handler, not
+ * the backend directly: the admin token lives in server-only env and must never
+ * reach the browser bundle.
+ */
+
+export type IngestionRunStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed'
+
+export type IngestionRunError = {
+  company_id?: string
+  display_name?: string
+  source?: string
+  error: string
+  stage?: string
+}
+
+export type IngestionRun = {
+  id: string
+  status: IngestionRunStatus
+  trigger: string
+  triggered_by: string | null
+  started_at: string | null
+  finished_at: string | null
+  companies_total: number
+  companies_done: number
+  jobs_fetched: number
+  jobs_inserted: number
+  jobs_updated: number
+  jobs_closed: number
+  /** Fetched but not stored — currently postings outside US/IN. Surfaced so a
+   *  smaller-than-expected result is explainable rather than mysterious. */
+  jobs_rejected: number
+  errors: IngestionRunError[]
+  created_at: string
+}
+
+export type IngestionRunList = { items: IngestionRun[]; total: number }
+
+export type JobSource = {
+  source: string
+  display_name: string
+  requires_board_token: boolean
+  enabled: boolean
+  notes: string
+  docs_url: string | null
+}
+
+export type TrackedCompany = {
+  id: string
+  source: string
+  board_token: string
+  display_name: string
+  website_url: string
+  canonical_domain: string
+  is_active: boolean
+  created_at: string
+}
+
+export type VisibilityRules = {
+  max_age_days: number | null
+  allowed_countries: string[]
+  allowed_sources: string[]
+  min_quality_score: number
+  require_compensation: boolean
+  blocked_company_domains: string[]
+  blocked_title_patterns: string[]
+  /** Increments on every save; part of the feed cache key, so a change takes
+   *  effect platform-wide on the next request. */
+  rules_version: number
+  updated_by: string | null
+  updated_at: string
+}
+
+export type VisibilityRulesUpdate = Partial<
+  Omit<VisibilityRules, 'rules_version' | 'updated_by' | 'updated_at'>
+>
+
+export type VisibilityImpact = {
+  total_active: number
+  visible: number
+  hidden: number
+  by_country: Record<string, number>
+  /** Non-null when the proposed rules would show candidates nothing. */
+  warning: string | null
+}
+
+const BASE = '/api/job-board'
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...init?.headers,
+    },
+  })
+
+  if (!response.ok) {
+    // Surface the backend's own message: "an ingestion run is already active",
+    // "invalid title pattern", etc. are actionable; "Request failed" is not.
+    let detail = `Request failed (${response.status})`
+    try {
+      const body = await response.json()
+      if (typeof body?.detail === 'string') detail = body.detail
+    } catch {
+      /* non-JSON error body — keep the status-based message */
+    }
+    throw new Error(detail)
+  }
+
+  if (response.status === 204) return undefined as T
+  return (await response.json()) as T
+}
+
+export const jobBoardApi = {
+  listSources: () => request<JobSource[]>('/sources'),
+
+  listCompanies: () => request<TrackedCompany[]>('/companies'),
+
+  seedCompanies: () => request<TrackedCompany[]>('/companies/seed', { method: 'POST' }),
+
+  addCompany: (body: {
+    source: string
+    board_token: string
+    website_url: string
+    display_name?: string
+  }) => request<TrackedCompany>('/companies', { method: 'POST', body: JSON.stringify(body) }),
+
+  /** 202 + a pollable run record. 409 if a crawl is already in flight, which is
+   *  what makes an impatient double-click harmless. */
+  startRun: () => request<IngestionRun>('/ingestion-runs', { method: 'POST' }),
+
+  getRun: (id: string) => request<IngestionRun>(`/ingestion-runs/${id}`),
+
+  listRuns: (limit = 10) => request<IngestionRunList>(`/ingestion-runs?limit=${limit}`),
+
+  getVisibilityRules: () => request<VisibilityRules>('/visibility-rules'),
+
+  saveVisibilityRules: (body: VisibilityRulesUpdate) =>
+    request<VisibilityRules>('/visibility-rules', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+
+  /** Impact of a proposed policy WITHOUT saving it. Exists because a tight age
+   *  window can silently empty the candidate site. */
+  previewVisibilityRules: (body: VisibilityRulesUpdate) =>
+    request<VisibilityImpact>('/visibility-rules/preview', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+}
+
+export const RUN_IN_PROGRESS: IngestionRunStatus[] = ['queued', 'running']
+
+export function isRunActive(run: IngestionRun | undefined | null): boolean {
+  return run != null && RUN_IN_PROGRESS.includes(run.status)
+}

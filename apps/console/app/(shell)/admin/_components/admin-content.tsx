@@ -9,8 +9,9 @@ import { AdminQuotasTab } from './admin-quotas-tab'
 import { AdminPipelineTab } from './admin-pipeline-tab'
 import { AdminPromptsTab } from './admin-prompts-tab'
 import { AdminCandidatesTab } from './admin-candidates-tab'
+import { AdminJobSourcesTab } from './admin-job-sources-tab'
 
-const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates'] as const
+const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates', 'job-sources'] as const
 type AdminTab = (typeof VALID_TABS)[number]
 
 function isAdminTab(value: string): value is AdminTab {
@@ -46,6 +47,8 @@ export function AdminContent() {
         return <AdminPromptsTab />
       case 'candidates':
         return <AdminCandidatesTab />
+      case 'job-sources':
+        return <AdminJobSourcesTab />
       default:
         return <AdminOverviewTab onNavigate={handleTabChange} />
     }
@@ -65,6 +68,7 @@ export function AdminContent() {
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="prompts">Prompts</TabsTrigger>
           <TabsTrigger value="candidates">Candidates</TabsTrigger>
+          <TabsTrigger value="job-sources">Job sources</TabsTrigger>
         </TabsList>
       </Tabs>
       {renderActiveTab()}

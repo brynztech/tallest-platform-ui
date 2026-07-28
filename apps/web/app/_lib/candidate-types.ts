@@ -2,25 +2,82 @@
 // Types derived from .planning/contracts/*.yaml
 // DELETE and import from api.d.ts when candidate backend endpoints ship.
 
+export type EmploymentType =
+  | 'full_time'
+  | 'part_time'
+  | 'contract'
+  | 'internship'
+  | 'temporary'
+
+/** Job-side workplace arrangement. Supersedes the `remote` boolean, which
+ *  cannot express hybrid — the most common real arrangement. */
+export type RemoteMode = 'onsite' | 'hybrid' | 'remote'
+
+export type Seniority =
+  | 'intern'
+  | 'junior'
+  | 'mid'
+  | 'senior'
+  | 'staff'
+  | 'lead'
+  | 'principal'
+  | 'director'
+  | 'exec'
+
+/** 'scraped' = public ATS posting (apply outbound via source_url).
+ *  'client_requisition' = our own role (apply through the platform). */
+export type JobKind = 'scraped' | 'client_requisition'
+
 export type PublicJobItem = {
   id: string
   title: string
   company_name: string | null
-  employment_type: 'full_time' | 'part_time' | 'contract'
+  employment_type: EmploymentType
   location: string | null
+  /** Legacy flag kept for compatibility; prefer `remote_mode`. */
   remote: boolean
-  seniority: 'junior' | 'mid' | 'senior' | 'staff' | 'principal' | null
+  seniority: Seniority | null
+  /** Normalized slugs — what the ?skills= filter accepts. Render
+   *  `skills_display` instead: "cplusplus" is not what a human should read. */
   skills: string[]
   date_posted: string
   description_summary: string | null
   compensation_min: number | null
   compensation_max: number | null
   match_strength: 'strong' | 'partial' | 'none' | null
+
+  job_kind: JobKind
+  source: string | null
+  /** External apply URL for scraped jobs; null for our own requisitions. */
+  source_url: string | null
+  country: string | null
+  city: string | null
+  remote_mode: RemoteMode | null
+  role_family: string | null
+  compensation_currency: string | null
+  compensation_period: 'year' | 'month' | 'hour' | null
+  /** Why this job matched, e.g. "3 of 4 skills matched (python, …)". */
+  match_reasons: string[]
+  /** Render-ready skill labels ("C++", "CI/CD"). */
+  skills_display: string[]
+  /** Preformatted, currency-qualified pay ("USD 160k–210k/yr"), or null.
+   *  Never render an amount without this — 2,000,000 is ~INR 20L or ~USD 2M. */
+  compensation_label: string | null
+  /** Identical postings collapsed into this entry (a company opening N seats
+   *  on one role). >1 renders as "N openings". */
+  openings: number
 }
 
 export type PublicJobsResponse = {
   items: PublicJobItem[]
   next_cursor: string | null
+  /** Total matching the current filters; a floor when `truncated` is true. */
+  total: number
+  /** True when the ranked set hit its size cap, so more exist than `total` says. */
+  truncated: boolean
+  /** True when the caller has a profile to match against — lets the UI tell
+   *  "no matches" apart from "no profile yet". */
+  personalized: boolean
 }
 
 export type CandidateProfile = {

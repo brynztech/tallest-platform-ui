@@ -5,6 +5,11 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 type CandidateAuth = {
   isLoggedIn: boolean
   candidate: CandidateIdentity | null
+  /** Session bearer token, exposed so callers can personalize API reads (the
+   *  public job feed ranks against the caller's profile when it is sent).
+   *  Held in state rather than re-read from localStorage per call, so a sign-in
+   *  or sign-out re-renders consumers instead of leaving them on a stale token. */
+  token: string | null
   signIn: (token: string, candidate: CandidateIdentity) => void
   signOut: () => void
 }
@@ -25,30 +30,36 @@ export function CandidateAuthProvider({
   enableClerk?: boolean
 }) {
   const [candidate, setCandidate] = useState<CandidateIdentity | null>(null)
+  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
     // T-05-03: try/catch guards against prototype pollution via corrupt localStorage
-    const token = localStorage.getItem('candidate_access_token')
+    const stored_token = localStorage.getItem('candidate_access_token')
     const stored = localStorage.getItem('candidate_data')
-    if (token && stored) {
-      try { setCandidate(JSON.parse(stored)) } catch { /* corrupt — ignore per T-05-03 */ }
+    if (stored_token && stored) {
+      try {
+        setCandidate(JSON.parse(stored))
+        setToken(stored_token)
+      } catch { /* corrupt — ignore per T-05-03 */ }
     }
   }, [])
 
-  const signIn = useCallback((token: string, data: CandidateIdentity) => {
-    localStorage.setItem('candidate_access_token', token)
+  const signIn = useCallback((next_token: string, data: CandidateIdentity) => {
+    localStorage.setItem('candidate_access_token', next_token)
     localStorage.setItem('candidate_data', JSON.stringify(data))
     setCandidate(data)
+    setToken(next_token)
   }, [])
 
   const signOut = useCallback(() => {
     localStorage.removeItem('candidate_access_token')
     localStorage.removeItem('candidate_data')
     setCandidate(null)
+    setToken(null)
   }, [])
 
   return (
-    <CandidateAuthContext.Provider value={{ isLoggedIn: !!candidate, candidate, signIn, signOut }}>
+    <CandidateAuthContext.Provider value={{ isLoggedIn: !!candidate, candidate, token, signIn, signOut }}>
       {enableClerk ? (
         <ClerkCandidateSessionBridge signIn={signIn} signOut={signOut}>
           {children}

@@ -20,8 +20,21 @@ describe('CandidateAuthContext (T-05-03)', () => {
   })
 
   it('contains T-05-03 try/catch for corrupt localStorage', () => {
-    // T-05-03: prototype pollution via corrupt localStorage must be caught
-    expect(src).toContain('try { setCandidate(JSON.parse(stored)) } catch')
+    // T-05-03: prototype pollution via corrupt localStorage must be caught.
+    // Asserts the GUARANTEE (every JSON.parse of stored data sits inside a
+    // try/catch) rather than one exact source line, so the check survives
+    // refactors of the provider instead of failing on formatting.
+    const parses = src.match(/JSON\.parse\(/g) ?? []
+    expect(parses.length).toBeGreaterThan(0)
+
+    for (const match of src.matchAll(/JSON\.parse\(/g)) {
+      const before = src.slice(0, match.index)
+      const tryIndex = before.lastIndexOf('try {')
+      const catchAfterTry = src.indexOf('catch', tryIndex)
+      expect(tryIndex).toBeGreaterThan(-1)
+      // The catch must come after this parse, i.e. the parse is inside the block.
+      expect(catchAfterTry).toBeGreaterThan(match.index!)
+    }
   })
 
   it('stores token and data in localStorage on signIn', () => {

@@ -43,6 +43,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           NEXT_PUBLIC_API_URL: ${{ secrets.DEV_NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.DEV_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          # Server-side only. Gates the job-board admin API and is read exclusively
+          # inside apps/console/app/api/job-board/[...path]/route.ts, which runs on
+          # the server — so it never reaches the browser bundle. MUST match the
+          # backend's ADMIN_API_TOKEN or the Job sources tab returns 503.
+          DEV_ADMIN_API_TOKEN: ${{ secrets.DEV_ADMIN_API_TOKEN }}
+          # Base URL the console's route handler calls server-to-server. Falls back
+          # to the public URL when unset.
+          DEV_BACKEND_API_URL: ${{ secrets.DEV_BACKEND_API_URL }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/frontend-dev "$FRONTEND_DEV_SSH_USER@$FRONTEND_DEV_HOST" \
@@ -86,7 +94,17 @@ jobs:
           cat > apps/console/.env.production <<EOF
           NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
           NEXT_PUBLIC_API_MOCKING=disabled
+          BACKEND_API_URL=${DEV_BACKEND_API_URL:-$NEXT_PUBLIC_API_URL}
+          ADMIN_API_TOKEN=$DEV_ADMIN_API_TOKEN
           EOF
+          chmod 600 apps/console/.env.production
+
+          if [ -z "$DEV_ADMIN_API_TOKEN" ]; then
+            echo "WARNING: DEV_ADMIN_API_TOKEN secret is not set."
+            echo "  The console will deploy and every other tab will work, but"
+            echo "  Admin -> Job sources will return 503 until this secret is added"
+            echo "  and matches the backend's ADMIN_API_TOKEN."
+          fi
 
           pnpm install --frozen-lockfile
           pnpm --filter @brynzit/web build

@@ -75,8 +75,20 @@ describe('Job card hover polish (POL-02, POL-06)', () => {
 
 describe('Filter bar focus rings (POL-06)', () => {
   const src = readFile('jobs/_components/filter-bar.tsx')
-  it('adds an accent focus ring to all 6 raw buttons', () => {
-    expect(src.match(/focus-visible:ring-ring/g)?.length).toBe(6)
+
+  it('gives every raw button an accent focus ring', () => {
+    // Asserts the guarantee rather than an occurrence count: the chip buttons are
+    // rendered from a map now, so a fixed count breaks on any refactor while
+    // saying nothing about whether the rings are actually there.
+    const rawButtons = src.split('<button').slice(1)
+    expect(rawButtons.length).toBeGreaterThan(0)
+    for (const fragment of rawButtons) {
+      const openingTag = fragment.slice(0, fragment.indexOf('>'))
+      const attrs = openingTag.includes('className')
+        ? openingTag
+        : fragment.slice(0, fragment.indexOf('</button>'))
+      expect(attrs).toContain('focus-visible:ring-ring')
+    }
   })
 })
 
