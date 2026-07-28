@@ -25,6 +25,13 @@ const ADMIN_TOKEN = process.env.ADMIN_API_TOKEN ?? ''
  *  through, so the proxy cannot become a general-purpose backend tunnel. */
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
 
+/** Upstream timeout. Every endpoint behind this proxy is fast — the crawl itself
+ *  is async and returns 202 immediately, and the heaviest read is a handful of
+ *  COUNTs for the visibility preview. Without a bound, an unreachable-but-not-
+ *  refusing backend leaves the admin panel spinning forever with no error; a
+ *  504 at least tells the operator what is wrong. */
+const UPSTREAM_TIMEOUT_MS = 15_000
+
 async function forward(request: NextRequest, path: string[]): Promise<NextResponse> {
   if (!ALLOWED_METHODS.has(request.method)) {
     return NextResponse.json({ detail: 'Method not allowed' }, { status: 405 })
@@ -65,6 +72,7 @@ async function forward(request: NextRequest, path: string[]): Promise<NextRespon
       body,
       // Admin reads must reflect the live crawl, so never serve a cached page.
       cache: 'no-store',
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     })
 
     const text = await response.text()
@@ -75,13 +83,21 @@ async function forward(request: NextRequest, path: string[]): Promise<NextRespon
       },
     })
   } catch (error) {
+    // Distinguish "took too long" from "could not connect": they need different
+    // fixes, and a single generic message sends operators down the wrong path.
+    const timedOut =
+      error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
     return NextResponse.json(
       {
-        detail: `Could not reach the backend at ${BACKEND_URL}: ${
-          error instanceof Error ? error.message : 'unknown error'
-        }`,
+        detail: timedOut
+          ? `The backend at ${BACKEND_URL} did not respond within ${
+              UPSTREAM_TIMEOUT_MS / 1000
+            }s.`
+          : `Could not reach the backend at ${BACKEND_URL}: ${
+              error instanceof Error ? error.message : 'unknown error'
+            }`,
       },
-      { status: 502 },
+      { status: timedOut ? 504 : 502 },
     )
   }
 }

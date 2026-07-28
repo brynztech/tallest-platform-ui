@@ -1,6 +1,7 @@
 'use client'
 
-import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from '@brynzit/ui/components/ui/tabs'
 import { AdminOverviewTab } from './admin-overview-tab'
 import { AdminCostsTab } from './admin-costs-tab'
@@ -14,22 +15,56 @@ import { AdminJobSourcesTab } from './admin-job-sources-tab'
 const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates', 'job-sources'] as const
 type AdminTab = (typeof VALID_TABS)[number]
 
+const DEFAULT_TAB: AdminTab = 'overview'
+
 function isAdminTab(value: string): value is AdminTab {
   return (VALID_TABS as readonly string[]).includes(value)
 }
 
+/** WR-06: whitelist tab values so arbitrary URL params can't be injected. */
+function normalizeTab(raw: string | null): AdminTab {
+  return raw && isAdminTab(raw) ? raw : DEFAULT_TAB
+}
+
 export function AdminContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
-  const rawTab = searchParams.get('tab') ?? 'overview'
-  // WR-06: whitelist tab values so arbitrary URL params can't be injected
-  const activeTab: AdminTab = isAdminTab(rawTab) ? rawTab : 'overview'
+  const urlTab = normalizeTab(searchParams.get('tab'))
 
-  function handleTabChange(value: string) {
-    if (!isAdminTab(value)) return
-    router.push(`${pathname}?tab=${value}`)
-  }
+  // Local state is the rendering source of truth, NOT useSearchParams.
+  //
+  // /admin is a statically prerendered route, and Next.js keys its client router
+  // cache by pathname. A `router.push('/admin?tab=x')` therefore looks like
+  // "already have this route" and gets elided, so useSearchParams() never
+  // updated — and because <Tabs> is controlled by that value, neither the URL nor
+  // the panel changed. It only showed up after a hard load (refresh or direct URL
+  // entry); soft-navigating into /admin leaves a live tree where the update does
+  // propagate, which is why it looked intermittent.
+  //
+  // Driving the render from state makes a tab switch instant and independent of
+  // the router cache entirely. Covered by e2e/admin-tabs.spec.ts.
+  const [activeTab, setActiveTab] = useState<AdminTab>(urlTab)
+
+  // Follow the URL when it changes underneath us: browser back/forward, and the
+  // initial value once search params resolve after hydration.
+  useEffect(() => {
+    setActiveTab(urlTab)
+  }, [urlTab])
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      if (!isAdminTab(value)) return
+      setActiveTab(value)
+
+      // Native history API rather than router.push: Next.js merges pushState into
+      // usePathname/useSearchParams, and unlike the router it cannot be dropped as
+      // a no-op for a query-only change on a static route. pushState rather than
+      // replaceState so browser back still walks through visited tabs.
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('tab', value)
+      window.history.pushState(null, '', `?${params.toString()}`)
+    },
+    [searchParams],
+  )
 
   function renderActiveTab() {
     switch (activeTab) {
