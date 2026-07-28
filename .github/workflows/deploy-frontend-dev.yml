@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/frontend-dev "$FRONTEND_DEV_SSH_USER@$FRONTEND_DEV_HOST" \
-            "FRONTEND_BRANCH=frontend-dev GITHUB_TOKEN='$GITHUB_TOKEN' NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY='$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY' bash -s" <<'REMOTE'
+            "FRONTEND_BRANCH=frontend-dev GITHUB_TOKEN='$GITHUB_TOKEN' NEXT_PUBLIC_API_URL='$NEXT_PUBLIC_API_URL' NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY='$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY' DEV_ADMIN_API_TOKEN='${DEV_ADMIN_API_TOKEN:-}' DEV_BACKEND_API_URL='${DEV_BACKEND_API_URL:-}' bash -s" <<'REMOTE'
           set -euo pipefail
 
           REPO_URL="https://github.com/bhuvan777/talent-platform-ui.git"
@@ -91,15 +91,18 @@ jobs:
           NEXT_PUBLIC_API_MOCKING=disabled
           EOF
 
+          CONSOLE_BACKEND_URL="${DEV_BACKEND_API_URL:-}"
+          CONSOLE_ADMIN_TOKEN="${DEV_ADMIN_API_TOKEN:-}"
+
           cat > apps/console/.env.production <<EOF
           NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
           NEXT_PUBLIC_API_MOCKING=disabled
-          BACKEND_API_URL=${DEV_BACKEND_API_URL:-$NEXT_PUBLIC_API_URL}
-          ADMIN_API_TOKEN=$DEV_ADMIN_API_TOKEN
+          BACKEND_API_URL=${CONSOLE_BACKEND_URL:-$NEXT_PUBLIC_API_URL}
+          ADMIN_API_TOKEN=$CONSOLE_ADMIN_TOKEN
           EOF
           chmod 600 apps/console/.env.production
 
-          if [ -z "$DEV_ADMIN_API_TOKEN" ]; then
+          if [ -z "$CONSOLE_ADMIN_TOKEN" ]; then
             echo "WARNING: DEV_ADMIN_API_TOKEN secret is not set."
             echo "  The console will deploy and every other tab will work, but"
             echo "  Admin -> Job sources will return 503 until this secret is added"
