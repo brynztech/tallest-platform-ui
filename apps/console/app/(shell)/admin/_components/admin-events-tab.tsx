@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -40,6 +40,21 @@ const DOMAIN_OPTIONS = [
   'admin',
   'monitoring',
 ]
+
+// Stable reference reused as the useQuery fallback below. A bare empty-array
+// literal used directly as that fallback would look identical but is NOT the
+// same fix: such a literal in a default parameter is re-created on every
+// render, and TanStack Table's own FAQ documents exactly this — an unstable
+// `data` reference makes it detect a "changed" table on every render, request
+// another update to recompute the row model, and re-render forever. Because
+// that render loop reschedules itself via microtasks, it starves the
+// macrotask queue, so nothing that queues as a macrotask (the in-flight
+// fetch's own response handler, CDP input dispatch, even trivial JS
+// evaluation) ever gets a turn — which is why clicking the Events tab froze
+// the whole page rather than just re-rendering slowly. Reusing one array
+// skips the update the moment the query resolves, since `events` then stops
+// changing identity every render.
+const EMPTY_EVENTS: AgentEventOut[] = []
 
 const columnHelper = createColumnHelper<AgentEventOut>()
 
@@ -146,7 +161,7 @@ export function AdminEventsTab() {
   })
   const [taskTypeFilter, setTaskTypeFilter] = useState('')
 
-  const { data: events = [] } = useQuery({
+  const { data: events = EMPTY_EVENTS } = useQuery({
     queryKey: ['monitoring-events', appliedServerFilters, offset],
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
@@ -168,12 +183,21 @@ export function AdminEventsTab() {
     staleTime: 60000,
   })
 
-  // task_type is client-side ONLY — /monitoring/agent-events has no task_type param
-  const displayedEvents = taskTypeFilter
-    ? events.filter((e) =>
-        e.task_type?.toLowerCase().includes(taskTypeFilter.toLowerCase()),
-      )
-    : events
+  // task_type is client-side ONLY — /monitoring/agent-events has no task_type param.
+  // Memoized for the same reason `events` needs a stable empty-array fallback
+  // above: `.filter()` allocates a new array every render, and feeding
+  // useReactTable an unstable `data` reference is what caused the freeze this
+  // component is now guarded against. Recomputes only when its actual inputs
+  // change, not on every render.
+  const displayedEvents = useMemo(
+    () =>
+      taskTypeFilter
+        ? events.filter((e) =>
+            e.task_type?.toLowerCase().includes(taskTypeFilter.toLowerCase()),
+          )
+        : events,
+    [events, taskTypeFilter],
+  )
 
   function handleApplyFilters() {
     setAppliedServerFilters({
