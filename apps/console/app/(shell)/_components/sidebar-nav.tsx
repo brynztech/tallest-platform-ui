@@ -27,6 +27,7 @@ import {
 } from '../_lib/recruiter-portal'
 import { cn } from '@brynzit/ui/lib/utils'
 import { useCan } from '@brynzit/identity'
+import { capabilityForRoute } from '../_lib/route-capabilities'
 
 const PRIMARY_ICONS = [Send, UsersRound, LayoutDashboard, CalendarDays, Inbox, Share2, Bot] as const
 const INTERNAL_OPS_ICONS = [
@@ -45,10 +46,17 @@ export function SidebarNav() {
   const searchParams = useSearchParams()
   const can = useCan()
   const canSeeInternalOps = can('internal_ops.view')
-  const canSeeAdmin = can('admin.view')
-  const canApproveGate = can('submission.approve_gate')
-  const canBookmark = can('candidate.bookmark')
   const isSubmitActive = pathname === '/submit' || pathname.startsWith('/supply/ingest')
+
+  // Reads the SAME map the route-level guards in each layout.tsx enforce (see
+  // _lib/route-capabilities.ts), so a nav link and its destination page can no
+  // longer disagree about who may see a route — which is exactly how a
+  // recruiter previously found "Admin Panel" hidden from the nav while
+  // `/admin` rendered fine if they typed the URL directly.
+  function canAccessRoute(href: string): boolean {
+    const required = capabilityForRoute(href)
+    return required === null || can(required)
+  }
 
   return (
     <nav
@@ -116,7 +124,7 @@ export function SidebarNav() {
           icon={<Briefcase className="size-4" />}
           isActive={pathname === '/my-roles'}
         />
-        {canBookmark && (
+        {canAccessRoute('/bookmarks') && (
           <SidebarLink
             href="/bookmarks"
             label="Bookmarks"
@@ -140,8 +148,7 @@ export function SidebarNav() {
           </span>
           {INTERNAL_OPS_ITEMS.map((item, index) => {
             const Icon = INTERNAL_OPS_ICONS[index]
-            if (item.href === '/admin' && !canSeeAdmin) return null
-            if (item.href === '/ops/quality-review' && !canApproveGate) return null
+            if (!canAccessRoute(item.href)) return null
             const activePrefixes = item.activePrefixes ?? [item.href]
             const isActive = activePrefixes.some(
               (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

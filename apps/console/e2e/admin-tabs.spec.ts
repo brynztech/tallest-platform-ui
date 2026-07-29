@@ -20,6 +20,18 @@ import { expect, test } from '@playwright/test'
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:3101'
 
+// /admin now requires the admin.view capability (see rbac.spec.ts) — the
+// default seed identity is a recruiter, who is correctly blocked from it.
+// These tests are about tab-switching behavior, not RBAC, so every test in
+// this file runs as the admin seed user via an init script that sets the
+// acting-user id before the app's first script runs, rather than the slower
+// path of clicking through the identity switcher per test.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('brynzit.identity.actingUserId', 'usr_admin')
+  })
+})
+
 test.describe('Admin tabs survive a hard reload', () => {
   test('switching tabs after a direct load updates URL and panel', async ({ page }) => {
     // Hard load straight onto a non-default tab — this is the trigger.
