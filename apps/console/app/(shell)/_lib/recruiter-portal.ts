@@ -67,7 +67,7 @@ export const RECRUITER_ROUTES: RecruiterRoute[] = [
   { href: '/calendar', label: 'Calendar' },
   { href: '/messages', label: 'Client Messages' },
   { href: '/cross-list', label: 'Cross List' },
-  { href: '/rewards', label: 'Referrals and Promotions' },
+  { href: '/rewards', label: 'Referrals' },
 ]
 
 export const RECRUITER_ROUTE_ALIASES: RecruiterRouteAlias[] = [

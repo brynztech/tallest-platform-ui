@@ -39,7 +39,16 @@ export const RECRUITER_STALE_TIME_MS = 30_000
 export async function fetchOpsClients() {
   const { data, error } = await apiClient.GET('/api/v1/ops/clients')
   if (error) throw error
-  return data ?? []
+  return dedupeClientsByName(data ?? [])
+}
+
+function dedupeClientsByName(clients: OpsClient[]) {
+  const uniqueByName = new Map<string, OpsClient>()
+  for (const client of clients) {
+    const key = client.name.trim().toLowerCase()
+    if (!uniqueByName.has(key)) uniqueByName.set(key, client)
+  }
+  return [...uniqueByName.values()]
 }
 
 export async function fetchClientRequisitions(client: OpsClient): Promise<RequisitionWithClient[]> {

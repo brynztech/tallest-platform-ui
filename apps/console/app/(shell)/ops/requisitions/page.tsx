@@ -43,6 +43,24 @@ const createReqSchema = z.object({
   target_start_date: z.string().nullable().optional(),
 })
 type CreateReqFormValues = z.infer<typeof createReqSchema>
+type RequisitionResponse = components['schemas']['RequisitionResponse']
+
+function getParsedSkills(skills: unknown) {
+  if (Array.isArray(skills)) {
+    return skills.filter((skill): skill is string => typeof skill === 'string')
+  }
+  if (typeof skills === 'string') return [skills]
+  return []
+}
+
+function hasParsedRequisitionFields(requisition: RequisitionResponse) {
+  return Boolean(
+    requisition.seniority ||
+      getParsedSkills(requisition.skills).length > 0 ||
+      requisition.compensation_range ||
+      requisition.target_start_date,
+  )
+}
 
 export default function RequisitionsPage() {
   const router = useRouter()
@@ -114,13 +132,12 @@ export default function RequisitionsPage() {
   })
 
   // --- useAsyncJob for JD parse ---
-  // CRITICAL: statusMap override required — 'open' not in DEFAULT_STATUS_MAP
-  // statusMap: { open: 'complete', filled: 'complete', closed: 'complete', parsing: 'pending' }
-  const { phase, data: polledReq } = useAsyncJob<components['schemas']['RequisitionResponse']>({
+  // Keep polling an "open" requisition until parsed fields are actually populated.
+  const { phase, data: polledReq } = useAsyncJob<RequisitionResponse>({
     jobId: isParsingJd ? reqId : null,
     endpoint: '/api/v1/ops/requisitions/{id}',
     statusMap: {
-      open: 'complete',
+      open: 'pending',
       filled: 'complete',
       closed: 'complete',
       parsing: 'pending',
@@ -128,7 +145,7 @@ export default function RequisitionsPage() {
     refetchInterval: 2000,
   })
 
-  const isParsing = phase === 'pending'
+  const isParsing = isParsingJd && !parsePhaseComplete && phase !== 'failed'
   const parseFailed = phase === 'failed'
 
   // Surface parse failure via toast (D-07)
@@ -139,19 +156,19 @@ export default function RequisitionsPage() {
     }
   }, [parseFailed])
 
-  // Mark complete for navigate button
+  // Mark complete only once structured fields are actually visible on the requisition.
   useEffect(() => {
-    if (phase === 'complete') {
-      setParsePhaseComplete(true)
-      if (polledReq) {
-        form.setValue('title', polledReq.title)
-        form.setValue('seniority', polledReq.seniority ?? '')
-        form.setValue('skills', ((polledReq.skills as string[] | null) ?? []).join(', '))
-        form.setValue('compensation_range', polledReq.compensation_range ?? '')
-        form.setValue('target_start_date', polledReq.target_start_date ?? '')
-      }
+    if (!isParsingJd || !polledReq || !hasParsedRequisitionFields(polledReq)) {
+      return
     }
-  }, [phase, polledReq, form])
+    setParsePhaseComplete(true)
+    setIsParsingJd(false)
+    form.setValue('title', polledReq.title)
+    form.setValue('seniority', polledReq.seniority ?? '')
+    form.setValue('skills', getParsedSkills(polledReq.skills).join(', '))
+    form.setValue('compensation_range', polledReq.compensation_range ?? '')
+    form.setValue('target_start_date', polledReq.target_start_date ?? '')
+  }, [isParsingJd, polledReq, form])
 
   // --- Create requisition mutation ---
   const createMutation = useMutation({
@@ -203,21 +220,17 @@ export default function RequisitionsPage() {
 
     setIsSavingReview(true)
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/ops/requisitions/${reqId}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: values.title,
-            seniority: values.seniority || null,
-            skills,
-            compensation_range: values.compensation_range || null,
-            target_start_date: values.target_start_date || null,
-          }),
+      const { error } = await apiClient.PATCH('/api/v1/ops/requisitions/{req_id}', {
+        params: { path: { req_id: reqId } },
+        body: {
+          title: values.title,
+          seniority: values.seniority || null,
+          skills,
+          compensation_range: values.compensation_range || null,
+          target_start_date: values.target_start_date || null,
         },
-      )
-      if (!response.ok) throw new Error(`PATCH failed: ${response.status}`)
+      })
+      if (error) throw error
       queryClient.invalidateQueries({ queryKey: ['ops-requisition', reqId] })
       queryClient.invalidateQueries({ queryKey: ['ops-requisitions'] })
       router.push(`/ops/requisitions/${reqId}`)
@@ -443,7 +456,9 @@ export default function RequisitionsPage() {
                     // Phase 3 — Parsed fields animate in and can be corrected before navigating.
                     <>
                       <p className="text-xs text-muted-foreground">
-                        Parsed from JD — review and correct before navigating.
+                        {parseFailed
+                          ? 'Parsing failed — fill fields manually before navigating.'
+                          : 'Parsed from JD — review and correct before navigating.'}
                       </p>
                       <div
                         className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"

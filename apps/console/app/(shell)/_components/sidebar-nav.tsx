@@ -60,7 +60,7 @@ export function SidebarNav() {
 
   return (
     <nav
-      className="flex w-56 shrink-0 flex-col border-r border-border/70 bg-white/90 shadow-sm shadow-slate-200/70 backdrop-blur"
+      className="flex h-full w-56 shrink-0 flex-col overflow-y-auto border-r border-border/70 bg-white/90 shadow-sm shadow-slate-200/70 backdrop-blur"
       aria-label="Recruiter portal navigation"
     >
       <div className="flex flex-col gap-2 p-3">
@@ -134,7 +134,7 @@ export function SidebarNav() {
         )}
         <SidebarLink
           href="/rewards"
-          label="Referrals and Promotions"
+          label="Referrals"
           icon={<CircleDollarSign className="size-4" />}
           isActive={pathname === '/rewards'}
           variant="outline"

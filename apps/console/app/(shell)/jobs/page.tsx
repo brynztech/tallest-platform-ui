@@ -51,7 +51,7 @@ export default function JobsPage() {
   if (hasError) {
     return (
       <div className="p-6">
-        <p className="text-sm text-destructive">Couldn&apos;t load jobs from Ops requisitions.</p>
+        <p className="text-sm text-destructive">Couldn&apos;t load open jobs right now.</p>
       </div>
     )
   }
@@ -62,12 +62,11 @@ export default function JobsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">Browse Jobs</h1>
           <p className="text-sm text-muted-foreground">
-            Live requisitions loaded from Ops clients. Open a requisition for matching,
-            shortlist, interviews, and placement work.
+            Live client roles ready for matching, shortlist, interviews, and placement work.
           </p>
         </div>
         <Button asChild size="sm">
-          <Link href="/ops/requisitions">Open Ops Requisitions</Link>
+          <Link href="/my-roles">Open My Roles</Link>
         </Button>
       </div>
 

@@ -181,6 +181,14 @@ export function LeadDetailSheet({ leadId, onClose, onRejectSuccess }: LeadDetail
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-border/60 px-6 py-5">
           <div className="min-w-0 flex-1">
+            <SheetTitle
+              className={cn(
+                'truncate text-base font-semibold leading-tight',
+                (isLoading || !lead) && 'sr-only',
+              )}
+            >
+              {lead?.contact?.company_name ?? lead?.canonical_domain ?? 'Lead details'}
+            </SheetTitle>
             {isLoading ? (
               <>
                 <Skeleton className="mb-2 h-5 w-48" />
@@ -188,9 +196,6 @@ export function LeadDetailSheet({ leadId, onClose, onRejectSuccess }: LeadDetail
               </>
             ) : (
               <>
-                <SheetTitle className="truncate text-base font-semibold leading-tight">
-                  {lead?.contact?.company_name ?? lead?.canonical_domain ?? 'Unknown company'}
-                </SheetTitle>
                 <SheetDescription className="mt-0.5 flex items-center gap-2">
                   {lead?.canonical_domain && (
                     <a

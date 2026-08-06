@@ -121,6 +121,8 @@ export function SequenceEditor({ sequence, leadName, onApproved, onRejected }: S
       })
       onApproved(sequence.sequence_id)
       queryClient.invalidateQueries({ queryKey: ['outreach-sequences'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] })
     },
     onError: () => {
       toast.error('Failed to approve sequence.')
@@ -128,23 +130,28 @@ export function SequenceEditor({ sequence, leadName, onApproved, onRejected }: S
   })
 
   const rejectMutation = useMutation({
-    mutationFn: () =>
-      fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/bd/outreach/${sequence.sequence_id}/reject`,
-        { method: 'POST' },
-      ).then((r) => {
-        if (!r.ok) throw new Error('Reject failed')
-        return r.json()
-      }),
+    mutationFn: async () => {
+      const { error } = await apiClient.POST('/api/v1/bd/outreach/{sequence_id}/reject', {
+        params: { path: { sequence_id: sequence.sequence_id } },
+        body: {
+          notes: `Rejected from console review${leadName ? ` for ${leadName}` : ''}.`,
+        },
+      })
+      if (error) throw error
+    },
     onSuccess: () => {
       toast('Sequence rejected', {
         description: `${leadName ?? 'Sequence'} outreach rejected.`,
       })
       onRejected(sequence.sequence_id)
       queryClient.invalidateQueries({ queryKey: ['outreach-sequences'] })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] })
     },
     onError: () => {
-      toast.error('Failed to reject sequence.')
+      toast.error('Failed to reject sequence.', {
+        description: 'The sequence stayed in review so no outreach state was lost.',
+      })
     },
   })
 

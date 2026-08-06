@@ -24,7 +24,7 @@ export function TopNav() {
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-semibold leading-4">Brynzit Console</span>
           <span className="text-muted-foreground truncate text-xs leading-4">
-            {isInternalOps ? 'Internal Ops workspace' : 'Recruiter workspace'}
+            {isInternalOps ? 'Internal operations' : 'Recruiter portal'}
           </span>
         </span>
       </Link>

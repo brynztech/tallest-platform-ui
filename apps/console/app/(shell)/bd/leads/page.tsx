@@ -41,11 +41,12 @@ export default function LeadsPage() {
       : parseLeadStatusTab(new URLSearchParams(window.location.search).get('status')),
   )
   const queryStatus = getQueryStatusForTab(activeTab)
+  const leadListQueryKey = ['leads', queryStatus] as const
   const activeTabConfig = LEAD_STATUS_TABS.find((tab) => tab.id === activeTab) ?? LEAD_STATUS_TABS[0]
 
   // ---- Infinite query (cursor pagination) ----
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
-    queryKey: ['leads', queryStatus],
+    queryKey: leadListQueryKey,
     queryFn: async ({ pageParam }) => {
       const { data, error } = await apiClient.GET('/api/v1/bd/leads', {
         params: {
@@ -87,14 +88,21 @@ export default function LeadsPage() {
       apiClient.POST('/api/v1/bd/leads/bulk-action', { body: payload }),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: ['leads'] })
-      const previousData = queryClient.getQueryData(['leads'])
-      queryClient.setQueryData(['leads'], (old: InfiniteData<LeadQueueResponse> | undefined) => {
+      const previousData =
+        queryClient.getQueryData<InfiniteData<LeadQueueResponse>>(leadListQueryKey)
+      queryClient.setQueryData(leadListQueryKey, (old: InfiniteData<LeadQueueResponse> | undefined) => {
         if (!old) return old
+        const removedCount = old.pages.reduce(
+          (count, page) =>
+            count + page.leads.filter((lead) => payload.lead_ids.includes(lead.id)).length,
+          0,
+        )
         return {
           ...old,
           pages: old.pages.map((page) => ({
             ...page,
             leads: page.leads.filter((l) => !payload.lead_ids.includes(l.id)),
+            total: Math.max(0, page.total - removedCount),
           })),
         }
       })
@@ -102,7 +110,7 @@ export default function LeadsPage() {
     },
     onError: (_err, payload, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(['leads'], context.previousData)
+        queryClient.setQueryData(leadListQueryKey, context.previousData)
       }
       // Remove from leavingIds to restore card visually
       setLeavingIds((prev) => {
@@ -114,6 +122,7 @@ export default function LeadsPage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['pipeline'] })
     },
   })
 

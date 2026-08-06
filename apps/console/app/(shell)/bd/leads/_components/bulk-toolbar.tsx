@@ -54,6 +54,7 @@ export function BulkToolbar({
     onSettled: async () => {
       // D-10: reset to page 1 (not invalidate) to avoid cursor corruption
       await queryClient.resetQueries({ queryKey: ['leads'] })
+      await queryClient.invalidateQueries({ queryKey: ['pipeline'] })
       onBulkSettled()
     },
     onError: () => {

@@ -139,7 +139,7 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
           </div>
           <p className="text-muted-foreground text-sm">
             {canViewAll
-              ? 'Live pipeline across every role — from Ops requisitions, shortlists, interviews, and placements.'
+              ? 'Live pipeline across every client role, shortlist, interview, and placement.'
               : `Live pipeline for the roles assigned to ${actingUser.name}.`}
           </p>
         </div>

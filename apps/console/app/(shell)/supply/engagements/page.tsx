@@ -8,6 +8,9 @@ import { ChevronRight } from 'lucide-react'
 import { EngagementSequenceSheet } from './_components/engagement-sequence-sheet'
 
 type EngagementSequenceResponse = components['schemas']['EngagementSequenceResponse']
+type EngagementListResponse =
+  | EngagementSequenceResponse[]
+  | { sequences?: EngagementSequenceResponse[] }
 
 function statusBadgeVariant(status: string): 'secondary' | 'outline' | 'default' | 'destructive' {
   switch (status) {
@@ -34,8 +37,11 @@ export default function EngagementsPage() {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/supply/engagements`,
       )
+      if (res.status === 404) return []
       if (!res.ok) throw new Error('Failed to fetch engagement sequences')
-      return res.json() as Promise<{ sequences: EngagementSequenceResponse[] }>
+
+      const body = (await res.json()) as EngagementListResponse
+      return Array.isArray(body) ? body : (body.sequences ?? [])
     },
     staleTime: 30000,
   })
@@ -56,7 +62,7 @@ export default function EngagementsPage() {
     )
   }
 
-  const sequences = data?.sequences ?? []
+  const sequences = data ?? []
 
   return (
     <div className="overflow-y-auto px-6 py-6">
@@ -75,7 +81,7 @@ export default function EngagementsPage() {
         <div className="mt-16 flex flex-col items-center justify-center text-center">
           <h2 className="text-xl font-semibold">No engagement sequences</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Generate sequences from candidate profiles in search results.
+            Generate sequences from candidate profiles in search results, then review them here.
           </p>
         </div>
       ) : (
