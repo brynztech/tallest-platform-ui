@@ -1,5 +1,8 @@
+import type { User } from '@brynzit/identity'
+
 export const assignmentQueryKeys = {
   forUser: (userId: string) => ['assignments', userId] as const,
+  forRequisition: (reqId: string) => ['requisition-assignees', reqId] as const,
 }
 
 function apiBase() {
@@ -14,4 +17,42 @@ export async function fetchAssignedRequisitionIds(userId: string): Promise<strin
   if (!response.ok) throw new Error(`Failed to load assignments: ${response.status}`)
   const data = (await response.json()) as { requisition_ids: string[] }
   return data.requisition_ids
+}
+
+/** User ids assigned to a requisition (empty if none). */
+export async function fetchRequisitionAssignees(reqId: string): Promise<string[]> {
+  const response = await fetch(
+    `${apiBase()}/api/v1/ops/requisitions/${encodeURIComponent(reqId)}/assignees`,
+  )
+  if (!response.ok) throw new Error(`Failed to load assignees: ${response.status}`)
+  const data = (await response.json()) as { user_ids: string[] }
+  return data.user_ids
+}
+
+/** Assign a recruiter to a requisition (idempotent on the backend). */
+export async function assignRecruiter(userId: string, reqId: string): Promise<void> {
+  const response = await fetch(`${apiBase()}/api/v1/ops/assignments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, requisition_id: reqId }),
+  })
+  if (!response.ok) throw new Error(`Failed to assign recruiter: ${response.status}`)
+}
+
+/** Unassign a recruiter from a requisition (idempotent on the backend). */
+export async function unassignRecruiter(userId: string, reqId: string): Promise<void> {
+  const params = `user_id=${encodeURIComponent(userId)}&requisition_id=${encodeURIComponent(reqId)}`
+  const response = await fetch(`${apiBase()}/api/v1/ops/assignments?${params}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) throw new Error(`Failed to unassign recruiter: ${response.status}`)
+}
+
+/** Recruiters who can still be assigned: recruiter role, not already assigned. */
+export function assignableRecruiters(
+  users: readonly User[],
+  assignedIds: readonly string[],
+): User[] {
+  const assigned = new Set(assignedIds)
+  return users.filter((u) => u.role === 'recruiter' && !assigned.has(u.id))
 }
