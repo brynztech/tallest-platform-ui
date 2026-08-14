@@ -180,3 +180,28 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 > Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
+
+## Prompt Contract
+
+Before executing any substantive task, decide these five from my prompt and state them back to me:
+
+1. **Goal** — what do I want?
+2. **Context** — why / where?
+3. **Constraints** — what should/shouldn't happen?
+4. **Scope** — how far should it go?
+5. **Done condition** — how do we know it's finished?
+
+If all five are clear, state them and proceed. If a missing one could materially change the result, ask before editing files or causing side effects. Answer simple factual questions and status checks directly — no contract needed. This replaces the CPECD format from global preferences for this project.
+
+## Docs Maintenance
+
+Every feature or test change ships with a docs update in the same pass — features and tests are documented as they land, not later:
+
+- **Frontend** work → `docs/` in this repo (`talent-platform-ui`)
+- **Backend** work → `../talent-platform/docs/`
+
+Update the existing doc covering the area; create a new one only when none exists. Test docs live alongside the feature doc they verify.
+
+## Ponytail
+
+Ponytail (full intensity) applies to all code changes in this repo — laziest working solution, ladder-first, shortest diff.

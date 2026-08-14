@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 3 context gathered
 last_updated: "2026-06-15T05:35:42.750Z"
-last_activity: 2026-06-15 -- Phase 05.1 planning complete
+last_activity: 2026-08-14 -- Completed quick task 260814-a01: recruiter role-assignment write path
 progress:
   total_phases: 8
   completed_phases: 4
@@ -82,6 +82,12 @@ Recent decisions affecting current work:
 - Phase 4: Semantic search response contract (`/supply/candidates/search` response shape) should be confirmed against live FastAPI before building the results UI
 - Phase 5: JobPosting JSON-LD required fields + Google for Jobs validation + canonical URL strategy for filter combinations need a concrete implementation plan before coding
 - All phases: snake_case vs camelCase on the live backend — Pydantic config confirmed camelCase (verified via codegen); propagate this as a global constraint to all feature phases
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260814-a01 | Recruiter role-assignment write path (backend endpoints + console UI) | 2026-08-14 | 88b3a05 | [260814-a01-recruiter-role-assignment](./quick/260814-a01-recruiter-role-assignment/) |
 
 ## Deferred Items
 
