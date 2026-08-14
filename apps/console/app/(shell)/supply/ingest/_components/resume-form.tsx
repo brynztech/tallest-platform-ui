@@ -21,7 +21,7 @@ interface ResumeFormProps {
 }
 
 export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -31,29 +31,41 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
     },
-    maxFiles: 1,
+    multiple: true,
     onDropRejected: (rejections) => {
       setUploadError(
         rejections[0]?.errors[0]?.message ?? 'File type not accepted — upload a PDF or DOCX.',
       )
     },
     onDrop: (acceptedFiles) => {
-      if (acceptedFiles[0]) {
-        setFile(acceptedFiles[0])
+      if (acceptedFiles.length > 0) {
+        setFiles((prev) => [...prev, ...acceptedFiles])
         setUploadError(null)
       }
     },
   })
 
-  async function handleSubmit() {
-    if (!file) return
-    setIsSubmitting(true)
-    setUploadError(null)
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index))
+  }
 
-    const formData = new FormData()
-    formData.append('file', file)
+  // Each resume is its own job card with independent upload + poll — one bad
+  // file must not block or fail the others in the batch.
+  async function uploadOne(file: File) {
+    const jobId = createClientId()
+    onJobAdded({
+      id: jobId,
+      type: 'resume',
+      label: `Resume: ${file.name}`,
+      status: 'processing',
+      progressText: 'Uploading…',
+      timestamp: new Date(),
+    })
 
     try {
+      const formData = new FormData()
+      formData.append('file', file)
+
       // IMPORTANT: native fetch, NOT apiClient.POST — browser sets multipart/form-data boundary
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/v1/supply/resumes/upload`,
@@ -65,35 +77,31 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
       }
 
       const data = (await res.json()) as components['schemas']['ResumeUploadResponse']
-      const jobId = createClientId()
-      const fileName = file.name
-
-      setFile(null)
-
-      // Add processing job card immediately
-      onJobAdded({
-        id: jobId,
-        type: 'resume',
-        label: `Resume: ${fileName}`,
-        status: 'processing',
-        progressText: 'Parsing resume…',
-        candidateId: data.candidate_id ?? undefined,
-        timestamp: new Date(),
-      })
 
       if (data.candidate_id) {
+        onJobUpdated(jobId, { progressText: 'Parsing resume…', candidateId: data.candidate_id })
         startPolling(jobId, data.candidate_id)
       } else {
         onJobUpdated(jobId, {
           status: 'failed',
           progressText: 'Resume upload did not return a candidate ID',
         })
-        toast.error('Resume upload did not return a candidate ID.')
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Resume upload failed — try again.'
-      setUploadError(msg)
-      toast.error('Resume upload failed — try again.')
+      onJobUpdated(jobId, { status: 'failed', progressText: msg })
+    }
+  }
+
+  async function handleSubmit() {
+    if (files.length === 0) return
+    setIsSubmitting(true)
+    setUploadError(null)
+    const batch = files
+    setFiles([])
+
+    try {
+      await Promise.all(batch.map(uploadOne))
     } finally {
       setIsSubmitting(false)
     }
@@ -147,50 +155,56 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
   return (
     <div className="mt-4 max-w-lg">
       <p className="mb-4 text-sm text-muted-foreground">
-        Upload a resume PDF or DOCX. A new candidate record is created and async parsing extracts
-        profile fields.
+        Upload one or more resumes (PDF or DOCX). A candidate record is created per resume and
+        async parsing extracts profile fields.
       </p>
       <div className="flex flex-col gap-4">
-        {file ? (
-          <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
-            <span className="truncate text-sm text-foreground">{file.name}</span>
-            <button
-              type="button"
-              onClick={() => setFile(null)}
-              className="ml-3 shrink-0 text-xs text-muted-foreground hover:text-foreground"
-            >
-              × clear
-            </button>
-          </div>
-        ) : (
-          <div
-            {...getRootProps()}
-            className={cn(
-              'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors',
-              isDragActive
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
-            )}
-          >
-            <input {...getInputProps()} />
-            <UploadCloud className="mb-3 h-8 w-8" />
-            {isDragActive ? (
-              <p className="text-sm font-medium">Drop resume here</p>
-            ) : (
-              <>
-                <p className="text-sm font-medium">
-                  Drop a PDF or DOCX resume here, or click to browse
-                </p>
-                <p className="mt-1 text-xs">PDF, DOC, DOCX — one file at a time</p>
-              </>
-            )}
+        {files.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {files.map((file, index) => (
+              <div
+                key={`${file.name}-${index}`}
+                className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+              >
+                <span className="truncate text-sm text-foreground">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeFile(index)}
+                  className="ml-3 shrink-0 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  × clear
+                </button>
+              </div>
+            ))}
           </div>
         )}
+        <div
+          {...getRootProps()}
+          className={cn(
+            'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors',
+            isDragActive
+              ? 'border-primary bg-primary/5 text-primary'
+              : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
+          )}
+        >
+          <input {...getInputProps()} />
+          <UploadCloud className="mb-3 h-8 w-8" />
+          {isDragActive ? (
+            <p className="text-sm font-medium">Drop resumes here</p>
+          ) : (
+            <>
+              <p className="text-sm font-medium">
+                Drop PDF or DOCX resumes here, or click to browse
+              </p>
+              <p className="mt-1 text-xs">PDF, DOC, DOCX — multiple files supported</p>
+            </>
+          )}
+        </div>
         {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
         <Button
           size="sm"
           className="mt-3 self-start"
-          disabled={!file || isSubmitting}
+          disabled={files.length === 0 || isSubmitting}
           onClick={handleSubmit}
         >
           {isSubmitting ? (
@@ -212,6 +226,8 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
               </svg>
               Uploading…
             </>
+          ) : files.length > 1 ? (
+            `Upload ${files.length} Resumes`
           ) : (
             'Upload Resume'
           )}
