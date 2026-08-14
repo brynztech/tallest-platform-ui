@@ -177,6 +177,21 @@ Plans:
 - Frontend: add upload/dropzone beside the JD textarea in New Requisition and Requisition Detail.
 - Keep pasted JD text as the fallback path.
 
+### Phase 999.2: AI-Matched Submissions Require Recruiter Accept/Reject Before Visibility (BACKLOG)
+
+**Goal:** A candidate submitted to a requisition by AI matching (`shortlisting.py` creates a `Submission` with `match_score`/`match_rationale`) does not appear as "Submitted" in the candidate's relationship history/timeline, the requisition shortlist's external view, or count toward relationship-memory stats until a recruiter/manager explicitly accepts it. Rejecting it removes it from ever surfacing as a submission (it can still be logged internally as a rejected AI suggestion, but must not read as "candidate was submitted to this client").
+**Requirements:** TBD — needs a requirement ID at promotion time
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with `/gsd-review-backlog` when ready)
+
+**Notes:**
+- Root cause (confirmed 2026-08-14): `supply/services/relationship.py` builds the "Submission history" / "Recent timeline" shown in the console's `CandidateRelationshipSection` directly from `supply_submissions` rows, with no distinction between AI-created (`status="shortlisted"`, has `match_score`/`match_rationale`, not yet reviewed), recruiter-approved, recruiter-manual, or candidate self-applied rows — see `docs/candidate-relationship-memory.md` for the full walkthrough (to be written when this is worked).
+- The `Submission.status` field already models an approve/reject lifecycle (`shortlisted` → `approved`/`hold`/`rejected` via `PATCH /supply/shortlists/{submission_id}`) — the fix is filtering `relationship.py`'s query/output on status rather than adding new state.
+- Needs a decision: does a `rejected` AI match disappear entirely from relationship memory, or surface distinctly (e.g. "AI considered, not submitted") so recruiters retain do-not-resubmit context? Current `relationshipGuardForTarget` re-submission logic (spec D5) depends on rejected submissions being visible — changing visibility rules here must not break that guard.
+- Frontend: `CandidateRelationshipSection`/`candidate-relationship.ts` consume whatever the backend returns — likely no frontend change needed beyond copy, once the backend only returns reviewed submissions.
+
 ## Progress
 
 **Execution Order:**
