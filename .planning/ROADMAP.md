@@ -177,20 +177,23 @@ Plans:
 - Frontend: add upload/dropzone beside the JD textarea in New Requisition and Requisition Detail.
 - Keep pasted JD text as the fallback path.
 
-### Phase 999.2: AI-Matched Submissions Require Recruiter Accept/Reject Before Visibility (BACKLOG)
+### Phase 999.2: AI-Matched Submissions Require Recruiter Accept/Reject Before Visibility (BACKLOG — partially resolved 2026-08-15)
 
 **Goal:** A candidate submitted to a requisition by AI matching (`shortlisting.py` creates a `Submission` with `match_score`/`match_rationale`) does not appear as "Submitted" in the candidate's relationship history/timeline, the requisition shortlist's external view, or count toward relationship-memory stats until a recruiter/manager explicitly accepts it. Rejecting it removes it from ever surfacing as a submission (it can still be logged internally as a rejected AI suggestion, but must not read as "candidate was submitted to this client").
 **Requirements:** TBD — needs a requirement ID at promotion time
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with `/gsd-review-backlog` when ready)
+- [ ] TBD (promote with `/gsd-review-backlog` when ready) — remaining scope narrowed below
 
-**Notes:**
-- Root cause (confirmed 2026-08-14): `supply/services/relationship.py` builds the "Submission history" / "Recent timeline" shown in the console's `CandidateRelationshipSection` directly from `supply_submissions` rows, with no distinction between AI-created (`status="shortlisted"`, has `match_score`/`match_rationale`, not yet reviewed), recruiter-approved, recruiter-manual, or candidate self-applied rows — see `docs/candidate-relationship-memory.md` for the full walkthrough (to be written when this is worked).
-- The `Submission.status` field already models an approve/reject lifecycle (`shortlisted` → `approved`/`hold`/`rejected` via `PATCH /supply/shortlists/{submission_id}`) — the fix is filtering `relationship.py`'s query/output on status rather than adding new state.
-- Needs a decision: does a `rejected` AI match disappear entirely from relationship memory, or surface distinctly (e.g. "AI considered, not submitted") so recruiters retain do-not-resubmit context? Current `relationshipGuardForTarget` re-submission logic (spec D5) depends on rejected submissions being visible — changing visibility rules here must not break that guard.
-- Frontend: `CandidateRelationshipSection`/`candidate-relationship.ts` consume whatever the backend returns — likely no frontend change needed beyond copy, once the backend only returns reviewed submissions.
+**Resolved 2026-08-15** (via the recruiter-shortlist-categorization feature, `docs/recruiter-shortlist-categorization.md` in both repos):
+- The **Account-Manager/Quality-Manager-facing shortlist table** (`GET /supply/shortlists/{requisition_id}`, default `include_pending=false`) now only returns `interested | approved | rejected` submissions — raw un-screened `shortlisted` (and recruiter-screened-out `not_interested`/`no_response`/`snoozed`) are hidden by default. A recruiter now must actively mark a candidate "Interested" (via the new `/my-roles/[id]` page) before an AM/QM ever sees it. This is a real, live behavior change, not just a plan.
+
+**Still open** — the original bug report's literal surface was the **candidate relationship/timeline panel**, not the shortlist table, and that panel is untouched:
+- `supply/services/relationship.py::get_candidate_relationship` still builds the console's `CandidateRelationshipSection` ("Submission history" / "Recent timeline", rendered on every `CandidateProfileSheet`) directly from ALL `supply_submissions` rows for a candidate, with no status filter at all — a raw `shortlisted` (never screened) or `not_interested`/`no_response`/`snoozed` submission still shows there as "Submitted to {client}".
+- The fix is the same shape as what was just done for the shortlist table: filter `relationship.py`'s query to the same `interested|approved|rejected` set (or a superset that still lets a recruiter/AM see their own screened-out history — needs the same UX decision below) before it's shown to anyone reviewing this candidate.
+- Still needs a decision (unchanged from before): does a `not_interested`/`rejected` submission disappear entirely from relationship memory, or surface distinctly (e.g. "AI considered, not submitted") so recruiters retain do-not-resubmit context? `relationshipGuardForTarget`'s re-submission/cooldown logic (spec D5) depends on rejected submissions being visible — changing visibility here must not break that guard.
+- Frontend `CandidateRelationshipSection`/`candidate-relationship.ts` would likely need no change beyond copy, once the backend narrows what it returns — same as originally scoped.
 
 ## Progress
 
