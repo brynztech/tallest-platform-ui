@@ -19,6 +19,16 @@ function assigneesFor(reqId: string): string[] {
     .map(([userId]) => userId)
 }
 
+/**
+ * Mirrors the real backend's `ops.services.matching.assert_recruiter_assigned`
+ * check used by `POST /ops/requisitions/{req_id}/match?acting_user_id=`.
+ * Exported so the ops match-trigger mock (handlers/ops.ts) can 403 consistent
+ * with the same seeded assignment map used by GET /ops/assignments.
+ */
+export function isUserAssignedToRequisition(userId: string, reqId: string): boolean {
+  return (ASSIGNMENTS[userId] ?? []).includes(reqId)
+}
+
 export const assignmentHandlers: HttpHandler[] = [
   http.get(`${API_BASE}/api/v1/ops/assignments`, ({ request }) => {
     const userId = new URL(request.url).searchParams.get('user_id') ?? ''

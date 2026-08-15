@@ -10,6 +10,88 @@ import { API_BASE } from '../base-url'
 // CRITICAL path ordering: specific static paths before parameterised paths
 //   /supply/candidates/search  (static) → BEFORE /supply/candidates/:candidate_id
 //   /supply/candidates/ingest  (static) → BEFORE /supply/candidates/:candidate_id
+
+// Shortlist submissions are stateful (keyed by requisition_id) so that a PATCH
+// (status change / snooze) is reflected on the next GET, and `include_pending`
+// filtering + the approved/rejected-is-terminal 409 guard behave like the real
+// backend (supply/services/shortlisting.py::update_submission_status).
+// `snoozed_until` isn't in the generated api.d.ts SubmissionResponse yet (see
+// docs/recruiter-shortlist-categorization.md) — MockSubmission adds it locally.
+type MockSubmission = components['schemas']['SubmissionResponse'] & {
+  snoozed_until: string | null
+}
+
+const shortlistStore: Record<string, MockSubmission[]> = {}
+
+function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
+  return [
+    {
+      id: '00000000-0000-0000-0000-sub000000001',
+      requisition_id: requisitionId,
+      candidate_id: '00000000-0000-0000-0000-cand000001',
+      match_score: 92,
+      match_rationale: { summary: 'Strong Python + FastAPI fit' },
+      status: 'shortlisted',
+      supply_notes: null,
+      snoozed_until: null,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      updated_at: new Date().toISOString(),
+      candidate_name: 'Alice Chen',
+      candidate_email: null,
+      candidate_title: 'Senior Software Engineer',
+      candidate_skills: ['Python', 'FastAPI', 'PostgreSQL'],
+      candidate_seniority: 'senior',
+      candidate_location: 'San Francisco, CA',
+      total_years_experience: 7,
+    },
+    {
+      id: '00000000-0000-0000-0000-sub000000002',
+      requisition_id: requisitionId,
+      candidate_id: '00000000-0000-0000-0000-cand000002',
+      match_score: 78,
+      match_rationale: { summary: 'TypeScript expertise, good cultural fit' },
+      status: 'approved',
+      supply_notes: 'Great candidate for the role',
+      snoozed_until: null,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+      updated_at: new Date().toISOString(),
+      candidate_name: 'David Park',
+      candidate_email: 'david@example.com',
+      candidate_title: 'Backend Lead',
+      candidate_skills: ['TypeScript', 'Node.js', 'Redis'],
+      candidate_seniority: 'senior',
+      candidate_location: 'Remote',
+      total_years_experience: 9,
+    },
+    {
+      id: '00000000-0000-0000-0000-sub000000003',
+      requisition_id: requisitionId,
+      candidate_id: '00000000-0000-0000-0000-cand000003',
+      match_score: 65,
+      match_rationale: null,
+      status: 'shortlisted',
+      supply_notes: null,
+      snoozed_until: null,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      updated_at: new Date().toISOString(),
+      candidate_name: 'Sara Okonkwo',
+      candidate_email: null,
+      candidate_title: 'Staff Engineer',
+      candidate_skills: ['Go', 'Kubernetes', 'PostgreSQL'],
+      candidate_seniority: 'staff',
+      candidate_location: 'Austin, TX',
+      total_years_experience: 12,
+    },
+  ]
+}
+
+function submissionsFor(requisitionId: string): MockSubmission[] {
+  if (!shortlistStore[requisitionId]) {
+    shortlistStore[requisitionId] = defaultSubmissionsFor(requisitionId)
+  }
+  return shortlistStore[requisitionId]
+}
+
 export const supplyHandlers: HttpHandler[] = [
 
   // --- Candidate Search ---
@@ -246,80 +328,62 @@ export const supplyHandlers: HttpHandler[] = [
   // --- Shortlists ---
 
   // 7. GET /api/v1/supply/shortlists/:requisition_id — get shortlist for a requisition
-  http.get(`${API_BASE}/api/v1/supply/shortlists/:requisition_id`, ({ params }) => {
+  // include_pending=true (recruiter's full working set) → everything but 'removed'.
+  // include_pending=false/absent (AM/QM-facing default) → only interested/approved/rejected.
+  http.get(`${API_BASE}/api/v1/supply/shortlists/:requisition_id`, ({ params, request }) => {
+    const requisitionId = params.requisition_id as string
+    const includePending = new URL(request.url).searchParams.get('include_pending') === 'true'
+    const all = submissionsFor(requisitionId)
+    const visible = includePending
+      ? all.filter((s) => s.status !== 'removed')
+      : all.filter((s) => ['interested', 'approved', 'rejected'].includes(s.status))
     return HttpResponse.json({
-      requisition_id: params.requisition_id as string,
-      total: 3,
-      submissions: [
-        {
-          id: '00000000-0000-0000-0000-sub000000001',
-          requisition_id: params.requisition_id as string,
-          candidate_id: '00000000-0000-0000-0000-cand000001',
-          match_score: 92,
-          match_rationale: { summary: 'Strong Python + FastAPI fit' },
-          status: 'shortlisted',
-          supply_notes: null,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          updated_at: new Date().toISOString(),
-          candidate_name: 'Alice Chen',
-          candidate_email: null,
-          candidate_title: 'Senior Software Engineer',
-          candidate_skills: ['Python', 'FastAPI', 'PostgreSQL'],
-          candidate_seniority: 'senior',
-          candidate_location: 'San Francisco, CA',
-          total_years_experience: 7,
-        },
-        {
-          id: '00000000-0000-0000-0000-sub000000002',
-          requisition_id: params.requisition_id as string,
-          candidate_id: '00000000-0000-0000-0000-cand000002',
-          match_score: 78,
-          match_rationale: { summary: 'TypeScript expertise, good cultural fit' },
-          status: 'approved',
-          supply_notes: 'Great candidate for the role',
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-          updated_at: new Date().toISOString(),
-          candidate_name: 'David Park',
-          candidate_email: 'david@example.com',
-          candidate_title: 'Backend Lead',
-          candidate_skills: ['TypeScript', 'Node.js', 'Redis'],
-          candidate_seniority: 'senior',
-          candidate_location: 'Remote',
-          total_years_experience: 9,
-        },
-        {
-          id: '00000000-0000-0000-0000-sub000000003',
-          requisition_id: params.requisition_id as string,
-          candidate_id: '00000000-0000-0000-0000-cand000003',
-          match_score: 65,
-          match_rationale: null,
-          status: 'shortlisted',
-          supply_notes: null,
-          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-          updated_at: new Date().toISOString(),
-          candidate_name: 'Sara Okonkwo',
-          candidate_email: null,
-          candidate_title: 'Staff Engineer',
-          candidate_skills: ['Go', 'Kubernetes', 'PostgreSQL'],
-          candidate_seniority: 'staff',
-          candidate_location: 'Austin, TX',
-          total_years_experience: 12,
-        },
-      ],
-    } satisfies components['schemas']['ShortlistResponse'])
+      requisition_id: requisitionId,
+      total: visible.length,
+      submissions: visible,
+    })
   }),
 
   // 8. PATCH /api/v1/supply/shortlists/:submission_id — update submission status
+  // 409 if the submission is already approved/rejected (terminal); snoozed_until
+  // is stored when status === 'snoozed' and cleared otherwise, mirroring the
+  // backend's update_submission_status state machine.
   http.patch(`${API_BASE}/api/v1/supply/shortlists/:submission_id`, async ({ params, request }) => {
-    const body = await request.json() as components['schemas']['PatchSubmissionRequest']
-    return HttpResponse.json({
-      id: params.submission_id as string,
+    const submissionId = params.submission_id as string
+    const body = (await request.json()) as components['schemas']['PatchSubmissionRequest'] & {
+      snoozed_until?: string | null
+    }
+
+    for (const requisitionId of Object.keys(shortlistStore)) {
+      const list = shortlistStore[requisitionId]
+      const idx = list.findIndex((s) => s.id === submissionId)
+      if (idx === -1) continue
+      const existing = list[idx]
+      if (existing.status === 'approved' || existing.status === 'rejected') {
+        return HttpResponse.json({ detail: 'Submission already decided.' }, { status: 409 })
+      }
+      const updated: MockSubmission = {
+        ...existing,
+        status: body.status,
+        supply_notes: body.notes ?? existing.supply_notes,
+        snoozed_until: body.status === 'snoozed' ? (body.snoozed_until ?? null) : null,
+        updated_at: new Date().toISOString(),
+      }
+      list[idx] = updated
+      return HttpResponse.json(updated)
+    }
+
+    // Submission not seeded into any requisition's store yet (no prior GET) —
+    // fall back to a standalone response so the PATCH still round-trips.
+    const fallback: MockSubmission = {
+      id: submissionId,
       requisition_id: '00000000-0000-0000-0000-req000000001',
       candidate_id: '00000000-0000-0000-0000-cand000001',
       match_score: 88,
       match_rationale: null,
       status: body.status,
       supply_notes: body.notes ?? null,
+      snoozed_until: body.status === 'snoozed' ? (body.snoozed_until ?? null) : null,
       created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Alice Chen',
@@ -329,7 +393,8 @@ export const supplyHandlers: HttpHandler[] = [
       candidate_seniority: 'senior',
       candidate_location: 'San Francisco, CA',
       total_years_experience: 7,
-    } satisfies components['schemas']['SubmissionResponse'])
+    }
+    return HttpResponse.json(fallback)
   }),
 
   // --- Engagement ---

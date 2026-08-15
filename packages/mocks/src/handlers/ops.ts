@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import type { HttpHandler } from 'msw'
 import type { components } from '@brynzit/api-client'
 import { API_BASE } from '../base-url'
+import { isUserAssignedToRequisition } from './assignments'
 
 const requisitionOverrides: Record<string, Partial<components['schemas']['RequisitionResponse']>> = {}
 
@@ -291,8 +292,20 @@ export const opsHandlers: HttpHandler[] = [
   }),
 
   // 12. POST /api/v1/ops/requisitions/:req_id/match — trigger candidate matching (202 async)
-  http.post(`${API_BASE}/api/v1/ops/requisitions/:req_id/match`, () => {
-    return HttpResponse.json({ status: 'processing' }, { status: 202 })
+  // `acting_user_id` (optional query param) mirrors the live backend: when present,
+  // schedules matching only if the user has an ops_assignments row for this
+  // requisition (else 403) — the recruiter-scoped /my-roles/[id] page always
+  // passes it; the existing AM/Ops-page caller omits it and always succeeds.
+  http.post(`${API_BASE}/api/v1/ops/requisitions/:req_id/match`, ({ params, request }) => {
+    const reqId = params.req_id as string
+    const actingUserId = new URL(request.url).searchParams.get('acting_user_id')
+    if (actingUserId && !isUserAssignedToRequisition(actingUserId, reqId)) {
+      return HttpResponse.json(
+        { detail: 'Recruiter is not assigned to this requisition.' },
+        { status: 403 },
+      )
+    }
+    return HttpResponse.json({ requisition_id: reqId, status: 'matching_scheduled' }, { status: 202 })
   }),
 
   // 13. GET /api/v1/ops/requisitions/:req_id/shortlist — get shortlist (loosely typed JSONB)
