@@ -75,7 +75,7 @@ export default function MyRolesPage() {
           {visible.map((requisition) => (
             <Link
               key={requisition.id}
-              href={`/ops/requisitions/${requisition.id}`}
+              href={canViewAll ? `/ops/requisitions/${requisition.id}` : `/my-roles/${requisition.id}`}
               className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
             >
               <div className="min-w-0">
