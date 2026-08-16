@@ -54,6 +54,12 @@ export default function CandidatePipelinePage() {
     queryFn: () => fetchPipelineSubmissions(activeReq ? [activeReq] : []),
     enabled: requisitionsQuery.isSuccess && Boolean(activeReq),
     staleTime: RECRUITER_STALE_TIME_MS,
+    // staleTime alone only affects refetch-on-remount/refocus — a candidate's
+    // stage can change from another screen (e.g. an AM approving on the Ops
+    // requisition page) while this page stays open, with nothing to pick
+    // that up. Poll at the same 15s cadence as the BD pipeline kanban and the
+    // recruiter shortlist page for this reason.
+    refetchInterval: 15_000,
   })
 
   const submissions = submissionsQuery.data ?? []
