@@ -1,11 +1,14 @@
-import { apiClient, type components } from '@brynzit/api-client'
+import { apiClient, type components, type SubmissionResponseExtended } from '@brynzit/api-client'
 
 export type OpsClient = components['schemas']['ClientResponse']
 export type OpsRequisition = components['schemas']['RequisitionResponse']
 export type OpsInterview = components['schemas']['InterviewResponse']
 export type OpsNote = components['schemas']['NoteResponse']
 export type OpsPlacement = components['schemas']['PlacementResponse']
-export type SupplySubmission = components['schemas']['SubmissionResponse']
+// current_stage_id isn't in the generated SubmissionResponse yet — see
+// @brynzit/api-client's SubmissionResponseExtended and
+// docs/recruiter-shortlist-categorization.md §8.
+export type SupplySubmission = SubmissionResponseExtended
 
 export type RequisitionWithClient = OpsRequisition & {
   client: OpsClient | null

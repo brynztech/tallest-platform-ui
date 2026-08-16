@@ -14,3 +14,14 @@ export type LeadQueueItemExtended = components['schemas']['LeadQueueItem'] & {
   open_roles_summary?: string | null
   suggested_angle?: string | null
 }
+
+/**
+ * SubmissionResponse extended with `current_stage_id` — the pipeline-stage
+ * tracking field added alongside `POST .../shortlists/{id}/advance-stage`
+ * (see docs/recruiter-shortlist-categorization.md §8, and the backend doc of
+ * the same name in ../talent-platform/docs/). Absent from the generated
+ * api.d.ts until the backend ships it and `pnpm generate:api` is rerun.
+ */
+export type SubmissionResponseExtended = components['schemas']['SubmissionResponse'] & {
+  current_stage_id?: string | null
+}
