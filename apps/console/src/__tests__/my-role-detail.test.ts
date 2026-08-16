@@ -10,6 +10,10 @@ import {
   statusBadgeClass,
   statusLabel,
 } from '../../app/(shell)/my-roles/[id]/_lib/status'
+import {
+  canSubmitApplications,
+  type ShortlistSubmission,
+} from '../../app/(shell)/my-roles/[id]/_lib/shortlist'
 
 describe('getSnoozePresetDate', () => {
   it('adds 3 months for the 3-month preset', () => {
@@ -115,5 +119,53 @@ describe('scoreColor', () => {
     expect(scoreColor(60)).toBe('oklch(0.65 0.16 70)')
     expect(scoreColor(50)).toBe('oklch(0.65 0.16 70)')
     expect(scoreColor(30)).toBe('oklch(0.58 0.2 25)')
+  })
+})
+
+function fixtureSubmission(overrides: Partial<ShortlistSubmission>): ShortlistSubmission {
+  return {
+    id: 'sub-1',
+    requisition_id: 'req-1',
+    candidate_id: 'cand-1',
+    match_score: 80,
+    match_rationale: null,
+    status: 'interested',
+    supply_notes: null,
+    snoozed_until: null,
+    submitted_at: null,
+    created_at: '2026-08-01T00:00:00.000Z',
+    updated_at: '2026-08-01T00:00:00.000Z',
+    candidate_name: 'Test Candidate',
+    candidate_email: null,
+    candidate_title: null,
+    candidate_skills: null,
+    ...overrides,
+  }
+}
+
+describe('canSubmitApplications', () => {
+  it('is false with no submissions at all', () => {
+    expect(canSubmitApplications([])).toBe(false)
+  })
+
+  it('is false when nothing is interested yet', () => {
+    const submissions = [fixtureSubmission({ status: 'no_response' })]
+    expect(canSubmitApplications(submissions)).toBe(false)
+  })
+
+  it('is true when at least one candidate is interested and nothing is unscreened', () => {
+    const submissions = [
+      fixtureSubmission({ id: 'a', status: 'interested' }),
+      fixtureSubmission({ id: 'b', status: 'rejected' }),
+    ]
+    expect(canSubmitApplications(submissions)).toBe(true)
+  })
+
+  it('is false while any submission is still raw "shortlisted" (unscreened), even with an interested candidate present', () => {
+    const submissions = [
+      fixtureSubmission({ id: 'a', status: 'interested' }),
+      fixtureSubmission({ id: 'b', status: 'shortlisted' }),
+    ]
+    expect(canSubmitApplications(submissions)).toBe(false)
   })
 })

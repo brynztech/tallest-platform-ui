@@ -5,10 +5,18 @@ import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import { toast } from 'sonner'
-import { ShieldAlert, Zap } from 'lucide-react'
+import { Send, ShieldAlert, Zap } from 'lucide-react'
 import { useActingUser, useCan } from '@brynzit/identity'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@brynzit/ui/components/ui/dialog'
 import { assignmentQueryKeys, fetchAssignedRequisitionIds } from '../../_lib/assignments'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
 import { AssignedRecruitersCard } from './_components/assigned-recruiters-card'
@@ -16,9 +24,12 @@ import { ShortlistCandidateCard } from './_components/shortlist-candidate-card'
 import {
   fetchRecruiterShortlist,
   patchSubmissionStatus,
+  submitInterestedCandidates,
   triggerRecruiterMatch,
+  canSubmitApplications,
   MatchNotAssignedError,
   SubmissionConflictError,
+  UnscreenedCandidatesError,
   type SubmissionStatus,
 } from './_lib/shortlist'
 
@@ -40,6 +51,7 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null)
   const [isCandidatePanelOpen, setIsCandidatePanelOpen] = useState(false)
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false)
 
   // ---- Assignment-scoped access check ----
   const { data: assignedIds = [], isLoading: assignmentsLoading } = useQuery({
@@ -130,6 +142,29 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
     },
   })
 
+  // ---- Submit Applications ----
+  const submitMutation = useMutation({
+    mutationFn: () => submitInterestedCandidates(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: shortlistQueryKey })
+      setSubmitDialogOpen(false)
+      toast(
+        data.submitted_count === 0
+          ? 'Nothing new to submit — your Account Manager already has these candidates.'
+          : `${data.submitted_count} candidate${data.submitted_count === 1 ? '' : 's'} submitted to your Account Manager.`,
+      )
+    },
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: shortlistQueryKey })
+      setSubmitDialogOpen(false)
+      if (err instanceof UnscreenedCandidatesError) {
+        toast.error('Screen every candidate before submitting.')
+      } else {
+        toast.error('Failed to submit candidates — try again.')
+      }
+    },
+  })
+
   function openProfile(candidateId: string | null, submissionId: string) {
     setSelectedCandidateId(candidateId)
     setSelectedSubmissionId(submissionId)
@@ -185,6 +220,9 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
   const clientName = clientsData?.find((c) => c.id === req.client_id)?.name ?? req.client_id ?? 'Unknown client'
   const canMatch = MATCHABLE_STATUSES.has(req.status)
   const skills = (req.skills as string[] | null) ?? []
+  const canSubmit = canSubmitApplications(submissions)
+  const activeSubmissions = submissions.filter((s) => !s.submitted_at)
+  const submittedSubmissions = submissions.filter((s) => s.submitted_at)
 
   return (
     <div className="overflow-y-auto px-6 py-6">
@@ -216,25 +254,64 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
       {/* Assignment logically precedes running a search — placed above Run Match. */}
       <AssignedRecruitersCard reqId={id} />
 
-      <Button
-        variant="default"
-        size="sm"
-        className="mb-6"
-        disabled={!canMatch || matchMutation.isPending}
-        onClick={() => matchMutation.mutate()}
-      >
-        <Zap className="mr-1 size-4" />
-        {matchMutation.isPending ? 'Starting match…' : 'Run Match'}
-      </Button>
+      <div className="mb-6 flex items-center gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          disabled={!canMatch || matchMutation.isPending}
+          onClick={() => matchMutation.mutate()}
+        >
+          <Zap className="mr-1 size-4" />
+          {matchMutation.isPending ? 'Starting match…' : 'Run Match'}
+        </Button>
+
+        {/* Visually distinct from Run Match — this is a final, deliberate
+            action (notifies the Account Manager), so it gets its own solid
+            success-green treatment plus a confirm step rather than firing
+            on a single click. */}
+        <Button
+          size="sm"
+          className="bg-[oklch(0.45_0.15_145)] text-white hover:bg-[oklch(0.45_0.15_145)]/90"
+          disabled={!canSubmit}
+          onClick={() => setSubmitDialogOpen(true)}
+        >
+          <Send className="mr-1 size-4" />
+          Submit Applications
+        </Button>
+      </div>
+
+      <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit candidates to your Account Manager?</DialogTitle>
+            <DialogDescription>
+              Every candidate marked Interested that hasn&apos;t already been submitted
+              will be sent for final review. You won&apos;t be able to un-submit from here.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubmitDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-[oklch(0.45_0.15_145)] text-white hover:bg-[oklch(0.45_0.15_145)]/90"
+              disabled={submitMutation.isPending}
+              onClick={() => submitMutation.mutate()}
+            >
+              {submitMutation.isPending ? 'Submitting…' : 'Submit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <h2 className="mb-2 text-base font-semibold">Shortlist</h2>
-      {submissions.length === 0 ? (
+      {activeSubmissions.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           No candidates yet. Run a match above to populate this list.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {submissions.map((submission) => (
+          {activeSubmissions.map((submission) => (
             <ShortlistCandidateCard
               key={submission.id}
               submission={submission}
@@ -253,6 +330,25 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
             />
           ))}
         </div>
+      )}
+
+      {submittedSubmissions.length > 0 && (
+        <>
+          <h2 className="mb-2 mt-6 text-base font-semibold">Submission History</h2>
+          <div className="flex flex-col gap-3">
+            {submittedSubmissions.map((submission) => (
+              <ShortlistCandidateCard
+                key={submission.id}
+                submission={submission}
+                isPending={false}
+                readOnly
+                onViewProfile={() => openProfile(submission.candidate_id, submission.id)}
+                onAction={() => {}}
+                onSnooze={() => {}}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <CandidateProfileSheet

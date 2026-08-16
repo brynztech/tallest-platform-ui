@@ -18,6 +18,14 @@ interface ShortlistCandidateCardProps {
   onSnooze: (snoozedUntil: string) => void
   onViewProfile: () => void
   onSnoozePopoverOpenChange?: (open: boolean) => void
+  /**
+   * Submission History mode: hides the note input and the categorization
+   * action row (Interested/Not Interested/No Response/Snooze/Reject) — a
+   * submitted candidate is out of the recruiter's hands. View Profile stays
+   * available. Kept as a boolean prop rather than a second card component
+   * per this app's reuse-over-duplication convention.
+   */
+  readOnly?: boolean
 }
 
 export function ShortlistCandidateCard({
@@ -27,11 +35,13 @@ export function ShortlistCandidateCard({
   onSnooze,
   onViewProfile,
   onSnoozePopoverOpenChange,
+  readOnly = false,
 }: ShortlistCandidateCardProps) {
   const [note, setNote] = useState('')
   const [snoozeOpen, setSnoozeOpen] = useState(false)
   const terminal = isTerminalStatus(submission.status)
   const isInterested = submission.status === 'interested'
+  const showActions = !terminal && !readOnly
   const score = submission.match_score
 
   function handleSnoozePopoverOpenChange(open: boolean) {
@@ -74,9 +84,15 @@ export function ShortlistCandidateCard({
           </div>
         </div>
 
-        {isInterested && (
+        {isInterested && !submission.submitted_at && (
           <p className="text-xs text-[oklch(0.45_0.15_145)]">
             Sent to your Account Manager for review.
+          </p>
+        )}
+
+        {submission.submitted_at && (
+          <p className="text-xs text-muted-foreground">
+            Submitted {new Date(submission.submitted_at).toLocaleDateString()}
           </p>
         )}
 
@@ -90,7 +106,7 @@ export function ShortlistCandidateCard({
           </div>
         )}
 
-        {!terminal && (
+        {showActions && (
           <Input
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -105,7 +121,7 @@ export function ShortlistCandidateCard({
             <User className="mr-1 size-3.5" />
             View Profile
           </Button>
-          {!terminal && (
+          {showActions && (
             <>
               <Button
                 size="sm"

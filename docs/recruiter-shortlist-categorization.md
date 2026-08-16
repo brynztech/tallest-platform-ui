@@ -174,6 +174,45 @@ fills in from an async match run shows up without a manual refresh. No
 field to poll by id, and the shortlist is a list with no such per-job
 resource — a plain interval is the simpler fit.
 
+## Submit Applications + Submission History
+
+Once a recruiter has screened everyone on the shortlist, they send the
+`interested` candidates to their Account Manager for final review with a
+**Submit Applications** button next to Run Match.
+
+- `_lib/shortlist.ts::submitInterestedCandidates(requisitionId)` — POSTs to
+  `/api/v1/supply/shortlists/{requisition_id}/submit` (no body). Returns
+  `{ submitted_count }`. Throws a new `UnscreenedCandidatesError` on `409`
+  (a raw `shortlisted` submission still exists), mirroring the existing
+  `SubmissionConflictError`/`MatchNotAssignedError` pattern in the same file.
+- `ShortlistSubmission` gained `submitted_at: string | null`.
+- `_lib/shortlist.ts::canSubmitApplications(submissions)` — pure client-side
+  mirror of the backend's gate (fast feedback before a round-trip, same
+  precedent as `isFutureSnoozeDate` pre-validating the snooze rule): enabled
+  only when at least one submission is `interested` and none is still raw
+  `shortlisted`. Covered by `apps/console/src/__tests__/my-role-detail.test.ts`.
+- The button is visually distinct from Run Match (solid success-green,
+  `Send` icon) and, because this notifies the Account Manager and can't be
+  undone from the recruiter's side, requires a confirm step via a `Dialog`
+  from `@brynzit/ui` before firing — not a single accidental click.
+- On success: toasts the count (e.g. "3 candidates submitted to your Account
+  Manager."). On `UnscreenedCandidatesError`: toasts "Screen every candidate
+  before submitting." Either way, the shortlist query is invalidated.
+- **Submission History** renders below the active shortlist: submissions
+  with `submitted_at != null` are filtered out of the active list (so a
+  submitted candidate's action buttons don't linger — its `status` typically
+  stays `interested`, which isn't itself terminal) and rendered instead in
+  History using `ShortlistCandidateCard`'s new `readOnly` prop, which hides
+  the note input and the categorization action row (View Profile stays).
+  Status keeps updating live via the same polled shortlist query if the
+  Account Manager later approves/rejects it — no extra fetch needed.
+  - **Reuse decision**: added `readOnly?: boolean` to `ShortlistCandidateCard`
+    rather than a second card component. The prop surface stays a single
+    boolean (no new required props, defaults to `false`), and the component
+    already branches on `isTerminalStatus`/`isInterested` internally, so one
+    more boolean condition (`showActions = !terminal && !readOnly`) reads
+    cleanly rather than forking ~140 lines of near-identical markup.
+
 ## MSW mocks
 
 `packages/mocks/src/handlers/supply.ts` — the shortlist GET/PATCH handlers
@@ -187,6 +226,12 @@ are now backed by a small in-memory `shortlistStore` (keyed by
   a subsequent GET reflects it), 409s if the existing status is already
   `approved`/`rejected`, and stores/clears `snoozed_until` based on whether
   the new status is `snoozed`.
+
+A new handler, `POST .../shortlists/:requisition_id/submit`, writes into the
+same `shortlistStore`: 409s if any submission for that requisition is still
+`shortlisted`, otherwise stamps `submitted_at` on every currently-`interested`
+submission that doesn't already have one and returns the count — idempotent,
+same as the live contract (a repeat call with nothing new submits 0).
 
 `packages/mocks/src/handlers/ops.ts`'s match-trigger handler now reads
 `acting_user_id` off the query string and 403s via a new
@@ -204,12 +249,12 @@ are now backed by a small in-memory `shortlistStore` (keyed by
 (`.ts`, not `.tsx`, per the known Vitest/JSX transform bug for new `.tsx`
 files, `apps/console/CLAUDE.md` gotcha #3 / `docs/console-admin-and-rbac.md`
 §5): `getSnoozePresetDate`/`snoozePresetLabel`/`isFutureSnoozeDate` from
-`_lib/snooze-presets.ts`, and `isTerminalStatus`/`statusLabel`/
-`statusBadgeClass`/`scoreColor` from `_lib/status.ts`. No render test for the
-page or its components.
+`_lib/snooze-presets.ts`, `isTerminalStatus`/`statusLabel`/
+`statusBadgeClass`/`scoreColor` from `_lib/status.ts`, and
+`canSubmitApplications` from `_lib/shortlist.ts`. No render test for the page
+or its components.
 
 ## Verification
 
 `pnpm --filter @brynzit/console exec tsc --noEmit` and
-`pnpm --filter @brynzit/console exec vitest run` both clean — 151 tests
-passing (135 pre-existing + 16 new).
+`pnpm --filter @brynzit/console exec vitest run` both clean.

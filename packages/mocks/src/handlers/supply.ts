@@ -19,6 +19,7 @@ import { API_BASE } from '../base-url'
 // docs/recruiter-shortlist-categorization.md) — MockSubmission adds it locally.
 type MockSubmission = components['schemas']['SubmissionResponse'] & {
   snoozed_until: string | null
+  submitted_at: string | null
 }
 
 const shortlistStore: Record<string, MockSubmission[]> = {}
@@ -34,6 +35,7 @@ function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
       status: 'shortlisted',
       supply_notes: null,
       snoozed_until: null,
+      submitted_at: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Alice Chen',
@@ -53,6 +55,7 @@ function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
       status: 'approved',
       supply_notes: 'Great candidate for the role',
       snoozed_until: null,
+      submitted_at: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'David Park',
@@ -72,6 +75,7 @@ function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
       status: 'shortlisted',
       supply_notes: null,
       snoozed_until: null,
+      submitted_at: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Sara Okonkwo',
@@ -384,6 +388,7 @@ export const supplyHandlers: HttpHandler[] = [
       status: body.status,
       supply_notes: body.notes ?? null,
       snoozed_until: body.status === 'snoozed' ? (body.snoozed_until ?? null) : null,
+      submitted_at: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Alice Chen',
@@ -395,6 +400,32 @@ export const supplyHandlers: HttpHandler[] = [
       total_years_experience: 7,
     }
     return HttpResponse.json(fallback)
+  }),
+
+  // 8b. POST /api/v1/supply/shortlists/:requisition_id/submit — submit interested
+  // candidates to the Account Manager. No body. 409 if any submission is still
+  // raw 'shortlisted' (unscreened). Idempotent: marks every currently-
+  // interested-and-not-yet-submitted submission with a submitted_at timestamp;
+  // a repeat call with nothing new submits 0.
+  http.post(`${API_BASE}/api/v1/supply/shortlists/:requisition_id/submit`, ({ params }) => {
+    const requisitionId = params.requisition_id as string
+    const list = submissionsFor(requisitionId)
+    const hasUnscreened = list.some((s) => s.status === 'shortlisted')
+    if (hasUnscreened) {
+      return HttpResponse.json(
+        { detail: 'Screen every candidate before submitting.' },
+        { status: 409 },
+      )
+    }
+    const now = new Date().toISOString()
+    let submittedCount = 0
+    for (const submission of list) {
+      if (submission.status === 'interested' && !submission.submitted_at) {
+        submission.submitted_at = now
+        submittedCount++
+      }
+    }
+    return HttpResponse.json({ submitted_count: submittedCount })
   }),
 
   // --- Engagement ---
