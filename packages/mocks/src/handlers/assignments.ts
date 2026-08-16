@@ -13,7 +13,8 @@ const ASSIGNMENTS: Record<string, string[]> = {
   usr_recruiter: ['00000000-0000-0000-0000-req000000001'],
 }
 
-function assigneesFor(reqId: string): string[] {
+/** Exported so the request-more-candidates mock (handlers/ops.ts) can notify every assignee. */
+export function assigneesFor(reqId: string): string[] {
   return Object.entries(ASSIGNMENTS)
     .filter(([, reqIds]) => reqIds.includes(reqId))
     .map(([userId]) => userId)

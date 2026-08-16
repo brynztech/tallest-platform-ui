@@ -7,6 +7,7 @@ import { candidateHandlers } from './handlers/candidate'
 import { qualityHandlers } from './handlers/quality'
 import { bookmarkHandlers } from './handlers/bookmarks'
 import { assignmentHandlers } from './handlers/assignments'
+import { notificationHandlers } from './handlers/notifications'
 
 export const worker = setupWorker(
   ...bdHandlers,
@@ -17,4 +18,5 @@ export const worker = setupWorker(
   ...qualityHandlers,
   ...bookmarkHandlers,
   ...assignmentHandlers,
+  ...notificationHandlers,
 )

@@ -2,7 +2,8 @@ import { http, HttpResponse } from 'msw'
 import type { HttpHandler } from 'msw'
 import type { components } from '@brynzit/api-client'
 import { API_BASE } from '../base-url'
-import { isUserAssignedToRequisition } from './assignments'
+import { assigneesFor, isUserAssignedToRequisition } from './assignments'
+import { addNotification } from './notifications'
 
 const requisitionOverrides: Record<string, Partial<components['schemas']['RequisitionResponse']>> = {}
 
@@ -14,6 +15,14 @@ function withRequisitionOverride(
     ...(requisitionOverrides[requisition.id] ?? {}),
     id: requisition.id,
   }
+}
+
+// Seeded defaults: req000000002 starts filled, everything else starts open
+// (mirrors the two seeded requisitions above/in the list handlers).
+function currentRequisitionStatus(id: string): string {
+  const override = requisitionOverrides[id]?.status
+  if (override) return override
+  return id === '00000000-0000-0000-0000-req000000002' ? 'filled' : 'open'
 }
 
 // Ops domain MSW handlers.
@@ -289,6 +298,41 @@ export const opsHandlers: HttpHandler[] = [
     } satisfies components['schemas']['RequisitionResponse']
     requisitionOverrides[updated.id] = updated
     return HttpResponse.json(updated)
+  }),
+
+  // 11c. PATCH /api/v1/ops/requisitions/:req_id/status — status lifecycle change
+  // (open/matching_complete/closed/filled). 409 if already closed/filled — terminal,
+  // no reopening supported.
+  http.patch(`${API_BASE}/api/v1/ops/requisitions/:req_id/status`, async ({ params, request }) => {
+    const id = params.req_id as string
+    const body = (await request.json()) as { status: string }
+    const current = currentRequisitionStatus(id)
+    if (current === 'closed' || current === 'filled') {
+      return HttpResponse.json(
+        { detail: 'Requisition is already closed or filled.' },
+        { status: 409 },
+      )
+    }
+    requisitionOverrides[id] = { ...requisitionOverrides[id], status: body.status }
+    return HttpResponse.json({ id, status: body.status })
+  }),
+
+  // 11d. POST /api/v1/ops/requisitions/:req_id/request-more-candidates — notify
+  // every assigned recruiter. No body. 409 if already closed/filled.
+  http.post(`${API_BASE}/api/v1/ops/requisitions/:req_id/request-more-candidates`, ({ params }) => {
+    const id = params.req_id as string
+    const current = currentRequisitionStatus(id)
+    if (current === 'closed' || current === 'filled') {
+      return HttpResponse.json(
+        { detail: 'Requisition is already closed or filled.' },
+        { status: 409 },
+      )
+    }
+    const assignees = assigneesFor(id)
+    for (const userId of assignees) {
+      addNotification(userId, id, 'Your Account Manager requested more candidates for this role.')
+    }
+    return HttpResponse.json({ notified_count: assignees.length })
   }),
 
   // 12. POST /api/v1/ops/requisitions/:req_id/match — trigger candidate matching (202 async)

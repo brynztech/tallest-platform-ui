@@ -11,6 +11,7 @@ import { Badge } from '@brynzit/ui/components/ui/badge'
 import Link from 'next/link'
 import { Trophy, Zap } from 'lucide-react'
 import { RequisitionFields } from './_components/requisition-fields'
+import { RequisitionLifecycleControls } from './_components/lifecycle-controls'
 import { HiringProcessPanel } from './_components/hiring-process-panel'
 import { MatchmakerPanel } from './_components/matchmaker-panel'
 import { ShortlistTable } from './_components/shortlist-table'
@@ -147,6 +148,7 @@ export default function RequisitionDetailPage({
         </div>
         <div className="flex items-center gap-2">
           <RequisitionStatusBadge status={req.status} />
+          <RequisitionLifecycleControls reqId={id} status={req.status} />
         </div>
       </div>
 
