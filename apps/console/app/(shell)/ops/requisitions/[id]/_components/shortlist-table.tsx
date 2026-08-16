@@ -227,10 +227,17 @@ export function ShortlistTable({
       pendingTimeouts.delete(key)
     }
 
+    // Optimistic: the row reflects the decision immediately, not after the
+    // 5s undo window — the Undo action below already reverts this override,
+    // so it was always meant to be immediate (see the actionMutation
+    // onError comment). Only the real backend write (and the parent-state
+    // callback that seeds Interviews/Placements candidate pickers) waits out
+    // the undo window, since those are the parts that actually need to be
+    // reversible.
+    setLocalStatusOverrides((prev) => ({ ...prev, [key]: newStatus }))
+
     const timeoutId = setTimeout(() => {
       pendingTimeouts.delete(key)
-      // Always update local override so the row reflects the action
-      setLocalStatusOverrides((prev) => ({ ...prev, [key]: newStatus }))
       // Try supply PATCH if we have a real submission_id
       if (entry.submission_id) {
         actionMutation.mutate({ submissionId: entry.submission_id, status: newStatus })
