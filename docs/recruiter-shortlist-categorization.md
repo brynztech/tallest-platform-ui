@@ -1,6 +1,6 @@
 # Recruiter Shortlist Categorization
 
-Status: implemented on `frontend-dev` · Last updated: 2026-08-15
+Status: implemented on `frontend-dev` · Last updated: 2026-08-16
 
 A recruiter-facing requisition detail page where a recruiter runs AI matching
 on a role assigned to them, then screens/categorizes each shortlisted
@@ -253,6 +253,161 @@ files, `apps/console/CLAUDE.md` gotcha #3 / `docs/console-admin-and-rbac.md`
 `statusBadgeClass`/`scoreColor` from `_lib/status.ts`, and
 `canSubmitApplications` from `_lib/shortlist.ts`. No render test for the page
 or its components.
+
+## Pipeline stage tracking, softened remove, and notes (added 2026-08-16)
+
+Frontend half of the backend's §8–§10
+(`../talent-platform/docs/recruiter-shortlist-categorization.md`) — read that
+doc first for the exact 404/409 semantics; this section covers the console
+UI built on top of it. This work is entirely on the separate
+`/pipeline` kanban page (`apps/console/app/(shell)/pipeline/page.tsx`), not
+`/my-roles/[id]` above — the Ops-page `ShortlistTable`'s approve/reject flow
+is unchanged.
+
+### Real stage columns, replacing the fake 2-bucket projection
+
+`/pipeline` used to group every non-rejected submission into just `stages[0]`
+or `stages[1]` via `stageForSubmissionStatus()`
+(`ops/requisitions/[id]/_lib/hiring-process.ts`) — a fake projection that
+ignored however many stages a requisition actually configures.
+`stageForSubmissionStatus` itself is untouched (still used/tested elsewhere);
+only its call site on this page was replaced.
+
+`_lib/group-submissions.ts::groupSubmissionsByPipelineStage(submissions,
+stages)` is the real grouping, a pure function:
+
+- `interested` (recruiter-screened, awaiting the Account Manager's
+  approve/reject — not real pipeline-stage tracking yet) → a distinct,
+  read-only **Awaiting Review** column, rendered before the requisition's
+  configured stages. No Advance/Remove/Notes actions here — approving/
+  rejecting still only happens on `/ops/requisitions/[id]`'s `ShortlistTable`.
+- `approved` → the column matching `current_stage_id`, defaulting to the
+  first configured stage when `current_stage_id` is `null` (not yet
+  explicitly advanced) or stale (no longer matches any configured stage —
+  same fallback in both cases, since either way "first stage" is the most
+  sensible default column for an approved-but-untracked candidate).
+- `rejected` (and anything else) → excluded; the page's existing
+  `?stage=rejected` toggle renders those from its own `rejectedSubmissions`
+  filter, unchanged mechanism.
+
+### `@brynzit/pipeline` bridge
+
+`_lib/pipeline-bridge.ts` bridges `HiringStage`/`HiringStageKind` into
+`@brynzit/pipeline` (imported as `@brynzit/pipeline`, already a workspace
+dependency of `@brynzit/console`) purely for computing the "Advance to
+{next stage}" button's label/enabled state — the backend's
+`POST .../advance-stage` is authoritative for the actual transition, so a
+stale computation here just risks a briefly-wrong label before a 409.
+
+- `hiringStageKindToPipelineStageType` re-exports
+  `ops/requisitions/[id]/_lib/requisition-pipeline.ts::hiringKindToStageType`
+  under this feature's contract name, rather than re-implementing the same
+  `internal_review -> internal_gate` / else `-> client_stage` mapping a
+  second time — that file already built this exact mapping for the
+  hiring-process editor's mediation-gate toggle.
+- `toPipelineDefinition(requisitionId, stages)` builds an (unvalidated)
+  `PipelineDefinition` from a requisition's already-fetched `HiringStage[]`
+  (the page already calls `getHiringProcess()` once for the column headers,
+  so this reuses that result instead of re-deriving it). The page runs it
+  through `definePipeline()` itself to get a validated `Pipeline`.
+- `nextPipelineStage(pipeline, currentStageId)` computes the stage a
+  submission would move to on its next `advance-stage` call. **Deviation
+  from the original ask to use `stageAfter()`/`getStage()`**: this uses
+  `allowedTransitions()` instead, because the backend treats a `null`
+  `current_stage_id` as "not yet entered the pipeline" and advances it *to*
+  the first stage, not past it — `stageAfter` has no way to express that
+  (it requires a concrete current stage id), while `allowedTransitions(p,
+  null)` under this pipeline's `forward_only` policy already returns
+  `[firstStage(p)]`, matching the backend exactly. Since `null` current-stage
+  is the default state for every just-approved candidate (the common case,
+  not an edge case), getting this right mattered more than following the
+  original suggestion literally. A stale/unconfigured `current_stage_id`
+  makes `allowedTransitions` return `[]` too, collapsing the backend's two
+  distinct 409s (final stage vs. stale stage) into one "can't advance"
+  button state — acceptable for a display-only computation.
+
+### Card actions (approved-stage columns only)
+
+`_components/pipeline-candidate-card.tsx`, `Card`/`CardContent` from
+`@brynzit/ui` (same primitive `shortlist-candidate-card.tsx` and
+`shortlist-table.tsx` build on):
+
+- **Advance to {next stage}** — `_lib/pipeline-actions.ts::
+  advanceSubmissionStage`, native `fetch` (this endpoint isn't in the
+  generated `api.d.ts`, same convention as `my-roles/[id]/_lib/shortlist.ts`).
+  Disabled at the final stage (`title="Already at the final stage"` rather
+  than a new Tooltip component — no Tooltip primitive exists in this app yet,
+  see `design-system/components.md`'s primitive list). On success, invalidates
+  the pipeline query and toasts the new stage name. On `409`, toasts the
+  backend's `detail` string when present (`AdvanceStageConflictError`), else
+  a generic "Couldn't advance — try again."
+- **Remove from Pipeline** — a `Dialog` mirroring the visual weight of
+  `shortlist-table.tsx`'s existing manual-remove dialog (lines ~688–712) but
+  **without** the score-override fields: just a reason textarea (min 3
+  chars, same threshold as the Ops-page dialog's `canSubmitFeedback`).
+  `_lib/pipeline-actions.ts::manualRemoveFromPipeline` POSTs `{ reason }`
+  only — `score_overrides` is now optional server-side (§9 of the backend
+  doc) specifically so this lighter kanban flow doesn't need to collect it.
+- **Notes** — `_components/submission-notes-popover.tsx`, a `Popover`
+  (consistent with `bd/leads/_components/snooze-popover.tsx`'s card-level
+  popover pattern) triggered by a small `MessageSquare` icon button. Content
+  mirrors `ops/clients/[id]/_components/client-notes.tsx`'s list/input
+  styling directly (`bg-muted/30` note rows, timestamp caption, plain
+  `Textarea` + "Add Note" button) rather than inventing new visual language.
+  Fetches on open (`enabled: open`) via `_lib/pipeline-actions.ts::
+  fetchSubmissionNotes`/`addSubmissionNote`. The backend returns notes
+  oldest-first; the popover re-sorts newest-first client-side before
+  rendering, the same "Reverse-chronological sort" `client-notes.tsx` already
+  does regardless of API order — kept for visual consistency with that
+  precedent. Has explicit loading (`"Loading notes…"`), error
+  (`"Couldn't load notes."`), and empty (`"No notes yet."`) states.
+
+The read-only Awaiting Review/Rejected cards (`CandidatePipelineCard` in
+`page.tsx`) were also moved onto `Card`/`CardContent` (previously a plain
+`<article>`) for visual consistency with the new action cards.
+
+## MSW mocks — advance-stage, manual-remove, notes
+
+`packages/mocks/src/handlers/supply.ts`:
+
+- `MockSubmission` gains `current_stage_id: string | null`.
+- `DEFAULT_STAGE_IDS` (`recruiter-review`, `client-screen`,
+  `technical-interview`, `offer`) mirrors `HiringProcess`'s
+  `DEFAULT_HIRING_STAGES` ids/order byte-for-byte (the mocks package can't
+  import app code, so this small stable list is intentionally duplicated —
+  same tradeoff the backend doc's §8 describes for its own
+  `_ordered_hiring_stages` default).
+- `POST .../advance-stage` — 404 unknown submission; 409 if the requisition
+  is closed/filled (reusing `ops.ts`'s newly-exported
+  `currentRequisitionStatus`, the same helper `ops.ts`'s own handlers already
+  use — cross-handler imports are an established pattern in this package, see
+  `ops.ts`'s own imports from `assignments.ts`/`notifications.ts`); 409 if not
+  `approved`; `current_stage_id: null` advances to `DEFAULT_STAGE_IDS[0]`;
+  409 on a stale/unconfigured stage id; 409 at the final stage; otherwise
+  advances to the next id.
+- `POST .../manual-remove` — previously **unmocked entirely** (a pre-existing
+  gap; `shortlist-table.tsx`'s own remove dialog had no backing handler).
+  Now backed: marks the submission `removed` (same terminal status the
+  existing shortlist GET handler's `include_pending` filter already excludes)
+  and records `reason` in `supply_notes`; `score_overrides` is accepted but
+  optional and unused either way in the mock (the real distinction — whether
+  a `ShortlistFeedback` row gets recorded — isn't something the mock's
+  in-memory store models).
+- `GET`/`POST .../notes` — new `submissionNotesStore: Record<string,
+  MockSubmissionNote[]>`, keyed by `submission_id`. `GET` returns `[]` for an
+  unknown/note-less submission (no 404), matching the backend's documented
+  `list_interaction_notes` convention.
+
+## Tests
+
+`apps/console/src/__tests__/pipeline-stage-columns.test.ts` — pure-logic only
+(`.ts`, not `.tsx`, same known Vitest/JSX transform constraint as
+`my-role-detail.test.ts` above): `hiringStageKindToPipelineStageType`,
+`toPipelineDefinition`, `nextPipelineStage` (null → first stage, mid-pipeline
+→ next, final stage → `null`, stale stage → `null`), and
+`groupSubmissionsByPipelineStage` (interested → Awaiting Review; approved
+with/without/with-stale `current_stage_id`; rejected excluded). No render
+test for the page or its new card/popover components.
 
 ## Verification
 
