@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell } from 'lucide-react'
 import { INTERNAL_OPS_ITEMS, TOP_NAV_ITEMS } from '../_lib/recruiter-portal'
 import { cn } from '@brynzit/ui/lib/utils'
 import { IdentitySwitcher } from './identity-switcher'
+import { NotificationBell } from './notification-bell'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -57,13 +57,7 @@ export function TopNav() {
       </nav>
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="flex size-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground shadow-sm shadow-slate-200/60 transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Bell className="size-4" />
-        </button>
+        <NotificationBell />
         <IdentitySwitcher />
       </div>
     </header>
