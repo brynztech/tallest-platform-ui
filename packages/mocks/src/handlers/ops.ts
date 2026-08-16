@@ -19,7 +19,10 @@ function withRequisitionOverride(
 
 // Seeded defaults: req000000002 starts filled, everything else starts open
 // (mirrors the two seeded requisitions above/in the list handlers).
-function currentRequisitionStatus(id: string): string {
+// Exported for supply.ts's advance-stage handler, which needs the same
+// closed/filled 409 gate the live backend's assert_requisition_not_closed
+// applies (docs/recruiter-shortlist-categorization.md §8).
+export function currentRequisitionStatus(id: string): string {
   const override = requisitionOverrides[id]?.status
   if (override) return override
   return id === '00000000-0000-0000-0000-req000000002' ? 'filled' : 'open'

@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import type { HttpHandler } from 'msw'
 import type { components } from '@brynzit/api-client'
 import { API_BASE } from '../base-url'
+import { currentRequisitionStatus } from './ops'
 
 // Supply domain MSW handlers.
 // All 14 handlers covering candidates, ingest, shortlists, and engagement.
@@ -20,9 +21,26 @@ import { API_BASE } from '../base-url'
 type MockSubmission = components['schemas']['SubmissionResponse'] & {
   snoozed_until: string | null
   submitted_at: string | null
+  current_stage_id: string | null
 }
 
 const shortlistStore: Record<string, MockSubmission[]> = {}
+
+// Mirrors HiringProcess's DEFAULT_HIRING_STAGES ids/order exactly
+// (apps/console/.../ops/requisitions/[id]/_lib/hiring-process.ts) — the mocks
+// package can't import app code, so this small, stable id list is duplicated
+// here intentionally (see docs/recruiter-shortlist-categorization.md §8).
+const DEFAULT_STAGE_IDS = ['recruiter-review', 'client-screen', 'technical-interview', 'offer']
+
+type MockSubmissionNote = {
+  id: string
+  submission_id: string
+  text: string
+  author: string | null
+  created_at: string
+}
+
+const submissionNotesStore: Record<string, MockSubmissionNote[]> = {}
 
 function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
   return [
@@ -36,6 +54,7 @@ function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
       supply_notes: null,
       snoozed_until: null,
       submitted_at: null,
+      current_stage_id: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Alice Chen',
@@ -56,6 +75,7 @@ function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
       supply_notes: 'Great candidate for the role',
       snoozed_until: null,
       submitted_at: null,
+      current_stage_id: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'David Park',
@@ -76,6 +96,7 @@ function defaultSubmissionsFor(requisitionId: string): MockSubmission[] {
       supply_notes: null,
       snoozed_until: null,
       submitted_at: null,
+      current_stage_id: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Sara Okonkwo',
@@ -389,6 +410,7 @@ export const supplyHandlers: HttpHandler[] = [
       supply_notes: body.notes ?? null,
       snoozed_until: body.status === 'snoozed' ? (body.snoozed_until ?? null) : null,
       submitted_at: null,
+      current_stage_id: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
       updated_at: new Date().toISOString(),
       candidate_name: 'Alice Chen',
@@ -426,6 +448,113 @@ export const supplyHandlers: HttpHandler[] = [
       }
     }
     return HttpResponse.json({ submitted_count: submittedCount })
+  }),
+
+  // 8c. POST /api/v1/supply/shortlists/:submission_id/advance-stage — move an
+  // approved submission to its next configured hiring-process stage. Mirrors
+  // supply/services/shortlisting.py::advance_submission_stage: 404 unknown
+  // submission; 409 if the requisition is closed/filled; 409 if not
+  // `approved`; 409 if `current_stage_id` no longer matches a configured
+  // stage; 409 at the final stage. `current_stage_id: null` means "not yet
+  // entered the pipeline" and advances to the first stage, not past it.
+  http.post(`${API_BASE}/api/v1/supply/shortlists/:submission_id/advance-stage`, ({ params }) => {
+    const submissionId = params.submission_id as string
+    for (const requisitionId of Object.keys(shortlistStore)) {
+      const list = shortlistStore[requisitionId]
+      const idx = list.findIndex((s) => s.id === submissionId)
+      if (idx === -1) continue
+      const submission = list[idx]
+
+      if (currentRequisitionStatus(requisitionId) === 'closed' || currentRequisitionStatus(requisitionId) === 'filled') {
+        return HttpResponse.json({ detail: 'Requisition is closed or filled.' }, { status: 409 })
+      }
+      if (submission.status !== 'approved') {
+        return HttpResponse.json(
+          { detail: 'Only approved candidates are tracked in the pipeline.' },
+          { status: 409 },
+        )
+      }
+
+      if (submission.current_stage_id === null) {
+        const updated: MockSubmission = {
+          ...submission,
+          current_stage_id: DEFAULT_STAGE_IDS[0],
+          updated_at: new Date().toISOString(),
+        }
+        list[idx] = updated
+        return HttpResponse.json(updated)
+      }
+
+      const currentIndex = DEFAULT_STAGE_IDS.indexOf(submission.current_stage_id)
+      if (currentIndex === -1) {
+        return HttpResponse.json(
+          { detail: "Current stage no longer exists in this requisition's hiring process." },
+          { status: 409 },
+        )
+      }
+      if (currentIndex === DEFAULT_STAGE_IDS.length - 1) {
+        return HttpResponse.json({ detail: 'Already at the final stage.' }, { status: 409 })
+      }
+      const updated: MockSubmission = {
+        ...submission,
+        current_stage_id: DEFAULT_STAGE_IDS[currentIndex + 1],
+        updated_at: new Date().toISOString(),
+      }
+      list[idx] = updated
+      return HttpResponse.json(updated)
+    }
+    return HttpResponse.json({ detail: 'Submission not found' }, { status: 404 })
+  }),
+
+  // 8d. POST /api/v1/supply/shortlists/:submission_id/manual-remove — marks a
+  // submission `removed`. `score_overrides` is optional (softened for the
+  // kanban "Remove from Pipeline" flow — see
+  // docs/recruiter-shortlist-categorization.md §9); omitting it here simply
+  // skips recording any scoring-feedback fields, same as the live backend
+  // skipping the ShortlistFeedback row when score_overrides is absent.
+  http.post(`${API_BASE}/api/v1/supply/shortlists/:submission_id/manual-remove`, async ({ params, request }) => {
+    const submissionId = params.submission_id as string
+    const body = (await request.json()) as {
+      reason: string
+      score_overrides?: Record<string, number>
+    }
+    for (const requisitionId of Object.keys(shortlistStore)) {
+      const list = shortlistStore[requisitionId]
+      const idx = list.findIndex((s) => s.id === submissionId)
+      if (idx === -1) continue
+      const updated: MockSubmission = {
+        ...list[idx],
+        status: 'removed',
+        supply_notes: body.reason,
+        updated_at: new Date().toISOString(),
+      }
+      list[idx] = updated
+      return HttpResponse.json(updated)
+    }
+    return HttpResponse.json({ detail: 'Submission not found' }, { status: 404 })
+  }),
+
+  // 8e. GET /api/v1/supply/shortlists/:submission_id/notes — oldest first.
+  // No 404 on an empty/unknown submission — matches the live
+  // list_interaction_notes convention (docs/recruiter-shortlist-categorization.md §10).
+  http.get(`${API_BASE}/api/v1/supply/shortlists/:submission_id/notes`, ({ params }) => {
+    const submissionId = params.submission_id as string
+    return HttpResponse.json(submissionNotesStore[submissionId] ?? [])
+  }),
+
+  // 8f. POST /api/v1/supply/shortlists/:submission_id/notes — appends a note.
+  http.post(`${API_BASE}/api/v1/supply/shortlists/:submission_id/notes`, async ({ params, request }) => {
+    const submissionId = params.submission_id as string
+    const body = (await request.json()) as { text: string; author?: string }
+    const note: MockSubmissionNote = {
+      id: crypto.randomUUID(),
+      submission_id: submissionId,
+      text: body.text,
+      author: body.author ?? null,
+      created_at: new Date().toISOString(),
+    }
+    submissionNotesStore[submissionId] = [...(submissionNotesStore[submissionId] ?? []), note]
+    return HttpResponse.json(note, { status: 201 })
   }),
 
   // --- Engagement ---
