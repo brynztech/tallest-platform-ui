@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import { definePipeline } from '@brynzit/pipeline'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
+import { Card, CardContent } from '@brynzit/ui/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -24,10 +26,12 @@ import {
 } from '../_lib/recruiter-data'
 import {
   getHiringProcess,
-  stageForSubmissionStatus,
   stageKindLabel,
   type HiringStage,
 } from '../ops/requisitions/[id]/_lib/hiring-process'
+import { toPipelineDefinition } from './_lib/pipeline-bridge'
+import { AWAITING_REVIEW_STAGE_ID, groupSubmissionsByPipelineStage } from './_lib/group-submissions'
+import { PipelineCandidateCard } from './_components/pipeline-candidate-card'
 
 export default function CandidatePipelinePage() {
   const searchParams = useSearchParams()
@@ -49,8 +53,9 @@ export default function CandidatePipelinePage() {
   const activeReqId = selectedReqId || requisitions[0]?.id || ''
   const activeReq = requisitions.find((requisition) => requisition.id === activeReqId) ?? null
   const hiringProcess = activeReq ? getHiringProcess(activeReq) : { stages: [] as HiringStage[] }
+  const pipelineQueryKey = recruiterQueryKeys.pipeline(activeReqId)
   const submissionsQuery = useQuery({
-    queryKey: recruiterQueryKeys.pipeline(activeReqId),
+    queryKey: pipelineQueryKey,
     queryFn: () => fetchPipelineSubmissions(activeReq ? [activeReq] : []),
     enabled: requisitionsQuery.isSuccess && Boolean(activeReq),
     staleTime: RECRUITER_STALE_TIME_MS,
@@ -64,9 +69,20 @@ export default function CandidatePipelinePage() {
 
   const submissions = submissionsQuery.data ?? []
   const grouped = useMemo(
-    () => groupSubmissions(submissions, hiringProcess.stages),
+    () => groupSubmissionsByPipelineStage(submissions, hiringProcess.stages),
     [submissions, hiringProcess.stages],
   )
+  const rejectedSubmissions = useMemo(
+    () => submissions.filter((submission) => submission.status === 'rejected'),
+    [submissions],
+  )
+  // Validated pipeline for the "Advance to {next stage}" button's display-only
+  // computation (see _lib/pipeline-bridge.ts) — only buildable once a
+  // requisition with configured stages is selected.
+  const pipeline = useMemo(() => {
+    if (!activeReqId || hiringProcess.stages.length === 0) return null
+    return definePipeline(toPipelineDefinition(activeReqId, hiringProcess.stages))
+  }, [activeReqId, hiringProcess.stages])
   const isLoading =
     clientsQuery.isLoading || requisitionsQuery.isLoading || submissionsQuery.isLoading
   const hasError = clientsQuery.error || requisitionsQuery.error || submissionsQuery.error
@@ -153,13 +169,13 @@ export default function CandidatePipelinePage() {
           <section className="rounded-xl border border-border/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold">Rejected</h2>
-              <Badge variant="secondary">{grouped.rejected.length}</Badge>
+              <Badge variant="secondary">{rejectedSubmissions.length}</Badge>
             </div>
             <div className="flex flex-col gap-3">
-              {grouped.rejected.length === 0 ? (
+              {rejectedSubmissions.length === 0 ? (
                 <p className="py-4 text-sm text-muted-foreground">No rejected candidates</p>
               ) : (
-                grouped.rejected.map((submission) => (
+                rejectedSubmissions.map((submission) => (
                   <CandidatePipelineCard key={submission.id} submission={submission} />
                 ))
               )}
@@ -169,8 +185,29 @@ export default function CandidatePipelinePage() {
       ) : (
         <div
           className="grid min-w-[900px] flex-1 gap-4 overflow-x-auto"
-          style={{ gridTemplateColumns: `repeat(${hiringProcess.stages.length}, minmax(220px, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${1 + hiringProcess.stages.length}, minmax(220px, 1fr))`,
+          }}
         >
+          <section className="rounded-xl border border-border/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold">Awaiting Review</h2>
+                <p className="text-[11px] text-muted-foreground">Screened, pending AM decision</p>
+              </div>
+              <Badge variant="secondary">{grouped[AWAITING_REVIEW_STAGE_ID].length}</Badge>
+            </div>
+            <div className="flex flex-col gap-3">
+              {grouped[AWAITING_REVIEW_STAGE_ID].length === 0 ? (
+                <p className="py-4 text-sm text-muted-foreground">No candidates awaiting review</p>
+              ) : (
+                grouped[AWAITING_REVIEW_STAGE_ID].map((submission) => (
+                  <CandidatePipelineCard key={submission.id} submission={submission} />
+                ))
+              )}
+            </div>
+          </section>
+
           {hiringProcess.stages.map((stage) => (
             <section key={stage.id} className="rounded-xl border border-border/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70">
               <div className="mb-3 flex items-center justify-between">
@@ -184,31 +221,18 @@ export default function CandidatePipelinePage() {
                 {grouped[stage.id].length === 0 ? (
                   <p className="py-4 text-sm text-muted-foreground">No candidates</p>
                 ) : (
-                  grouped[stage.id].map((submission) => (
-                    <article key={submission.id} className="rounded-lg border bg-background p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-sm font-semibold">
-                            {submission.candidate_name ?? submission.candidate_id}
-                          </h3>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {submission.candidate_title ?? 'Candidate'} ·{' '}
-                            {submission.requisition.title}
-                          </p>
-                        </div>
-                        <Badge variant="outline">{submission.status}</Badge>
-                      </div>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {submission.requisition.client?.name ?? 'Client'} · Match score{' '}
-                        {submission.match_score ?? 'not scored'}
-                      </p>
-                      <Button asChild className="mt-3 w-full" size="sm" variant="outline">
-                        <Link href={`/ops/requisitions/${submission.requisition.id}`}>
-                          Review Shortlist
-                        </Link>
-                      </Button>
-                    </article>
-                  ))
+                  grouped[stage.id].map((submission) =>
+                    pipeline ? (
+                      <PipelineCandidateCard
+                        key={submission.id}
+                        submission={submission}
+                        pipeline={pipeline}
+                        pipelineQueryKey={pipelineQueryKey}
+                      />
+                    ) : (
+                      <CandidatePipelineCard key={submission.id} submission={submission} />
+                    ),
+                  )
                 )}
               </div>
             </section>
@@ -219,39 +243,30 @@ export default function CandidatePipelinePage() {
   )
 }
 
-function groupSubmissions(submissions: PipelineSubmission[], stages: HiringStage[]) {
-  const groups: Record<string, PipelineSubmission[]> = { rejected: [] }
-  for (const stage of stages) groups[stage.id] = []
-
-  for (const submission of submissions) {
-    const stageId = stageForSubmissionStatus(stages, submission.status)
-    groups[stageId] = [...(groups[stageId] ?? []), submission]
-  }
-
-  return groups
-}
-
+/** Read-only card — Awaiting Review and Rejected columns, no pipeline actions. */
 function CandidatePipelineCard({ submission }: { submission: PipelineSubmission }) {
   return (
-    <article className="rounded-lg border border-border/80 bg-background/80 p-3 shadow-sm shadow-slate-200/60">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold">
-            {submission.candidate_name ?? submission.candidate_id}
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {submission.candidate_title ?? 'Candidate'} · {submission.requisition.title}
-          </p>
+    <Card>
+      <CardContent className="flex flex-col gap-2 px-3 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold">
+              {submission.candidate_name ?? submission.candidate_id}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {submission.candidate_title ?? 'Candidate'} · {submission.requisition.title}
+            </p>
+          </div>
+          <Badge variant="outline">{submission.status}</Badge>
         </div>
-        <Badge variant="outline">{submission.status}</Badge>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {submission.requisition.client?.name ?? 'Client'} · Match score{' '}
-        {submission.match_score ?? 'not scored'}
-      </p>
-      <Button asChild className="mt-3 w-full" size="sm" variant="outline">
-        <Link href={`/ops/requisitions/${submission.requisition.id}`}>Review Shortlist</Link>
-      </Button>
-    </article>
+        <p className="text-xs text-muted-foreground">
+          {submission.requisition.client?.name ?? 'Client'} · Match score{' '}
+          {submission.match_score ?? 'not scored'}
+        </p>
+        <Button asChild className="mt-1 w-full" size="sm" variant="outline">
+          <Link href={`/ops/requisitions/${submission.requisition.id}`}>Review Shortlist</Link>
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
