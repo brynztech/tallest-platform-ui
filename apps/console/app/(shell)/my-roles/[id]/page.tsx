@@ -11,6 +11,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { assignmentQueryKeys, fetchAssignedRequisitionIds } from '../../_lib/assignments'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
+import { AssignedRecruitersCard } from './_components/assigned-recruiters-card'
 import { ShortlistCandidateCard } from './_components/shortlist-candidate-card'
 import {
   fetchRecruiterShortlist,
@@ -211,6 +212,9 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
           </Badge>
         ))}
       </div>
+
+      {/* Assignment logically precedes running a search — placed above Run Match. */}
+      <AssignedRecruitersCard reqId={id} />
 
       <Button
         variant="default"
