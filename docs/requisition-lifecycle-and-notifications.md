@@ -114,6 +114,34 @@ convention as above (`GET /ops/notifications`, `POST
 - `fetchUnreadNotifications(userId)`, `markNotificationRead(notificationId)`,
   `notificationQueryKey(userId)`.
 
+## 3. JD parse failure is now visible
+
+Creating a requisition with pasted JD text POSTs
+`/api/v1/ops/requisitions/{req_id}/parse-jd` from the `createMutation`
+`onSuccess` in `apps/console/app/(shell)/ops/requisitions/page.tsx`.
+
+There were two failure paths and only one of them told the user anything:
+
+| Path | Detection | Before | Now |
+|---|---|---|---|
+| Parse starts, then stalls | `useAsyncJob` phase → `failed` | `toast.error` | unchanged |
+| POST itself fails (non-2xx) | `error` truthy on the POST | silent `router.push` | `toast.error` + `router.push` |
+
+The second path is the one that mattered in production. The endpoint is
+declared `202` but `parse_jd_for_requisition` is awaited inline, so an LLM
+failure surfaces as a **500 on the POST** — `useAsyncJob` never starts, the
+phase never reaches `failed`, and the recruiter landed on a requisition with
+empty `title`/`seniority`/`skills` and no indication anything had gone wrong.
+The only trace was a `status="error"` row in Admin → Agent Events.
+
+Both paths reuse the same copy — *"JD parsing failed — fill fields manually."*
+— because the recruiter's next action is identical either way. The
+requisition is always created; only enrichment is lost.
+
+Root cause of the production incident was backend-side (Groq retired the
+pinned model); see `../talent-platform/docs/platform-hardening.md`
+§ Provider model retirement.
+
 ## MSW mocks
 
 New `packages/mocks/src/handlers/notifications.ts` (registered in

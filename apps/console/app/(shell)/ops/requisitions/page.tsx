@@ -187,7 +187,10 @@ export default function RequisitionsPage() {
         if (!error) {
           setIsParsingJd(true)
         } else {
-          // parse-jd POST failed — navigate directly
+          // parse-jd POST failed outright (e.g. the LLM provider 404'd the model).
+          // Without this the requisition just opens with empty fields and no
+          // signal — the failure was only visible in the agent event log.
+          toast.error('JD parsing failed — fill fields manually.')
           router.push(`/ops/requisitions/${req.id}`)
           setIsCreateOpen(false)
         }
