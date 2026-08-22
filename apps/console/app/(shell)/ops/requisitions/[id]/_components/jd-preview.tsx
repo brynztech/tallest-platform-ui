@@ -4,16 +4,14 @@
  * Paper-faithful preview of a generated JD.
  *
  * This renders the *document*, not console chrome: the palette, Arial face,
- * section order and 3x3 quick-facts grid mirror
+ * section order and quick-facts grid mirror
  * `../talent-platform/ops/services/jd_docx.py` so what an account manager sees
  * here is what the downloaded .docx contains. Everything around it (dialog,
  * buttons, toasts) uses the console's own tokens.
- *
- * The .docx additionally carries the Brynz logo mark in its header; the web
- * preview shows the wordmark alone.
  */
 
-import { paragraphs, quickFactRows, titleSubtitle, type JobDescription } from '../_lib/jd'
+import Image from 'next/image'
+import { isFactPresent, paragraphs, quickFactRows, titleSubtitle, type JobDescription } from '../_lib/jd'
 
 // Lifted verbatim from jd_docx.py — keep the two in step.
 const DOC = {
@@ -30,20 +28,32 @@ const DOC = {
 const PAPER_FONT = 'Arial, Helvetica, sans-serif'
 
 export function JdPreview({ jd }: { jd: JobDescription }) {
-  const company = jd.title_block.company || 'the Company'
+  const company = isFactPresent(jd.title_block.company)
+    ? jd.title_block.company.trim()
+    : 'the Company'
+  const factRows = quickFactRows(jd.quick_facts)
   return (
     <article
       className="mx-auto w-full max-w-[820px] bg-white px-8 py-7 text-[13px] leading-[1.55]"
       style={{ fontFamily: PAPER_FONT, color: DOC.body }}
       aria-label={`Job description for ${jd.title_block.role_title}`}
     >
-      {/* Brand header */}
-      <header className="pb-2">
-        <div className="text-[16px] font-bold" style={{ color: DOC.navy }}>
-          {jd.footer.recruiter_name}
-        </div>
-        <div className="text-[9px]" style={{ color: DOC.muted }}>
-          {jd.footer.recruiter_title}
+      {/* Brand header — logo + Brynz wordmark, matching the .docx */}
+      <header className="flex items-center gap-3 pb-2">
+        <Image
+          src="/brynz_logo.jpg"
+          alt=""
+          width={54}
+          height={54}
+          className="h-[54px] w-auto shrink-0"
+        />
+        <div>
+          <div className="text-[16px] font-bold" style={{ color: DOC.navy }}>
+            {jd.footer.recruiter_name}
+          </div>
+          <div className="text-[9px]" style={{ color: DOC.muted }}>
+            {jd.footer.recruiter_title}
+          </div>
         </div>
       </header>
       <hr className="mb-3 border-0 border-t" style={{ borderColor: DOC.hairline }} />
@@ -58,21 +68,25 @@ export function JdPreview({ jd }: { jd: JobDescription }) {
         </p>
       </div>
 
-      {/* Quick facts — fixed 3x3, every cell filled */}
-      <div className="mt-4 grid grid-cols-3">
-        {quickFactRows(jd.quick_facts).flatMap((row, rowIndex) =>
-          row.map((fact) => (
-            <div key={`${rowIndex}-${fact.label}`} className="px-2 py-2">
-              <div className="text-[9px] tracking-wide" style={{ color: DOC.muted }}>
-                {fact.label}
-              </div>
-              <div className="text-[14px] font-bold" style={{ color: DOC.navy }}>
-                {fact.value}
-              </div>
+      {/* Quick facts — only stated values; up to three per row */}
+      {factRows.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          {factRows.map((row, rowIndex) => (
+            <div key={rowIndex} className="grid grid-cols-3">
+              {row.map((fact) => (
+                <div key={fact.label} className="px-2 py-2">
+                  <div className="text-[9px] tracking-wide" style={{ color: DOC.muted }}>
+                    {fact.label}
+                  </div>
+                  <div className="text-[14px] font-bold" style={{ color: DOC.navy }}>
+                    {fact.value}
+                  </div>
+                </div>
+              ))}
             </div>
-          )),
-        )}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
       <Section title={`About ${company}`}>
         {paragraphs(jd.about_company).map((text, index) => (

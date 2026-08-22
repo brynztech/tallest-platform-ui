@@ -8,15 +8,21 @@ only what lives in this repo.
 
 ## 1. Where it appears
 
-A **Job Description** card on the requisition detail screen
+**Create (primary):** `CreateRequisitionWizard` on the requisitions list.
+New Requisition opens a four-step dialog — inputs → generate JD → assign
+recruiters → confirmation. The requisition is created as `draft`, published
+to `open` on the last step, and `parse-jd` is not called.
+
+**Existing requisitions:** a **Job Description** card on the detail screen
 (`app/(shell)/ops/requisitions/[id]/page.tsx`), between `RequisitionFields` and
-`HiringProcessPanel`. Everything happens in a centred dialog on that same
-screen — no new route.
+`AssignedRecruitersCard`. Used to preview, download, or regenerate.
 
 | File | Role |
 |---|---|
 | `_lib/jd.ts` | Types + native-fetch data layer + the pure helpers the preview consumes |
-| `_components/jd-panel.tsx` | The card, the dialog, generate/regenerate/download actions |
+| `_lib/create-requisition.ts` | Draft create + title patch for the wizard |
+| `_components/create-requisition-wizard.tsx` | Generate-first create flow |
+| `_components/jd-panel.tsx` | Detail-page generate/regenerate/download |
 | `_components/jd-preview.tsx` | Paper-faithful render of the JD JSON |
 
 ## 2. Two faces, one dialog
@@ -52,17 +58,14 @@ paragraph to re-run after an edit.
 ## 4. Why the preview uses document colours, not console tokens
 
 `jd-preview.tsx` renders the *document*: Arial, navy `#1B2A4A` title band,
-`#166534` green-flag bullets, `#991B1B` red-flag bullets, the 3×3 quick-facts
-grid, the accent-ruled section headings — all lifted verbatim from
+`#166534` green-flag bullets, `#991B1B` red-flag bullets, the quick-facts
+grid, the accent-ruled section headings, and the Brynz logo beside the wordmark
+— all lifted verbatim from
 `../talent-platform/ops/services/jd_docx.py` so what the operator approves on
 screen is what the downloaded file contains. The console's own tokens govern
 everything *around* the paper: card, dialog, buttons, labels, toasts, the
 Resdex/hard-filters blocks below the preview. Console rules still apply — light
 theme only, no `dark:` variants.
-
-The one intentional divergence: the `.docx` header carries the Brynz logo mark,
-the web preview shows the wordmark alone (the image asset lives in the backend
-repo).
 
 Below the paper the dialog shows two operational blocks that are **not** part
 of the JD document — the Naukri Resdex search criteria (the generator's second
@@ -83,10 +86,11 @@ The browser never builds the file.
 ## 6. Tests
 
 `src/__tests__/ops-jd-generate.test.ts` (11 tests) covers the pure helpers and
-the fetch layer: the quick-facts 3×3 order, `"Not specified"` for blank or
-missing cells, a missing `quick_facts` object still yielding nine cells, the
-title-band subtitle skipping unset parts, `fetchJd` returning `null` on 404
-versus throwing on 500, and `generateJd` surfacing the backend's `detail`.
+the fetch layer: quick-facts field order, omission of blank or legacy
+`"Not specified"` cells, row chunking, a missing `quick_facts` object yielding
+no rows, the title-band subtitle skipping unset parts, `fetchJd` returning
+`null` on 404 versus throwing on 500, and `generateJd` surfacing the backend's
+`detail`.
 
 **No render test for `JdPreview`.** Component rendering is still blocked in this
 app's Vitest — importing any `.tsx` component into a test fails to transform

@@ -1,25 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
-import type { components } from '@brynzit/api-client'
-import { useAsyncJob } from '@brynzit/hooks'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { Button } from '@brynzit/ui/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@brynzit/ui/components/ui/dialog'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -27,60 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
-import { Textarea } from '@brynzit/ui/components/ui/textarea'
-import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Badge } from '@brynzit/ui/components/ui/badge'
-import { Separator } from '@brynzit/ui/components/ui/separator'
 import Link from 'next/link'
-import { ChevronRight, Plus, Loader2 } from 'lucide-react'
-
-const createReqSchema = z.object({
-  client_id: z.string().min(1, 'Select a client'),
-  title: z.string().min(1, 'Title is required'),
-  seniority: z.string().nullable().optional(),
-  skills: z.string().nullable().optional(),
-  compensation_range: z.string().nullable().optional(),
-  target_start_date: z.string().nullable().optional(),
-})
-type CreateReqFormValues = z.infer<typeof createReqSchema>
-type RequisitionResponse = components['schemas']['RequisitionResponse']
-
-function getParsedSkills(skills: unknown) {
-  if (Array.isArray(skills)) {
-    return skills.filter((skill): skill is string => typeof skill === 'string')
-  }
-  if (typeof skills === 'string') return [skills]
-  return []
-}
-
-function hasParsedRequisitionFields(requisition: RequisitionResponse) {
-  return Boolean(
-    requisition.seniority ||
-      getParsedSkills(requisition.skills).length > 0 ||
-      requisition.compensation_range ||
-      requisition.target_start_date,
-  )
-}
+import { ChevronRight, Plus } from 'lucide-react'
+import { CreateRequisitionWizard } from './_components/create-requisition-wizard'
 
 export default function RequisitionsPage() {
-  const router = useRouter()
-  const queryClient = useQueryClient()
-
-  // --- Filter + dialog state ---
   const [clientFilter, setClientFilter] = useState<string>(
     () =>
       typeof window === 'undefined'
         ? 'all'
-        : new URLSearchParams(window.location.search).get('client_id') ?? 'all',
+        : (new URLSearchParams(window.location.search).get('client_id') ?? 'all'),
   )
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [jdText, setJdText] = useState('')
-  const [reqId, setReqId] = useState<string | null>(null)
-  const [isParsingJd, setIsParsingJd] = useState(false)
-  const [isSavingReview, setIsSavingReview] = useState(false)
-  const [parsePhaseComplete, setParsePhaseComplete] = useState(false)
 
-  // --- Clients query (for filter Select, requisition aggregation, and create form) ---
   const { data: clientsData, isLoading: isLoadingClients } = useQuery({
     queryKey: ['ops-clients'],
     queryFn: async () => {
@@ -99,7 +43,6 @@ export default function RequisitionsPage() {
     return data ?? []
   }
 
-  // --- Requisitions list query (real backend: list by client, aggregate for "All") ---
   const { data, isLoading, error } = useQuery({
     queryKey: ['ops-requisitions', clientFilter, clients.map((client) => client.id).join(',')],
     enabled: Boolean(clientsData),
@@ -111,153 +54,11 @@ export default function RequisitionsPage() {
       const lists = await Promise.all(clients.map((client) => fetchClientRequisitions(client.id)))
       return lists
         .flat()
-        .sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     },
   })
   const requisitions = data ?? []
 
-  // --- Form ---
-  const form = useForm<CreateReqFormValues>({
-    resolver: zodResolver(createReqSchema),
-    defaultValues: {
-      client_id: '',
-      title: '',
-      seniority: '',
-      skills: '',
-      compensation_range: '',
-      target_start_date: '',
-    },
-  })
-
-  // --- useAsyncJob for JD parse ---
-  // Keep polling an "open" requisition until parsed fields are actually populated.
-  const { phase, data: polledReq } = useAsyncJob<RequisitionResponse>({
-    jobId: isParsingJd ? reqId : null,
-    endpoint: '/api/v1/ops/requisitions/{id}',
-    statusMap: {
-      open: 'pending',
-      filled: 'complete',
-      closed: 'complete',
-      parsing: 'pending',
-    },
-    refetchInterval: 2000,
-  })
-
-  const isParsing = isParsingJd && !parsePhaseComplete && phase !== 'failed'
-  const parseFailed = phase === 'failed'
-
-  // Surface parse failure via toast (D-07)
-  useEffect(() => {
-    if (parseFailed) {
-      toast.error('JD parsing failed — fill fields manually.')
-      setIsParsingJd(false)
-    }
-  }, [parseFailed])
-
-  // Mark complete only once structured fields are actually visible on the requisition.
-  useEffect(() => {
-    if (!isParsingJd || !polledReq || !hasParsedRequisitionFields(polledReq)) {
-      return
-    }
-    setParsePhaseComplete(true)
-    setIsParsingJd(false)
-    form.setValue('title', polledReq.title)
-    form.setValue('seniority', polledReq.seniority ?? '')
-    form.setValue('skills', getParsedSkills(polledReq.skills).join(', '))
-    form.setValue('compensation_range', polledReq.compensation_range ?? '')
-    form.setValue('target_start_date', polledReq.target_start_date ?? '')
-  }, [isParsingJd, polledReq, form])
-
-  // --- Create requisition mutation ---
-  const createMutation = useMutation({
-    mutationFn: async (body: components['schemas']['CreateRequisitionRequest']) => {
-      const { data, error } = await apiClient.POST('/api/v1/ops/requisitions', { body })
-      if (error) throw error
-      return data
-    },
-    onSuccess: async (req) => {
-      setReqId(req.id)
-      if (jdText.trim()) {
-        const { error } = await apiClient.POST('/api/v1/ops/requisitions/{req_id}/parse-jd', {
-          params: { path: { req_id: req.id } },
-          body: { jd_text: jdText },
-        })
-        if (!error) {
-          setIsParsingJd(true)
-        } else {
-          // parse-jd POST failed outright (e.g. the LLM provider 404'd the model).
-          // Without this the requisition just opens with empty fields and no
-          // signal — the failure was only visible in the agent event log.
-          toast.error('JD parsing failed — fill fields manually.')
-          router.push(`/ops/requisitions/${req.id}`)
-          setIsCreateOpen(false)
-        }
-      } else {
-        // No JD pasted — navigate directly
-        router.push(`/ops/requisitions/${req.id}`)
-        setIsCreateOpen(false)
-      }
-      queryClient.invalidateQueries({ queryKey: ['ops-requisitions'] })
-    },
-    onError: () => {
-      toast.error('Failed to create requisition.')
-    },
-  })
-
-  const onSubmit = form.handleSubmit((values) => {
-    createMutation.mutate({ client_id: values.client_id, title: values.title })
-  })
-
-  async function saveReviewAndNavigate() {
-    if (!reqId) return
-
-    const values = form.getValues()
-    const skills = values.skills
-      ? values.skills
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean)
-      : []
-
-    setIsSavingReview(true)
-    try {
-      const { error } = await apiClient.PATCH('/api/v1/ops/requisitions/{req_id}', {
-        params: { path: { req_id: reqId } },
-        body: {
-          title: values.title,
-          seniority: values.seniority || null,
-          skills,
-          compensation_range: values.compensation_range || null,
-          target_start_date: values.target_start_date || null,
-        },
-      })
-      if (error) throw error
-      queryClient.invalidateQueries({ queryKey: ['ops-requisition', reqId] })
-      queryClient.invalidateQueries({ queryKey: ['ops-requisitions'] })
-      router.push(`/ops/requisitions/${reqId}`)
-      setIsCreateOpen(false)
-    } catch {
-      toast.error('Failed to update requisition.')
-    } finally {
-      setIsSavingReview(false)
-    }
-  }
-
-  // --- Dialog close reset ---
-  function handleDialogOpenChange(open: boolean) {
-    setIsCreateOpen(open)
-    if (!open) {
-      setJdText('')
-      setReqId(null)
-      setIsParsingJd(false)
-      setParsePhaseComplete(false)
-      form.reset()
-    }
-  }
-
-  // --- Loading / error states ---
   if (isLoadingClients || isLoading) {
     return (
       <div className="p-6">
@@ -278,7 +79,6 @@ export default function RequisitionsPage() {
 
   return (
     <div className="flex flex-col">
-      {/* Sticky toolbar */}
       <div className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/90 px-6 backdrop-blur">
         <h1 className="flex-1 text-xl font-semibold">Requisitions</h1>
         <Select value={clientFilter} onValueChange={setClientFilter}>
@@ -287,9 +87,9 @@ export default function RequisitionsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All clients</SelectItem>
-            {clients.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -300,43 +100,26 @@ export default function RequisitionsPage() {
         </Button>
       </div>
 
-      {/* Requisitions list */}
       <div className="flex flex-col gap-2 px-4 py-4">
         {requisitions.length === 0 ? (
           <div className="mt-16 flex flex-col items-center justify-center text-center">
-            {clientFilter !== 'all' ? (
-              <>
-                <h2 className="text-xl font-semibold">No requisitions for this client</h2>
-                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                  Create one now to start matching candidates.
-                </p>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => setIsCreateOpen(true)}
-                >
-                  <Plus className="mr-1 size-4" />
-                  New Requisition
-                </Button>
-              </>
-            ) : (
-              <>
-                <h2 className="text-xl font-semibold">No requisitions</h2>
-                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                  Create your first requisition or select a client above to filter.
-                </p>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => setIsCreateOpen(true)}
-                >
-                  <Plus className="mr-1 size-4" />
-                  New Requisition
-                </Button>
-              </>
-            )}
+            <h2 className="text-xl font-semibold">
+              {clientFilter !== 'all' ? 'No requisitions for this client' : 'No requisitions'}
+            </h2>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+              {clientFilter !== 'all'
+                ? 'Create one now to start matching candidates.'
+                : 'Create your first requisition or select a client above to filter.'}
+            </p>
+            <Button
+              variant="default"
+              size="sm"
+              className="mt-4"
+              onClick={() => setIsCreateOpen(true)}
+            >
+              <Plus className="mr-1 size-4" />
+              New Requisition
+            </Button>
           </div>
         ) : (
           requisitions.map((req) => (
@@ -347,7 +130,7 @@ export default function RequisitionsPage() {
             >
               <span className="flex-1 truncate text-sm font-semibold">{req.title}</span>
               <span className="max-w-[140px] truncate text-xs text-muted-foreground">
-                {clients.find((c) => c.id === req.client_id)?.name ?? req.client_id ?? '—'}
+                {clients.find((client) => client.id === req.client_id)?.name ?? req.client_id ?? '—'}
               </span>
               <Badge variant="secondary" className="text-xs">
                 {req.status}
@@ -358,200 +141,11 @@ export default function RequisitionsPage() {
         )}
       </div>
 
-      {/* Create Requisition Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>New Requisition</DialogTitle>
-            <DialogDescription className="sr-only">
-              Create a requisition and optionally paste a job description for parsing.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            {/* Phase 1: Input fields (before create) */}
-            <div>
-              <Label htmlFor="client_id">Client</Label>
-              <Controller
-                control={form.control}
-                name="client_id"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="client_id" className="mt-1 w-full">
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {form.formState.errors.client_id && (
-                <p className="mt-1 text-xs text-destructive">
-                  {form.formState.errors.client_id.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                {...form.register('title')}
-                placeholder="e.g. Senior Backend Engineer"
-                className="mt-1"
-                disabled={createMutation.isPending || isParsingJd}
-              />
-              {form.formState.errors.title && (
-                <p className="mt-1 text-xs text-destructive">
-                  {form.formState.errors.title.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="jd_text">Job Description</Label>
-              <Textarea
-                id="jd_text"
-                value={jdText}
-                onChange={(e) => setJdText(e.target.value)}
-                placeholder="Paste full job description here — skills, seniority, comp, and dates will be extracted automatically."
-                className="mt-1 min-h-[160px] resize-y"
-                disabled={createMutation.isPending || isParsingJd || parsePhaseComplete}
-              />
-              {/* Parse status line */}
-              {!reqId && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  JD is optional — fields can be filled manually after creation.
-                </p>
-              )}
-              {isParsing && (
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Loader2 className="size-3 animate-spin" />
-                  Parsing job description…
-                </p>
-              )}
-              {parseFailed && (
-                <p className="mt-1 text-xs text-destructive">
-                  Parsing failed — fill fields manually.
-                </p>
-              )}
-            </div>
-
-            {/* Phase 2 / 3: Parsed fields (after create) */}
-            {reqId && (
-              <>
-                <Separator />
-                <div className="flex flex-col gap-3">
-                  {isParsing ? (
-                    // Phase 2 — Skeleton shimmer
-                    <>
-                      <Skeleton className="h-8 w-full" />
-                      <Skeleton className="h-8 w-full" />
-                      <Skeleton className="h-8 w-full" />
-                      <Skeleton className="h-8 w-full" />
-                    </>
-                  ) : (
-                    // Phase 3 — Parsed fields animate in and can be corrected before navigating.
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        {parseFailed
-                          ? 'Parsing failed — fill fields manually before navigating.'
-                          : 'Parsed from JD — review and correct before navigating.'}
-                      </p>
-                      <div
-                        className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
-                        style={{ animationDelay: '0ms' }}
-                      >
-                        <Label htmlFor="parsed_seniority">Seniority</Label>
-                        <Input
-                          id="parsed_seniority"
-                          {...form.register('seniority')}
-                          placeholder="e.g. senior"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div
-                        className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
-                        style={{ animationDelay: '50ms' }}
-                      >
-                        <Label htmlFor="parsed_skills">Skills (comma-separated)</Label>
-                        <Input
-                          id="parsed_skills"
-                          {...form.register('skills')}
-                          placeholder="e.g. TypeScript, React, Node.js"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div
-                        className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
-                        style={{ animationDelay: '100ms' }}
-                      >
-                        <Label htmlFor="parsed_comp">Compensation Range</Label>
-                        <Input
-                          id="parsed_comp"
-                          {...form.register('compensation_range')}
-                          placeholder="e.g. $150k–$180k"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div
-                        className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-300"
-                        style={{ animationDelay: '150ms' }}
-                      >
-                        <Label htmlFor="parsed_start_date">Target Start Date</Label>
-                        <Input
-                          id="parsed_start_date"
-                          type="date"
-                          {...form.register('target_start_date')}
-                          className="mt-1"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleDialogOpenChange(false)}
-                disabled={createMutation.isPending || isParsing || isSavingReview}
-              >
-                Cancel
-              </Button>
-              {!reqId ? (
-                // Before create: show "Create Requisition" button
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating…' : 'Create Requisition'}
-                </Button>
-              ) : isParsing ? (
-                // During parse: show disabled "Parsing JD…"
-                <Button type="button" disabled>
-                  <Loader2 className="mr-1 size-4 animate-spin" />
-                  Parsing JD…
-                </Button>
-              ) : (
-                // After parse (complete or failed): save review edits before navigating.
-                <Button
-                  type="button"
-                  onClick={saveReviewAndNavigate}
-                  disabled={isSavingReview}
-                >
-                  {isSavingReview ? 'Saving…' : 'Save & Go to Requisition'}
-                </Button>
-              )}
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateRequisitionWizard
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        clients={clients}
+      />
     </div>
   )
 }

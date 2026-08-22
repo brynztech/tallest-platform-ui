@@ -71,37 +71,42 @@ export interface GenerateJdInput {
 
 export const NOT_SPECIFIED = 'Not specified'
 
-/** A missing value renders as "Not specified" — never a blank cell. */
-export function factValue(value: string | null | undefined): string {
+/** True when a quick-fact value should render in the JD document. */
+export function isFactPresent(value: string | null | undefined): boolean {
   const trimmed = (value ?? '').trim()
-  return trimmed === '' ? NOT_SPECIFIED : trimmed
+  return trimmed !== '' && trimmed.toLowerCase() !== NOT_SPECIFIED.toLowerCase()
+}
+
+/** Trim a quick-fact value; absent values stay empty (they are omitted from the grid). */
+export function factValue(value: string | null | undefined): string {
+  return isFactPresent(value) ? (value ?? '').trim() : ''
 }
 
 /**
- * The quick-facts table's fixed 3x3 layout. Order is part of the template
- * contract (see the backend's `_quick_facts`) — never reordered or collapsed.
+ * Quick-facts in fixed field order, chunked into rows of up to three. Only
+ * cells with a stated value are included — never "Not specified" placeholders.
  */
 export function quickFactRows(
   facts: Partial<JdQuickFacts> | null | undefined,
 ): { label: string; value: string }[][] {
   const f = facts ?? {}
-  return [
-    [
-      { label: 'LOCATION', value: factValue(f.location) },
-      { label: 'EMPLOYMENT', value: factValue(f.employment) },
-      { label: 'EXPERIENCE', value: factValue(f.experience) },
-    ],
-    [
-      { label: 'SALARY', value: factValue(f.salary) },
-      { label: 'WORK TYPE', value: factValue(f.work_type) },
-      { label: 'COMPANY', value: factValue(f.company) },
-    ],
-    [
-      { label: 'STAGE', value: factValue(f.stage) },
-      { label: 'TEAM SIZE', value: factValue(f.team_size) },
-      { label: 'EQUITY', value: factValue(f.equity) },
-    ],
-  ]
+  const cells = [
+    { label: 'LOCATION', value: factValue(f.location) },
+    { label: 'EMPLOYMENT', value: factValue(f.employment) },
+    { label: 'EXPERIENCE', value: factValue(f.experience) },
+    { label: 'SALARY', value: factValue(f.salary) },
+    { label: 'WORK TYPE', value: factValue(f.work_type) },
+    { label: 'COMPANY', value: factValue(f.company) },
+    { label: 'STAGE', value: factValue(f.stage) },
+    { label: 'TEAM SIZE', value: factValue(f.team_size) },
+    { label: 'EQUITY', value: factValue(f.equity) },
+  ].filter((cell) => cell.value !== '')
+
+  const rows: { label: string; value: string }[][] = []
+  for (let index = 0; index < cells.length; index += 3) {
+    rows.push(cells.slice(index, index + 3))
+  }
+  return rows
 }
 
 /** `Company · Work type · Location · Stage`, skipping anything unset. */
@@ -109,7 +114,7 @@ export function titleSubtitle(block: Partial<JdTitleBlock> | null | undefined): 
   const b = block ?? {}
   return [b.company, b.work_type, b.location, b.stage]
     .map((part) => (part ?? '').trim())
-    .filter(Boolean)
+    .filter(isFactPresent)
     .join('  ·  ')
 }
 
@@ -119,6 +124,13 @@ export function paragraphs(text: string | null | undefined): string[] {
     .split('\n')
     .map((chunk) => chunk.trim())
     .filter(Boolean)
+}
+
+/** True when the generated role title is meaningfully different from what the AM typed. */
+export function titlesDiffer(typed: string, generated: string | null | undefined): boolean {
+  const a = typed.trim().toLowerCase()
+  const b = (generated ?? '').trim().toLowerCase()
+  return a !== '' && b !== '' && a !== b
 }
 
 /** The stored JD, or `null` when this requisition has never had one generated. */

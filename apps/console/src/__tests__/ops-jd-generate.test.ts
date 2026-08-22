@@ -4,9 +4,11 @@ import {
   factValue,
   fetchJd,
   generateJd,
+  isFactPresent,
   jdDownloadUrl,
   paragraphs,
   quickFactRows,
+  titlesDiffer,
   titleSubtitle,
 } from '../../app/(shell)/ops/requisitions/[id]/_lib/jd'
 
@@ -15,31 +17,63 @@ afterEach(() => {
 })
 
 describe('quickFactRows', () => {
-  it('keeps the template\'s fixed 3x3 order', () => {
-    const labels = quickFactRows({}).map((row) => row.map((cell) => cell.label))
-    expect(labels).toEqual([
-      ['LOCATION', 'EMPLOYMENT', 'EXPERIENCE'],
-      ['SALARY', 'WORK TYPE', 'COMPANY'],
-      ['STAGE', 'TEAM SIZE', 'EQUITY'],
+  it('keeps the template field order and omits unset cells', () => {
+    const rows = quickFactRows({
+      location: 'Remote',
+      employment: 'Full-Time',
+      experience: '5 Years',
+      salary: '   ',
+      team_size: NOT_SPECIFIED,
+    })
+    expect(rows.flat().map((cell) => cell.label)).toEqual([
+      'LOCATION',
+      'EMPLOYMENT',
+      'EXPERIENCE',
     ])
+    expect(rows.flat().map((cell) => cell.value)).toEqual(['Remote', 'Full-Time', '5 Years'])
   })
 
-  it('never renders a blank cell', () => {
-    const rows = quickFactRows({ location: 'Remote', salary: '   ' })
-    expect(rows[0][0].value).toBe('Remote')
-    expect(rows[0][1].value).toBe(NOT_SPECIFIED)
-    expect(rows[1][0].value).toBe(NOT_SPECIFIED)
+  it('chunks more than three facts into multiple rows', () => {
+    const rows = quickFactRows({
+      location: 'Remote',
+      employment: 'Full-Time',
+      experience: '5 Years',
+      salary: '$100k',
+    })
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toHaveLength(3)
+    expect(rows[1]).toHaveLength(1)
   })
 
-  it('survives a missing quick_facts object', () => {
-    expect(quickFactRows(null).flat()).toHaveLength(9)
+  it('returns no rows when every fact is absent', () => {
+    expect(quickFactRows(null)).toEqual([])
   })
 })
 
 describe('factValue', () => {
-  it('trims and falls back', () => {
+  it('trims stated values and drops absent ones', () => {
     expect(factValue('  Full-Time ')).toBe('Full-Time')
-    expect(factValue(null)).toBe(NOT_SPECIFIED)
+    expect(factValue(null)).toBe('')
+    expect(factValue(NOT_SPECIFIED)).toBe('')
+  })
+})
+
+describe('isFactPresent', () => {
+  it('treats blank and legacy "Not specified" as absent', () => {
+    expect(isFactPresent('Remote')).toBe(true)
+    expect(isFactPresent('')).toBe(false)
+    expect(isFactPresent(NOT_SPECIFIED)).toBe(false)
+  })
+})
+
+describe('titlesDiffer', () => {
+  it('is false when the generated title matches what the AM typed', () => {
+    expect(titlesDiffer('Backend Engineer', 'Backend Engineer')).toBe(false)
+    expect(titlesDiffer('  Senior FE  ', 'senior fe')).toBe(false)
+  })
+
+  it('is true when the generated title is a different role name', () => {
+    expect(titlesDiffer('Backend Engineer', 'Senior Backend Engineer')).toBe(true)
   })
 })
 
@@ -57,6 +91,7 @@ describe('titleSubtitle', () => {
 
   it('skips unset parts rather than emitting empty separators', () => {
     expect(titleSubtitle({ company: 'Acme', stage: '' })).toBe('Acme')
+    expect(titleSubtitle({ company: NOT_SPECIFIED, work_type: 'Remote' })).toBe('Remote')
   })
 })
 

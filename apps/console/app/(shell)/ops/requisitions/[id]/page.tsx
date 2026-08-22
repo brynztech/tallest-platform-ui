@@ -10,6 +10,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import Link from 'next/link'
 import { Trophy, Zap } from 'lucide-react'
+import { AssignedRecruitersCard } from '@/(shell)/my-roles/[id]/_components/assigned-recruiters-card'
 import { RequisitionFields } from './_components/requisition-fields'
 import { RequisitionLifecycleControls } from './_components/lifecycle-controls'
 import { HiringProcessPanel } from './_components/hiring-process-panel'
@@ -156,6 +157,7 @@ export default function RequisitionDetailPage({
       {/* Section 1: Requisition Fields */}
       <RequisitionFields req={req} />
       <JdPanel req={req} />
+      <AssignedRecruitersCard reqId={id} />
       <HiringProcessPanel req={req} />
 
       {/* Trigger Match button */}
