@@ -13,6 +13,7 @@ import { Trophy, Zap } from 'lucide-react'
 import { RequisitionFields } from './_components/requisition-fields'
 import { RequisitionLifecycleControls } from './_components/lifecycle-controls'
 import { HiringProcessPanel } from './_components/hiring-process-panel'
+import { JdPanel } from './_components/jd-panel'
 import { MatchmakerPanel } from './_components/matchmaker-panel'
 import { ShortlistTable } from './_components/shortlist-table'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
@@ -154,6 +155,7 @@ export default function RequisitionDetailPage({
 
       {/* Section 1: Requisition Fields */}
       <RequisitionFields req={req} />
+      <JdPanel req={req} />
       <HiringProcessPanel req={req} />
 
       {/* Trigger Match button */}
