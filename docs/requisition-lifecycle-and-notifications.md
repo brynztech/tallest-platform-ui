@@ -1,6 +1,6 @@
 # Requisition Lifecycle & Notifications
 
-Status: implemented on `frontend-dev` · Last updated: 2026-08-16
+Status: implemented on `frontend-dev` · Last updated: 2026-08-22
 
 Two console-facing additions: (1) an Account Manager/Admin can close or fill
 a requisition, and ask an assigned recruiter for more candidates on a
@@ -46,6 +46,11 @@ Admin), same pattern as the moved `AssignedRecruitersCard`.
 - `my-roles/[id]/page.tsx`'s locally-duplicated `MATCHABLE_STATUSES` set
   needed no change — it already only lists `open`/`matching_complete`, by
   construction excluding `closed`/`filled` the same way.
+
+Badges and lists never show `matching_complete`.
+`requisitionStatusLabel()` (`_lib/requisition-status.ts`) maps
+`open`/`matching_complete` → **Open**, plus Closed / Filled / Draft. The
+stored status is unchanged — only the label.
 
 ### Data layer
 

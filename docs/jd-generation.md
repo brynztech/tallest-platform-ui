@@ -10,8 +10,12 @@ only what lives in this repo.
 
 **Create (primary):** `CreateRequisitionWizard` on the requisitions list.
 New Requisition opens a four-step dialog — inputs → generate JD → assign
-recruiters → confirmation. The requisition is created as `draft`, published
-to `open` on the last step, and `parse-jd` is not called.
+recruiters → confirmation (JD preview, assignees, matching started). The
+requisition is created as `draft`, published to `open` on the last step
+(which starts candidate search), and `parse-jd` is not called.
+
+**My Roles:** the recruiter sees the generated JD and can copy Naukri Resdex
+criteria. Search is already running after publish; Run Match re-runs it.
 
 **Existing requisitions:** a **Job Description** card on the detail screen
 (`app/(shell)/ops/requisitions/[id]/page.tsx`), between `RequisitionFields` and

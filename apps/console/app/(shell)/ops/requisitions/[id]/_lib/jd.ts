@@ -57,6 +57,7 @@ export interface JobDescription {
   hard_requirements: string[]
   application_requirements: string[]
   resdex_search_criteria: string
+  core_skills?: string[]
 }
 
 export interface GenerateJdInput {

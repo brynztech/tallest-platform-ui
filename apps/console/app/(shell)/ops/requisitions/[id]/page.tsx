@@ -21,6 +21,7 @@ import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-s
 import { InterviewsSection } from './_components/interviews-section'
 import { PlacementPanel } from './_components/placement-panel'
 import { PlacementsSection } from './_components/placements-section'
+import { requisitionStatusLabel } from '@/(shell)/_lib/requisition-status'
 import { canTriggerCandidateMatch, candidateMatchButtonLabel } from './_lib/match-status'
 
 type SubmissionResponse = components['schemas']['SubmissionResponse']
@@ -252,26 +253,27 @@ function shortId(id: string) {
 }
 
 function RequisitionStatusBadge({ status }: { status: string }) {
+  const label = requisitionStatusLabel(status)
   if (status === 'filled') {
     return (
       <Badge
         className="border-[oklch(0.45_0.15_145)/40] bg-[oklch(0.45_0.15_145)/20] text-xs text-[oklch(0.45_0.15_145)]"
         variant="outline"
       >
-        {status}
+        {label}
       </Badge>
     )
   }
   if (status === 'closed') {
     return (
       <Badge variant="outline" className="border-border text-xs text-muted-foreground">
-        {status}
+        {label}
       </Badge>
     )
   }
   return (
     <Badge variant="secondary" className="text-xs">
-      {status}
+      {label}
     </Badge>
   )
 }

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@brynzit/ui/components/ui/badge'
+import { isLiveRequisitionStatus, requisitionStatusLabel } from '../_lib/requisition-status'
 import { Button } from '@brynzit/ui/components/ui/button'
 import {
   Table,
@@ -95,8 +96,8 @@ export default function JobsPage() {
                 <TableCell>{requisition.seniority ?? 'Not set'}</TableCell>
                 <TableCell>{requisition.compensation_range ?? 'Not set'}</TableCell>
                 <TableCell>
-                  <Badge variant={requisition.status === 'open' ? 'default' : 'secondary'}>
-                    {requisition.status}
+                  <Badge variant={isLiveRequisitionStatus(requisition.status) ? 'default' : 'secondary'}>
+                    {requisitionStatusLabel(requisition.status)}
                   </Badge>
                 </TableCell>
                 <TableCell>{formatShortDate(requisition.target_start_date)}</TableCell>

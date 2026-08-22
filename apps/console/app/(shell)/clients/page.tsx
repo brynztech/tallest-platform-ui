@@ -20,6 +20,7 @@ import {
   recruiterQueryKeys,
   RECRUITER_STALE_TIME_MS,
 } from '../_lib/recruiter-data'
+import { isLiveRequisitionStatus } from '../_lib/requisition-status'
 
 export default function ClientsPage() {
   const clientsQuery = useQuery({
@@ -92,7 +93,9 @@ export default function ClientsPage() {
           <TableBody>
             {clients.map((client) => {
               const clientRequisitions = requisitionsByClient.get(client.id) ?? []
-              const openCount = clientRequisitions.filter((req) => req.status === 'open').length
+              const openCount = clientRequisitions.filter((req) =>
+                isLiveRequisitionStatus(req.status),
+              ).length
               return (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.name}</TableCell>

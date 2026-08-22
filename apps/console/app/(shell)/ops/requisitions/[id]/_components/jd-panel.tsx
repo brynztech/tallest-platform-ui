@@ -34,6 +34,7 @@ import {
   type GenerateJdInput,
   type JobDescription,
 } from '../_lib/jd'
+import { ResdexCriteria } from '@/(shell)/_components/resdex-criteria'
 import { JdPreview } from './jd-preview'
 
 type RequisitionResponse = components['schemas']['RequisitionResponse']
@@ -240,11 +241,7 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <JdPreview jd={jd} />
               </div>
-              {jd.resdex_search_criteria ? (
-                <MetaBlock title="Naukri Resdex search criteria">
-                  <p className="whitespace-pre-wrap">{jd.resdex_search_criteria}</p>
-                </MetaBlock>
-              ) : null}
+              <ResdexCriteria criteria={jd.resdex_search_criteria} />
               {jd.hard_requirements.length + jd.application_requirements.length > 0 ? (
                 <MetaBlock title="Hard filters applied to candidate matching">
                   <ul className="list-disc space-y-0.5 pl-5">

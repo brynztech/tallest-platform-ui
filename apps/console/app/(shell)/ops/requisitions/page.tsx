@@ -14,6 +14,7 @@ import {
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import Link from 'next/link'
 import { ChevronRight, Plus } from 'lucide-react'
+import { requisitionStatusLabel } from '@/(shell)/_lib/requisition-status'
 import { CreateRequisitionWizard } from './_components/create-requisition-wizard'
 
 export default function RequisitionsPage() {
@@ -133,7 +134,7 @@ export default function RequisitionsPage() {
                 {clients.find((client) => client.id === req.client_id)?.name ?? req.client_id ?? '—'}
               </span>
               <Badge variant="secondary" className="text-xs">
-                {req.status}
+                {requisitionStatusLabel(req.status)}
               </Badge>
               <ChevronRight className="ml-auto size-4 text-muted-foreground" />
             </Link>

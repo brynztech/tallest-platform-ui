@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
 import { CheckCircle2, RefreshCw, Sparkles } from 'lucide-react'
-import Link from 'next/link'
 import {
   assignableRecruiters,
   assignRecruiter,
@@ -43,6 +42,7 @@ import {
   titlesDiffer,
   type JobDescription,
 } from '../[id]/_lib/jd'
+import { ResdexCriteria } from '@/(shell)/_components/resdex-criteria'
 import { JdPreview } from '../[id]/_components/jd-preview'
 import { createDraftRequisition, patchRequisitionTitle } from '../_lib/create-requisition'
 
@@ -188,7 +188,8 @@ export function CreateRequisitionWizard({
               'Describe the role and company. Generating the JD fills seniority, skills, and matching signals — no separate parse step.'}
             {step === 'preview' && 'This is the JD recruiters will search against.'}
             {step === 'assign' && 'Choose who sources candidates for this role, then publish.'}
-            {step === 'done' && 'The role is open and assigned.'}
+            {step === 'done' &&
+              'The role is open. Candidate search has started against this JD.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -343,10 +344,10 @@ export function CreateRequisitionWizard({
         )}
 
         {step === 'done' && reqId && (
-          <div className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm">
             <div className="flex items-center gap-2 text-base font-medium">
               <CheckCircle2 className="size-5 text-primary" />
-              Requisition created
+              Role published — matching started
             </div>
             <p>
               <span className="text-muted-foreground">Role: </span>
@@ -357,13 +358,17 @@ export function CreateRequisitionWizard({
               {clientName || '—'}
             </p>
             <p>
-              <span className="text-muted-foreground">JD: </span>
-              generated
-            </p>
-            <p>
               <span className="text-muted-foreground">Assigned to: </span>
               {assignedNames.length > 0 ? assignedNames.join(', ') : 'no recruiters yet'}
             </p>
+            {jd ? (
+              <>
+                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                  <JdPreview jd={jd} />
+                </div>
+                <ResdexCriteria criteria={jd.resdex_search_criteria} />
+              </>
+            ) : null}
           </div>
         )}
 
@@ -405,16 +410,7 @@ export function CreateRequisitionWizard({
             </>
           )}
           {step === 'done' && reqId && (
-            <>
-              <Button variant="outline" onClick={() => handleOpenChange(false)}>
-                Back to requisitions
-              </Button>
-              <Button asChild>
-                <Link href={`/ops/requisitions/${reqId}`} onClick={() => handleOpenChange(false)}>
-                  View requisition
-                </Link>
-              </Button>
-            </>
+            <Button onClick={() => handleOpenChange(false)}>Done</Button>
           )}
         </DialogFooter>
       </DialogContent>

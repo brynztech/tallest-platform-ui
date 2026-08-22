@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Separator } from '@brynzit/ui/components/ui/separator'
+import { requisitionStatusLabel } from '@/(shell)/_lib/requisition-status'
 
 interface ClientRequisitionsProps {
   clientId: string
@@ -56,7 +57,7 @@ export function ClientRequisitions({ clientId }: ClientRequisitionsProps) {
             >
               <span className="flex-1 truncate text-sm">{req.title}</span>
               <Badge variant="secondary" className="text-xs">
-                {req.status}
+                {requisitionStatusLabel(req.status)}
               </Badge>
             </Link>
           ))}

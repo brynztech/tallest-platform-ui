@@ -18,7 +18,11 @@ import {
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
 import { assignmentQueryKeys, fetchAssignedRequisitionIds } from '../../_lib/assignments'
+import { requisitionStatusLabel } from '../../_lib/requisition-status'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
+import { ResdexCriteria } from '@/(shell)/_components/resdex-criteria'
+import { fetchJd } from '@/(shell)/ops/requisitions/[id]/_lib/jd'
+import { JdPreview } from '@/(shell)/ops/requisitions/[id]/_components/jd-preview'
 import { AssignedRecruitersCard } from './_components/assigned-recruiters-card'
 import { ShortlistCandidateCard } from './_components/shortlist-candidate-card'
 import {
@@ -104,6 +108,13 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
     refetchInterval: 15_000,
   })
   const submissions = shortlist?.submissions ?? []
+
+  const { data: jd } = useQuery({
+    queryKey: ['ops-requisition-jd', id],
+    queryFn: () => fetchJd(id),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
 
   // ---- Run Match ----
   const matchMutation = useMutation({
@@ -238,7 +249,7 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
           )}
         </div>
         <Badge variant="secondary" className="text-xs">
-          {req.status}
+          {requisitionStatusLabel(req.status)}
         </Badge>
       </div>
 
@@ -250,6 +261,19 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
           </Badge>
         ))}
       </div>
+
+      {jd ? (
+        <div className="mb-6 space-y-3">
+          <div className="rounded-lg border border-border bg-muted/40 p-3">
+            <JdPreview jd={jd} />
+          </div>
+          <ResdexCriteria criteria={jd.resdex_search_criteria} />
+        </div>
+      ) : (
+        <p className="mb-6 text-sm text-muted-foreground">
+          No generated job description on this role yet.
+        </p>
+      )}
 
       {/* Assignment logically precedes running a search — placed above Run Match. */}
       <AssignedRecruitersCard reqId={id} />
@@ -307,7 +331,8 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
       <h2 className="mb-2 text-base font-semibold">Shortlist</h2>
       {activeSubmissions.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          No candidates yet. Run a match above to populate this list.
+          Candidates appear here when matching finishes. Search starts when the
+          role is published; use Run Match to search again.
         </p>
       ) : (
         <div className="flex flex-col gap-3">

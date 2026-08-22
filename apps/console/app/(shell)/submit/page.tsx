@@ -24,6 +24,7 @@ import {
   recruiterQueryKeys,
   RECRUITER_STALE_TIME_MS,
 } from '../_lib/recruiter-data'
+import { requisitionStatusLabel } from '../_lib/requisition-status'
 
 export default function SubmitCandidatePage() {
   const searchParams = useSearchParams()
@@ -97,7 +98,8 @@ export default function SubmitCandidatePage() {
               <>
                 <p className="font-medium">{activeReq.title}</p>
                 <p className="text-muted-foreground">
-                  {activeReq.client?.name ?? 'Unassigned client'} · {activeReq.status}
+                  {activeReq.client?.name ?? 'Unassigned client'} ·{' '}
+                  {requisitionStatusLabel(activeReq.status)}
                 </p>
                 <p className="mt-1 text-muted-foreground">
                   {activeReq.compensation_range ?? 'Compensation not set'}

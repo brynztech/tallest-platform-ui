@@ -13,6 +13,7 @@ import {
   recruiterQueryKeys,
 } from '../_lib/recruiter-data'
 import { assignmentQueryKeys, fetchAssignedRequisitionIds } from '../_lib/assignments'
+import { requisitionStatusLabel } from '../_lib/requisition-status'
 
 export default function MyRolesPage() {
   const actingUser = useActingUser()
@@ -85,7 +86,7 @@ export default function MyRolesPage() {
                 </p>
               </div>
               <Badge variant="secondary" className="shrink-0">
-                {requisition.status}
+                {requisitionStatusLabel(requisition.status)}
               </Badge>
             </Link>
           ))}
