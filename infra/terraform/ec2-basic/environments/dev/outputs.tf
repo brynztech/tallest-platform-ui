@@ -32,3 +32,8 @@ output "backend_api_url" {
   description = "Backend API URL on the backend EC2 host."
   value       = "http://${module.ec2_pair.backend_public_ip}:8000"
 }
+
+output "documents_bucket_name" {
+  description = "Private S3 bucket for application documents (resumes, uploaded JDs)."
+  value       = module.ec2_pair.documents_bucket_name
+}

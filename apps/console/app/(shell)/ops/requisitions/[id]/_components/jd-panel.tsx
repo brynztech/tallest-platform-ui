@@ -34,6 +34,7 @@ import {
   type GenerateJdInput,
   type JobDescription,
 } from '../_lib/jd'
+import { fetchUploadedJdUrl, openDocumentInNewTab } from '@/(shell)/_lib/documents'
 import { ResdexCriteria } from '@/(shell)/_components/resdex-criteria'
 import { JdPreview } from './jd-preview'
 
@@ -55,13 +56,33 @@ function cachedInputs(req: RequisitionResponse): CachedInputs {
   return inputs && typeof inputs === 'object' ? (inputs as CachedInputs) : {}
 }
 
+interface UploadedJd {
+  text?: string
+  filename?: string
+  object_key?: string | null
+  uploaded_at?: string
+}
+
+/** The client's original JD document of record, stored at upload time. */
+function uploadedJdOf(req: RequisitionResponse): UploadedJd | null {
+  const intake = req.intake_details as Record<string, unknown> | null
+  const uploaded = intake?.uploaded_jd
+  return uploaded && typeof uploaded === 'object' ? (uploaded as UploadedJd) : null
+}
+
 export function JdPanel({ req }: { req: RequisitionResponse }) {
   const queryClient = useQueryClient()
   const [isOpen, setIsOpen] = useState(false)
   const [isEditingInputs, setIsEditingInputs] = useState(false)
 
   const prefill = useMemo(() => cachedInputs(req), [req])
-  const [requirementText, setRequirementText] = useState(prefill.requirement_text ?? '')
+  const uploadedJd = useMemo(() => uploadedJdOf(req), [req])
+  // Option C: the uploaded JD text doubles as the generator's requirement
+  // input — "Generate formatted version" is the existing generate flow, just
+  // prefilled with the client's own JD.
+  const [requirementText, setRequirementText] = useState(
+    prefill.requirement_text ?? uploadedJd?.text ?? '',
+  )
   const [websiteUrl, setWebsiteUrl] = useState(prefill.website_url ?? '')
   const [referenceMemo, setReferenceMemo] = useState((prefill.reference_memos ?? []).join('\n\n'))
   const [resdexMemo, setResdexMemo] = useState(prefill.resdex_memo ?? '')
@@ -99,11 +120,24 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
     },
   })
 
-  const showForm = isEditingInputs || !jd
+  const hasUploaded = Boolean(uploadedJd?.text)
+  // Three dialog faces: generated preview (jd wins), uploaded-JD preview
+  // (document of record, exact text), or the generation form.
+  const showUploadedPreview = !jd && !isEditingInputs && hasUploaded
+  const showForm = isEditingInputs || (!jd && !hasUploaded)
   const canGenerate =
     requirementText.trim().length >= 20 &&
     websiteUrl.trim().length > 0 &&
     !generateMutation.isPending
+
+  async function openOriginal() {
+    try {
+      const opened = await openDocumentInNewTab(() => fetchUploadedJdUrl(req.id))
+      if (!opened) toast.error('The original file is not stored — only its extracted text.')
+    } catch {
+      toast.error('Could not open the original document — try again.')
+    }
+  }
 
   return (
     <div className="mb-6 rounded-xl border border-border bg-card p-4">
@@ -116,6 +150,10 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
               <Badge variant="secondary" className="text-xs">
                 generated
               </Badge>
+            ) : hasUploaded ? (
+              <Badge variant="secondary" className="text-xs">
+                uploaded
+              </Badge>
             ) : null}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
@@ -123,7 +161,9 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
               ? 'Checking…'
               : jd
                 ? `Preview the JD, download the .docx, or regenerate after editing the requirement.`
-                : 'Generate the JD from the requirement paragraph, the company website, and a reference memo.'}
+                : hasUploaded
+                  ? `Uploaded from ${uploadedJd?.filename ?? 'a document'} — preview the exact JD, or generate a formatted version from it.`
+                  : 'Generate the JD from the requirement paragraph, the company website, and a reference memo.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -137,13 +177,13 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
           ) : null}
           <Button
             size="sm"
-            variant={jd ? 'outline' : 'default'}
+            variant={jd || hasUploaded ? 'outline' : 'default'}
             onClick={() => {
-              setIsEditingInputs(!jd)
+              setIsEditingInputs(!jd && !hasUploaded)
               setIsOpen(true)
             }}
           >
-            {jd ? (
+            {jd || hasUploaded ? (
               <>
                 <FileText className="mr-1 size-4" />
                 Preview JD
@@ -161,15 +201,29 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[900px]">
           <DialogHeader>
-            <DialogTitle>{showForm ? 'Generate job description' : 'Job description'}</DialogTitle>
+            <DialogTitle>
+              {showForm
+                ? 'Generate job description'
+                : showUploadedPreview
+                  ? `Uploaded job description${uploadedJd?.filename ? ` — ${uploadedJd.filename}` : ''}`
+                  : 'Job description'}
+            </DialogTitle>
             <DialogDescription>
               {showForm
                 ? 'The requirement paragraph and the company website are both required — the generator refuses to write a JD from the paragraph alone.'
-                : 'This is exactly what the downloaded .docx contains.'}
+                : showUploadedPreview
+                  ? 'The exact text extracted from the uploaded document — the JD of record for this role.'
+                  : 'This is exactly what the downloaded .docx contains.'}
             </DialogDescription>
           </DialogHeader>
 
-          {showForm ? (
+          {showUploadedPreview ? (
+            <div className="rounded-lg border border-border bg-muted/40 p-4">
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                {uploadedJd?.text}
+              </pre>
+            </div>
+          ) : showForm ? (
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="jd-requirement">Requirement paragraph</Label>
@@ -236,7 +290,7 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : jd ? (
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <JdPreview jd={jd} />
@@ -252,12 +306,25 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
                 </MetaBlock>
               ) : null}
             </div>
-          )}
+          ) : null}
 
           <DialogFooter>
-            {showForm ? (
+            {showUploadedPreview ? (
               <>
-                {jd ? (
+                {uploadedJd?.object_key ? (
+                  <Button variant="outline" onClick={openOriginal}>
+                    <Download className="mr-1 size-4" />
+                    Download original
+                  </Button>
+                ) : null}
+                <Button onClick={() => setIsEditingInputs(true)}>
+                  <Sparkles className="mr-1 size-4" />
+                  Generate formatted version
+                </Button>
+              </>
+            ) : showForm ? (
+              <>
+                {jd || hasUploaded ? (
                   <Button variant="ghost" onClick={() => setIsEditingInputs(false)}>
                     Back to preview
                   </Button>

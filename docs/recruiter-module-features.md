@@ -33,3 +33,16 @@ Native fetch for endpoints absent from the generated `api.d.ts` (apps/console/CL
 explanations (no Tooltip primitive exists in this repo — deliberate reuse of the existing
 precedent in `pipeline-candidate-card.tsx`); scoped calls omit `acting_user_id` for
 `role.view_all` users, who have no assignment rows.
+
+## Round 2 — Document previews + JD-derived hiring process (2026-08-23)
+
+- `jd-panel.tsx`: three faces — generated preview (canonical when present), uploaded-JD
+  exact-text preview (badge "uploaded", Download original, "Generate formatted version"
+  prefilled with the uploaded text), generation form.
+- `candidate-profile-sheet.tsx`: "View Resume" opens the stored file via a presigned URL
+  (`_lib/documents.ts`, fetched on click, popup-blocker-safe); older candidates show
+  "file not stored — parsed profile only".
+- Wizard review step shows the JD-extracted hiring process (mirrors backend mapping).
+- Terraform (`infra/terraform/ec2-basic`): documents bucket + IAM; instances AMI-pinned via
+  lifecycle ignore_changes.
+- MSW: handlers for resume-url, jd/original-url, interview_process in the upload mock.

@@ -61,6 +61,49 @@ resource "aws_iam_role_policy_attachment" "ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Private bucket for application documents (candidate resumes, uploaded JDs).
+# Served to the browser only via short-lived presigned URLs — never public.
+resource "aws_s3_bucket" "documents" {
+  bucket = "${local.name_prefix}-documents"
+
+  tags = local.common_tags
+}
+
+resource "aws_s3_bucket_public_access_block" "documents" {
+  bucket = aws_s3_bucket.documents.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "documents" {
+  bucket = aws_s3_bucket.documents.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "documents_access" {
+  name = "${local.name_prefix}-documents-access"
+  role = aws_iam_role.ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject"]
+        Resource = "${aws_s3_bucket.documents.arn}/*"
+      },
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "ec2" {
   name = "${local.name_prefix}-ec2-profile"
   role = aws_iam_role.ec2.name
@@ -198,6 +241,13 @@ resource "aws_instance" "frontend" {
     Name = local.frontend_name
     Role = "frontend"
   })
+
+  # A refreshed most_recent AMI lookup must never force instance replacement —
+  # replacements wipe the deployed app + on-box data. Bump AMIs deliberately
+  # via var.ubuntu_ami_id instead.
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
 
 resource "aws_instance" "backend" {
@@ -220,6 +270,13 @@ resource "aws_instance" "backend" {
     Name = local.backend_name
     Role = "backend"
   })
+
+  # A refreshed most_recent AMI lookup must never force instance replacement —
+  # replacements wipe the deployed app + on-box data. Bump AMIs deliberately
+  # via var.ubuntu_ami_id instead.
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
 
 resource "aws_eip" "frontend" {

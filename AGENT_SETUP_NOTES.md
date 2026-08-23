@@ -56,3 +56,24 @@ quality (non-tautological), no regressions in existing callers.
 
 Full suites re-run after fixes: backend 739 passed; console 193 passed; web 117 passed;
 typecheck clean.
+
+## Round 2 review (document store / JD-of-record / hiring-process extraction)
+
+Fresh-context subagent review over the round-2 diff (both repos + terraform). Dispositions:
+1 (MEDIUM, blocking S3 put on event loop) **fixed** — asyncio.to_thread at all 3 sites;
+2 (MEDIUM, configured-S3 failure indistinguishable from off) **fixed** — error-level log;
+client-visible `resume_stored` flag deferred; 3 (LOW, deploy-skew crash on missing
+interview_process) **fixed** — optional chaining; 4 (LOW, degenerate JD process replaced default
+pipeline) **fixed** — ≥2-stage guard + test; 5 (LOW, popup-blocked window.open after await)
+**fixed** — openDocumentInNewTab helper; 6 (LOW, non-ASCII filename broke Content-Disposition)
+**fixed** — ASCII sanitize; 7 (LOW, mapping edges untested) **fixed** —
+tests/ops/test_hiring_process_mapping.py; 8 (NIT, orphaned S3 objects on re-upload, stale
+key/filename pair in degraded merge) **accepted debt** — add bucket lifecycle rule + delete-old-key
+when it matters; 9 (NIT, wizard preview showed "Hired") **fixed**. Reviewer verified clean: merge
+ordering under shared session, stage-shape byte-compatibility with the console, no hardcoded
+stage-id coupling, presigned flow (TTL/no caching), terraform state convergence after the
+-target apply, no credential leakage.
+
+Also caught during terraform: a plain `terraform apply` would have REPLACED both EC2 instances
+(AMI drift via most_recent lookup) — applied with -target and added
+`lifecycle { ignore_changes = [ami] }` to both instances.

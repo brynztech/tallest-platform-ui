@@ -6,4 +6,4 @@ export const apiClient = createClient<paths>({
 })
 
 export type { paths, components } from './types/api'
-export type { LeadQueueItemExtended, SubmissionResponseExtended } from './types/extensions'
+export type { LeadQueueItemExtended, SubmissionResponseExtended, TalentPoolSummaryExtended } from './types/extensions'

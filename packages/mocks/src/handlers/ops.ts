@@ -279,20 +279,28 @@ export const opsHandlers: HttpHandler[] = [
 
   // 11a. POST /api/v1/ops/requisitions/:req_id/jd/upload — upload-to-JD intake
   // (recruiter-module Feature 1). Returns a plausible parsed result so the
-  // wizard's review step renders in mock mode.
+  // wizard's review step renders in mock mode. interview_process is additive
+  // to the generated ParseJDResponse type (regenerate api.d.ts to absorb it).
   http.post(`${API_BASE}/api/v1/ops/requisitions/:req_id/jd/upload`, ({ params }) => {
+    const base = {
+      requisition_id: params.req_id as string,
+      status: 'draft',
+      role: 'Senior Backend Engineer',
+      seniority: 'senior',
+      skills: ['Python', 'FastAPI', 'PostgreSQL'],
+      compensation_range: '$150k-$180k',
+      target_start_date: null,
+    } satisfies components['schemas']['ParseJDResponse']
     return HttpResponse.json(
-      {
-        requisition_id: params.req_id as string,
-        status: 'draft',
-        role: 'Senior Backend Engineer',
-        seniority: 'senior',
-        skills: ['Python', 'FastAPI', 'PostgreSQL'],
-        compensation_range: '$150k-$180k',
-        target_start_date: null,
-      } satisfies components['schemas']['ParseJDResponse'],
+      { ...base, interview_process: ['Intro Call', 'Technical Deep-Dive', 'Offer'] },
       { status: 200 },
     )
+  }),
+
+  // 11a-bis. GET /api/v1/ops/requisitions/:req_id/jd/original-url — presigned
+  // URL for the uploaded original (mock: a stable fake URL).
+  http.get(`${API_BASE}/api/v1/ops/requisitions/:req_id/jd/original-url`, () => {
+    return HttpResponse.json({ url: 'https://example.com/mock-jd-original.docx', filename: 'mock-jd.docx' })
   }),
 
   // 11b. PATCH /api/v1/ops/requisitions/:req_id — update requisition fields

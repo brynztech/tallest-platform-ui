@@ -37,3 +37,8 @@ output "backend_security_group_id" {
   description = "Backend security group ID."
   value       = aws_security_group.backend.id
 }
+
+output "documents_bucket_name" {
+  description = "Private S3 bucket for application documents (resumes, uploaded JDs)."
+  value       = aws_s3_bucket.documents.bucket
+}

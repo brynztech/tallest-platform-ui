@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
-import type { components } from '@brynzit/api-client'
+import type { components, TalentPoolSummaryExtended } from '@brynzit/api-client'
 import {
   Sheet,
   SheetContent,
@@ -21,6 +21,7 @@ import { useCan, useActingUser } from '@brynzit/identity'
 import { isBookmarked } from '@brynzit/recruiting'
 import { CandidateRelationshipSection } from './candidate-relationship-section'
 import { addBookmark, bookmarkQueryKeys, deleteBookmark, fetchBookmarks } from '../_lib/bookmarks'
+import { fetchResumeUrl, openDocumentInNewTab } from '../_lib/documents'
 
 interface CandidateProfileSheetProps {
   candidateId: string | null
@@ -224,7 +225,7 @@ export function CandidateProfileSheet({
   }
 
   const candidate = data as components['schemas']['supply__schemas__candidates__CandidateProfileResponse'] | undefined
-  const talentPool = candidate?.talent_pool
+  const talentPool = candidate?.talent_pool as TalentPoolSummaryExtended | null | undefined
   const skills = talentPool?.skills ?? []
   const needsEnrichment =
     talentPool?.github_public_repos == null && talentPool?.email_verified == null
@@ -543,8 +544,11 @@ export function CandidateProfileSheet({
                 )}
               </div>
 
-              {/* Resume section */}
-              {(talentPool?.resume_file_path || isEnriching) && (
+              {/* Resume section — a real preview only when the file is stored
+                  in the documents bucket (resume_available); older candidates
+                  show just the original filename. Presigned URLs are fetched
+                  on click, never cached (they expire). */}
+              {(talentPool?.resume_available || talentPool?.resume_file_path || isEnriching) && (
                 <>
                   <Separator />
                   <div>
@@ -553,17 +557,30 @@ export function CandidateProfileSheet({
                     </p>
                     {isEnriching ? (
                       <Skeleton className="h-4 w-[160px]" />
+                    ) : talentPool?.resume_available && candidateId ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const opened = await openDocumentInNewTab(() => fetchResumeUrl(candidateId))
+                            if (!opened) toast.error('No stored resume file for this candidate.')
+                          } catch {
+                            toast.error('Could not open the resume — try again.')
+                          }
+                        }}
+                        className="flex items-center gap-1.5 text-primary hover:underline text-xs"
+                      >
+                        <ExternalLink className="size-3" />
+                        View Resume
+                        {talentPool.resume_file_path ? ` (${talentPool.resume_file_path})` : ''}
+                      </button>
                     ) : (
                       talentPool?.resume_file_path && (
-                        <a
-                          href={safeHref(talentPool.resume_file_path)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-primary hover:underline text-xs"
-                        >
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Download className="size-3" />
-                          Download Resume
-                        </a>
+                          {talentPool.resume_file_path}
+                          <span>(file not stored — parsed profile only)</span>
+                        </p>
                       )
                     )}
                   </div>

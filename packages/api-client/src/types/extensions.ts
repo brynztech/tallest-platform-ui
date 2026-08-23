@@ -22,6 +22,16 @@ export type LeadQueueItemExtended = components['schemas']['LeadQueueItem'] & {
  * the same name in ../talent-platform/docs/). Absent from the generated
  * api.d.ts until the backend ships it and `pnpm generate:api` is rerun.
  */
+/**
+ * TalentPoolSummary extended with `resume_available` — true when the resume
+ * file is persisted in the documents bucket (backend
+ * docs/recruiter-module-features.md). Absent from the generated api.d.ts
+ * until `pnpm generate:api` is rerun against the updated backend.
+ */
+export type TalentPoolSummaryExtended = components['schemas']['TalentPoolSummary'] & {
+  resume_available?: boolean
+}
+
 export type SubmissionResponseExtended = components['schemas']['SubmissionResponse'] & {
   current_stage_id?: string | null
   // Sensitive per-candidate compensation (backend FEATURE_SPEC.md Feature 3).

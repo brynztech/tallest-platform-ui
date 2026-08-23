@@ -369,6 +369,12 @@ export const supplyHandlers: HttpHandler[] = [
     })
   }),
 
+  // 7a. GET /api/v1/supply/candidates/:candidate_id/resume-url — presigned URL
+  // for the stored resume (mock: a stable fake URL).
+  http.get(`${API_BASE}/api/v1/supply/candidates/:candidate_id/resume-url`, () => {
+    return HttpResponse.json({ url: 'https://example.com/mock-resume.pdf', filename: 'resume.pdf' })
+  }),
+
   // 7b. PATCH /api/v1/supply/candidates/:candidate_id/compensation — set CTC/ECTC
   // (recruiter-module Feature 3). Mock trusts every caller (no assignment
   // check in mock mode, same as the shortlists GET ignoring acting_user_id).

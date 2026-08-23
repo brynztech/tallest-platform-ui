@@ -472,6 +472,28 @@ export function CreateRequisitionWizard({
                 Target start date: {parsed.target_start_date}
               </p>
             )}
+            {(parsed.interview_process?.length ?? 0) > 0 && (
+              <div className="rounded-lg border border-border p-3 text-sm">
+                <p className="mb-1 font-medium">Hiring process (from the JD)</p>
+                <p className="text-muted-foreground">
+                  {/* Mirrors the backend's _stages_from_interview_process: terminal
+                      "Hired" dropped; the internal gate prepended unless the JD's
+                      first stage already is one. */}
+                  {(() => {
+                    const stages = (parsed.interview_process ?? []).filter(
+                      (s) => s.trim().toLowerCase() !== 'hired',
+                    )
+                    const withGate = /recruiter|internal|hr screen/i.test(stages[0] ?? '')
+                      ? stages
+                      : ['Recruiter Review', ...stages]
+                    return withGate.join(' → ')
+                  })()}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Configured as this role&apos;s pipeline — editable later via Edit Process.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

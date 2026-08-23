@@ -76,6 +76,10 @@ export interface ParsedJd {
   skills: string[]
   compensation_range: string | null
   target_start_date: string | null
+  /** JD-stated hiring stages — already written into the requisition's
+   * hiring process (with the internal Recruiter Review gate prepended);
+   * echoed here so the review step can show what was configured. */
+  interview_process: string[]
 }
 
 /**
