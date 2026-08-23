@@ -32,6 +32,7 @@ import {
 import { toPipelineDefinition } from './_lib/pipeline-bridge'
 import { AWAITING_REVIEW_STAGE_ID, groupSubmissionsByPipelineStage } from './_lib/group-submissions'
 import { PipelineCandidateCard } from './_components/pipeline-candidate-card'
+import { SubmissionNotesPopover } from './_components/submission-notes-popover'
 
 export default function CandidatePipelinePage() {
   const searchParams = useSearchParams()
@@ -268,8 +269,18 @@ export default function CandidatePipelinePage() {
   )
 }
 
-/** Read-only card — Awaiting Review and Rejected columns, no pipeline actions. */
+/**
+ * Read-only card — the whole board for users without `pipeline.advance`, and
+ * the Awaiting Review / Rejected columns for everyone. Notes stay readable
+ * (following the conversation on your own candidates is the point of the
+ * screen); no stage, note, or removal actions.
+ */
 function CandidatePipelineCard({ submission }: { submission: PipelineSubmission }) {
+  const can = useCan()
+  // "Review Shortlist" opens the Ops requisition page, which is gated on
+  // internal_ops.view — offering it to a recruiter just dead-ends them in the
+  // Access Restricted panel, so only show it to users who can actually open it.
+  const canOpenShortlist = can('internal_ops.view')
   return (
     <Card>
       <CardContent className="flex flex-col gap-2 px-3 py-3">
@@ -288,9 +299,14 @@ function CandidatePipelineCard({ submission }: { submission: PipelineSubmission 
           {submission.requisition.client?.name ?? 'Client'} · Match score{' '}
           {submission.match_score ?? 'not scored'}
         </p>
-        <Button asChild className="mt-1 w-full" size="sm" variant="outline">
-          <Link href={`/ops/requisitions/${submission.requisition.id}`}>Review Shortlist</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <SubmissionNotesPopover submissionId={submission.id} readOnly />
+          {canOpenShortlist ? (
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/ops/requisitions/${submission.requisition.id}`}>Review Shortlist</Link>
+            </Button>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   )

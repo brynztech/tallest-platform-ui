@@ -16,7 +16,16 @@ import {
 // and styling exactly (professional-UI precedent for this app), adapted into
 // a Popover (consistent with this app's other card-level popovers, e.g.
 // bd/leads/_components/snooze-popover.tsx) instead of a full-height panel.
-export function SubmissionNotesPopover({ submissionId }: { submissionId: string }) {
+export function SubmissionNotesPopover({
+  submissionId,
+  readOnly = false,
+}: {
+  submissionId: string
+  /** Hides the composer — notes stay readable for users without
+   * `pipeline.advance` (recruiters follow the conversation on their
+   * candidates; the Account Manager writes it). */
+  readOnly?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [noteText, setNoteText] = useState('')
   const queryClient = useQueryClient()
@@ -73,22 +82,24 @@ export function SubmissionNotesPopover({ submissionId }: { submissionId: string 
           )}
         </div>
 
-        <div className="border-t border-border pt-3">
-          <Textarea
-            value={noteText}
-            onChange={(event) => setNoteText(event.target.value)}
-            placeholder="Add a note…"
-            className="min-h-[70px] resize-none text-sm"
-          />
-          <Button
-            className="mt-2 ml-auto block"
-            size="sm"
-            disabled={noteText.trim().length === 0 || addNoteMutation.isPending}
-            onClick={() => addNoteMutation.mutate()}
-          >
-            {addNoteMutation.isPending ? 'Saving…' : 'Add Note'}
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="border-t border-border pt-3">
+            <Textarea
+              value={noteText}
+              onChange={(event) => setNoteText(event.target.value)}
+              placeholder="Add a note…"
+              className="min-h-[70px] resize-none text-sm"
+            />
+            <Button
+              className="mt-2 ml-auto block"
+              size="sm"
+              disabled={noteText.trim().length === 0 || addNoteMutation.isPending}
+              onClick={() => addNoteMutation.mutate()}
+            >
+              {addNoteMutation.isPending ? 'Saving…' : 'Add Note'}
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   )

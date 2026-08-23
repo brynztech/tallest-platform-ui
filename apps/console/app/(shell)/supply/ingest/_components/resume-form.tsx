@@ -7,10 +7,11 @@ import type { components } from '@brynzit/api-client'
 import { toast } from 'sonner'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
-import { UploadCloud } from 'lucide-react'
+import { FolderUp, UploadCloud } from 'lucide-react'
 import type { IngestJob } from './ingest-job-card'
 import { createClientId } from '../_lib/client-id'
 import { isResumeParsingComplete } from '../_lib/resume-status'
+import { RESUME_ACCEPT, selectResumesFromFolder } from '../_lib/resume-files'
 
 const MAX_POLL_DURATION_MS = 60_000
 const POLL_INTERVAL_MS = 3_000
@@ -20,17 +21,17 @@ interface ResumeFormProps {
   onJobUpdated: (id: string, updates: Partial<IngestJob>) => void
 }
 
+type UploadMode = 'files' | 'folder'
+
 export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
   const [files, setFiles] = useState<File[]>([])
+  const [mode, setMode] = useState<UploadMode>('files')
+  const [folderNote, setFolderNote] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-    },
+    accept: RESUME_ACCEPT,
     multiple: true,
     onDropRejected: (rejections) => {
       setUploadError(
@@ -47,6 +48,24 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
 
   function removeFile(index: number) {
     setFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  /** Folder pick: keep only parseable files and say what was ignored. */
+  function handleFolderSelected(fileList: FileList | null) {
+    const { accepted, skippedCount } = selectResumesFromFolder(Array.from(fileList ?? []))
+    setUploadError(null)
+    if (accepted.length === 0) {
+      setFolderNote(null)
+      setUploadError('No PDF or DOCX resumes found in that folder.')
+      return
+    }
+    setFiles((prev) => [...prev, ...accepted])
+    setFolderNote(
+      `${accepted.length} resume${accepted.length === 1 ? '' : 's'} found` +
+        (skippedCount > 0
+          ? ` · ${skippedCount} other file${skippedCount === 1 ? '' : 's'} skipped`
+          : ''),
+    )
   }
 
   // Each resume is its own job card with independent upload + poll — one bad
@@ -99,6 +118,7 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
     setUploadError(null)
     const batch = files
     setFiles([])
+    setFolderNote(null)
 
     try {
       await Promise.all(batch.map(uploadOne))
@@ -155,9 +175,29 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
   return (
     <div className="mt-4 max-w-lg">
       <p className="mb-4 text-sm text-muted-foreground">
-        Upload one or more resumes (PDF or DOCX). A candidate record is created per resume and
-        async parsing extracts profile fields.
+        Upload resumes (PDF or DOCX) individually or pick a whole folder. A candidate record is
+        created per resume and async parsing extracts profile fields.
       </p>
+      <div className="mb-4 flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === 'files' ? 'default' : 'outline'}
+          onClick={() => setMode('files')}
+        >
+          <UploadCloud className="mr-1 size-4" />
+          Upload files
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={mode === 'folder' ? 'default' : 'outline'}
+          onClick={() => setMode('folder')}
+        >
+          <FolderUp className="mr-1 size-4" />
+          Upload folder
+        </Button>
+      </div>
       <div className="flex flex-col gap-4">
         {files.length > 0 && (
           <div className="flex flex-col gap-2">
@@ -178,28 +218,60 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
             ))}
           </div>
         )}
-        <div
-          {...getRootProps()}
-          className={cn(
-            'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors',
-            isDragActive
-              ? 'border-primary bg-primary/5 text-primary'
-              : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
-          )}
-        >
-          <input {...getInputProps()} />
-          <UploadCloud className="mb-3 h-8 w-8" />
-          {isDragActive ? (
-            <p className="text-sm font-medium">Drop resumes here</p>
-          ) : (
-            <>
-              <p className="text-sm font-medium">
-                Drop PDF or DOCX resumes here, or click to browse
-              </p>
-              <p className="mt-1 text-xs">PDF, DOC, DOCX — multiple files supported</p>
-            </>
-          )}
-        </div>
+        {mode === 'files' ? (
+          <div
+            {...getRootProps()}
+            className={cn(
+              'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors',
+              isDragActive
+                ? 'border-primary bg-primary/5 text-primary'
+                : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
+            )}
+          >
+            <input {...getInputProps()} />
+            <UploadCloud className="mb-3 h-8 w-8" />
+            {isDragActive ? (
+              <p className="text-sm font-medium">Drop resumes here</p>
+            ) : (
+              <>
+                <p className="text-sm font-medium">
+                  Drop PDF or DOCX resumes here, or click to browse
+                </p>
+                <p className="mt-1 text-xs">PDF, DOC, DOCX — multiple files supported</p>
+              </>
+            )}
+          </div>
+        ) : (
+          <label
+            className={cn(
+              'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors',
+              'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
+            )}
+          >
+            {/* webkitdirectory is the native folder picker — set via ref
+                because React's input typings don't carry the attribute. */}
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              ref={(node) => {
+                node?.setAttribute('webkitdirectory', '')
+                node?.setAttribute('directory', '')
+              }}
+              onChange={(event) => {
+                handleFolderSelected(event.target.files)
+                // Allow re-picking the same folder after a clear.
+                event.target.value = ''
+              }}
+            />
+            <FolderUp className="mb-3 h-8 w-8" />
+            <p className="text-sm font-medium">Click to choose a folder</p>
+            <p className="mt-1 text-xs">
+              Every PDF, DOC, and DOCX inside is queued — other files are ignored
+            </p>
+          </label>
+        )}
+        {folderNote && <p className="text-sm text-muted-foreground">{folderNote}</p>}
         {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
         <Button
           size="sm"

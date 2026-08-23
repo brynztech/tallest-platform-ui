@@ -61,3 +61,17 @@ precedent in `pipeline-candidate-card.tsx`); scoped calls omit `acting_user_id` 
   every change (backend NOTIFICATION_EVENTS.md); the AM who owns the role drives the stages.
   UI gating only — the backend has no role concept to enforce against (see backend
   FEATURE_SPEC.md Feature 6).
+
+## Round 5 — Read-only pipeline polish + folder ingest (2026-08-23)
+
+- **Pipeline read-only card**: "Review Shortlist" now renders only for users holding
+  `internal_ops.view` — it opens the Ops requisition page, so offering it to a recruiter just
+  dead-ended them in the Access Restricted panel. Notes are readable instead:
+  `SubmissionNotesPopover` gained a `readOnly` prop that hides the composer, so recruiters follow
+  the conversation on their candidates without being able to write.
+- **Supply ingest folder upload**: the resume form has an "Upload files" / "Upload folder"
+  toggle. Folder mode uses the native `webkitdirectory` input (no dependency added) and filters
+  through `_lib/resume-files.ts` — `webkitdirectory` returns every file under the folder
+  recursively, so unsupported types and dotfiles are dropped and reported ("12 resumes found ·
+  3 other files skipped") rather than silently queued. The accept map is now defined once and
+  shared with the dropzone. Upload/poll path is unchanged: one job card per resume.
