@@ -46,3 +46,18 @@ precedent in `pipeline-candidate-card.tsx`); scoped calls omit `acting_user_id` 
 - Terraform (`infra/terraform/ec2-basic`): documents bucket + IAM; instances AMI-pinned via
   lifecycle ignore_changes.
 - MSW: handlers for resume-url, jd/original-url, interview_process in the upload mock.
+
+## Round 4 — Requisition scoping everywhere + pipeline read/write capability (2026-08-23)
+
+- **`useScopedRequisitions`** (`app/(shell)/_lib/`): one hook returning the requisitions the
+  acting user may act on — assignment-filtered for recruiters (via `visibleByAssignment` from
+  `@brynzit/recruiting`), unfiltered for `role.view_all`. Now the single source for `/submit`,
+  `/clients`, `/cross-list`, and `/pipeline`; `/jobs` and `/rewards` intentionally keep the full
+  browse list. Fixes recruiters seeing every client's roles in the Submit Candidate picker.
+- **`pipeline.advance` capability** (`packages/identity`): held by account_manager /
+  quality_manager / admin, not recruiter. `/pipeline` renders the read-only
+  `CandidatePipelineCard` for every column without it, with a "View only" badge and copy naming
+  who advances stages. Recruiters watch their submitted candidates move and are notified on
+  every change (backend NOTIFICATION_EVENTS.md); the AM who owns the role drives the stages.
+  UI gating only — the backend has no role concept to enforce against (see backend
+  FEATURE_SPEC.md Feature 6).

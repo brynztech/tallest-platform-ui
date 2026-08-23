@@ -54,6 +54,16 @@ describe('capability matrix', () => {
     expect(hasCapability('admin', 'internal_ops.view')).toBe(true)
   })
 
+  it('recruiter cannot advance the pipeline; managers and admin can', () => {
+    // The /pipeline board renders read-only without this capability — the
+    // recruiter watches their submitted candidates move and is notified on
+    // every change instead of driving the stages themselves.
+    expect(hasCapability('recruiter', 'pipeline.advance')).toBe(false)
+    expect(hasCapability('account_manager', 'pipeline.advance')).toBe(true)
+    expect(hasCapability('quality_manager', 'pipeline.advance')).toBe(true)
+    expect(hasCapability('admin', 'pipeline.advance')).toBe(true)
+  })
+
   it('capability lists contain no duplicates', () => {
     for (const capabilities of Object.values(ROLE_CAPABILITIES)) {
       expect(new Set(capabilities).size).toBe(capabilities.length)

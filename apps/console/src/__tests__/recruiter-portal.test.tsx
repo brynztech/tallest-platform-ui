@@ -181,14 +181,17 @@ describe('Recruiter route implementations', () => {
 
   it('maps recruiter pages to existing Ops and Supply data flows', () => {
     const expectedSources: Record<string, RegExp[]> = {
+      // Screens offering a requisition to ACT on take it from
+      // useScopedRequisitions (assignment-filtered for recruiters); /jobs and
+      // /rewards keep the unfiltered browse list deliberately.
       jobs: [/fetchOpsClients/, /fetchRequisitionsForClients/],
-      clients: [/fetchOpsClients/, /fetchRequisitionsForClients/],
-      submit: [/supply\/ingest|LinkedInForm|ResumeForm/, /fetchOpsClients|requisitions/],
-      pipeline: [/fetchPipelineSubmissions/, /getHiringProcess/, /fetchOpsClients|requisitions/],
+      clients: [/fetchOpsClients/, /useScopedRequisitions/],
+      submit: [/supply\/ingest|LinkedInForm|ResumeForm/, /useScopedRequisitions/],
+      pipeline: [/fetchPipelineSubmissions/, /getHiringProcess/, /useScopedRequisitions/],
       matchmaker: [/supply\/candidates\/search|CandidateSearchWorkspace/],
       calendar: [/fetchOpsInterviews|ops\/interviews/],
       messages: [/fetchClientNotes/, /fetchOpsClients/],
-      'cross-list': [/supply\/candidates\/search/, /fetchRequisitionsForClients/],
+      'cross-list': [/supply\/candidates\/search/, /useScopedRequisitions/],
       rewards: [/fetchPlacementsForRequisitions/, /fetchRequisitionsForClients/],
     }
 

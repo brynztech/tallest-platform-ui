@@ -18,12 +18,11 @@ import { LinkedInForm } from '../supply/ingest/_components/linkedin-form'
 import { CsvForm } from '../supply/ingest/_components/csv-form'
 import { ResumeForm } from '../supply/ingest/_components/resume-form'
 import {
-  clientIdsKey,
   fetchOpsClients,
-  fetchRequisitionsForClients,
   recruiterQueryKeys,
   RECRUITER_STALE_TIME_MS,
 } from '../_lib/recruiter-data'
+import { useScopedRequisitions } from '../_lib/use-scoped-requisitions'
 import { requisitionStatusLabel } from '../_lib/requisition-status'
 
 export default function SubmitCandidatePage() {
@@ -36,13 +35,9 @@ export default function SubmitCandidatePage() {
     staleTime: RECRUITER_STALE_TIME_MS,
   })
   const clients = clientsQuery.data ?? []
-  const requisitionsQuery = useQuery({
-    queryKey: recruiterQueryKeys.requisitions(clientIdsKey(clients)),
-    queryFn: () => fetchRequisitionsForClients(clients),
-    enabled: clientsQuery.isSuccess,
-    staleTime: RECRUITER_STALE_TIME_MS,
-  })
-  const requisitions = requisitionsQuery.data ?? []
+  // Recruiters can only submit into roles assigned to them; managers/admins
+  // keep the full list. Also enforced server-side on the submit action.
+  const { requisitions } = useScopedRequisitions(clients, clientsQuery.isSuccess)
 
   const requestedReqId = searchParams.get('requisition_id')
   const initialReqId =

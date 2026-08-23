@@ -17,14 +17,13 @@ import {
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
 import {
-  clientIdsKey,
   fetchOpsClients,
   fetchPipelineSubmissions,
-  fetchRequisitionsForClients,
   recruiterQueryKeys,
   RECRUITER_STALE_TIME_MS,
   type PipelineSubmission,
 } from '../_lib/recruiter-data'
+import { useScopedRequisitions } from '../_lib/use-scoped-requisitions'
 import {
   getHiringProcess,
   stageKindLabel,
@@ -33,7 +32,6 @@ import {
 import { toPipelineDefinition } from './_lib/pipeline-bridge'
 import { AWAITING_REVIEW_STAGE_ID, groupSubmissionsByPipelineStage } from './_lib/group-submissions'
 import { PipelineCandidateCard } from './_components/pipeline-candidate-card'
-import { assignmentQueryKeys, fetchAssignedRequisitionIds } from '../_lib/assignments'
 
 export default function CandidatePipelinePage() {
   const searchParams = useSearchParams()
@@ -44,6 +42,10 @@ export default function CandidatePipelinePage() {
   // shortlist fetch (backend FEATURE_SPEC.md Feature 6). Managers/admins with
   // role.view_all keep the unfiltered picker.
   const canViewAll = can('role.view_all')
+  // Read vs write on the board itself: recruiters watch their candidates move
+  // (and are notified on every change); the Account Manager who owns the role
+  // does the advancing, annotating, and removing.
+  const canAdvance = can('pipeline.advance')
   const [selectedReqId, setSelectedReqId] = useState('')
   const stageView = searchParams.get('stage') === 'rejected' ? 'rejected' : 'active'
   const clientsQuery = useQuery({
@@ -52,24 +54,11 @@ export default function CandidatePipelinePage() {
     staleTime: RECRUITER_STALE_TIME_MS,
   })
   const clients = clientsQuery.data ?? []
-  const requisitionsQuery = useQuery({
-    queryKey: recruiterQueryKeys.requisitions(clientIdsKey(clients)),
-    queryFn: () => fetchRequisitionsForClients(clients),
-    enabled: clientsQuery.isSuccess,
-    staleTime: RECRUITER_STALE_TIME_MS,
-  })
-  const assignedIdsQuery = useQuery({
-    queryKey: assignmentQueryKeys.forUser(actingUser.id),
-    queryFn: () => fetchAssignedRequisitionIds(actingUser.id),
-    enabled: !canViewAll,
-    staleTime: 60_000,
-  })
-  const requisitions = useMemo(() => {
-    const all = requisitionsQuery.data ?? []
-    if (canViewAll) return all
-    const assigned = new Set(assignedIdsQuery.data ?? [])
-    return all.filter((requisition) => assigned.has(requisition.id))
-  }, [requisitionsQuery.data, canViewAll, assignedIdsQuery.data])
+  const {
+    requisitions,
+    isLoading: requisitionsLoading,
+    error: requisitionsError,
+  } = useScopedRequisitions(clients, clientsQuery.isSuccess)
   const activeReqId = selectedReqId || requisitions[0]?.id || ''
   const activeReq = requisitions.find((requisition) => requisition.id === activeReqId) ?? null
   const hiringProcess = activeReq ? getHiringProcess(activeReq) : { stages: [] as HiringStage[] }
@@ -84,7 +73,7 @@ export default function CandidatePipelinePage() {
         activeReq ? [activeReq] : [],
         canViewAll ? undefined : actingUser.id,
       ),
-    enabled: requisitionsQuery.isSuccess && Boolean(activeReq),
+    enabled: Boolean(activeReq),
     staleTime: RECRUITER_STALE_TIME_MS,
     // staleTime alone only affects refetch-on-remount/refocus — a candidate's
     // stage can change from another screen (e.g. an AM approving on the Ops
@@ -111,15 +100,8 @@ export default function CandidatePipelinePage() {
     return definePipeline(toPipelineDefinition(activeReqId, hiringProcess.stages))
   }, [activeReqId, hiringProcess.stages])
   const isLoading =
-    clientsQuery.isLoading ||
-    requisitionsQuery.isLoading ||
-    submissionsQuery.isLoading ||
-    (!canViewAll && assignedIdsQuery.isLoading)
-  const hasError =
-    clientsQuery.error ||
-    requisitionsQuery.error ||
-    submissionsQuery.error ||
-    (!canViewAll && assignedIdsQuery.error)
+    clientsQuery.isLoading || requisitionsLoading || submissionsQuery.isLoading
+  const hasError = clientsQuery.error || requisitionsError || submissionsQuery.error
 
   if (isLoading) {
     return (
@@ -143,9 +125,18 @@ export default function CandidatePipelinePage() {
     <div className="flex min-h-full flex-col gap-5 px-6 py-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-[-0.03em]">Candidate Pipeline</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-[-0.03em]">Candidate Pipeline</h1>
+            {/* Say why the actions are absent — a board with no buttons and no
+                explanation reads as broken rather than as read-only. */}
+            <Badge variant="secondary" className="text-xs">
+              {canAdvance ? 'Can edit' : 'View only'}
+            </Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Columns come from the selected requisition&apos;s Ops-configured hiring process.
+            {canAdvance
+              ? "Columns come from the selected requisition's Ops-configured hiring process."
+              : 'Track your submitted candidates as they move. Your Account Manager advances stages and adds notes — you’re notified on every change.'}
           </p>
           <div className="mt-3 flex gap-2">
             <Button asChild size="sm" variant={stageView === 'active' ? 'default' : 'outline'}>
@@ -256,7 +247,7 @@ export default function CandidatePipelinePage() {
                   <p className="py-4 text-sm text-muted-foreground">No candidates</p>
                 ) : (
                   grouped[stage.id].map((submission) =>
-                    pipeline ? (
+                    pipeline && canAdvance ? (
                       <PipelineCandidateCard
                         key={submission.id}
                         submission={submission}

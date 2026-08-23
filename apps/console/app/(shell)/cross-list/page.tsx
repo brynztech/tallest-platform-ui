@@ -17,12 +17,11 @@ import {
 } from '@brynzit/ui/components/ui/select'
 import { CandidateProfileSheet } from '../_components/candidate-profile-sheet'
 import {
-  clientIdsKey,
   fetchOpsClients,
-  fetchRequisitionsForClients,
   recruiterQueryKeys,
   RECRUITER_STALE_TIME_MS,
 } from '../_lib/recruiter-data'
+import { useScopedRequisitions } from '../_lib/use-scoped-requisitions'
 
 export default function CrossListPage() {
   const [query, setQuery] = useState('')
@@ -37,13 +36,9 @@ export default function CrossListPage() {
     staleTime: RECRUITER_STALE_TIME_MS,
   })
   const clients = clientsQuery.data ?? []
-  const requisitionsQuery = useQuery({
-    queryKey: recruiterQueryKeys.requisitions(clientIdsKey(clients)),
-    queryFn: () => fetchRequisitionsForClients(clients),
-    enabled: clientsQuery.isSuccess,
-    staleTime: RECRUITER_STALE_TIME_MS,
-  })
-  const requisitions = requisitionsQuery.data ?? []
+  // Cross-listing puts a candidate onto another role — only roles the acting
+  // user is assigned to (managers/admins: all of them).
+  const { requisitions } = useScopedRequisitions(clients, clientsQuery.isSuccess)
   const activeReqId = selectedReqId || requisitions[0]?.id || ''
 
   const searchQuery = useQuery({

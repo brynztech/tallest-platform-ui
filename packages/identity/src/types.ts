@@ -21,6 +21,7 @@ export type Capability =
   | 'client.manage'
   | 'requisition.manage'
   | 'pipeline.configure'
+  | 'pipeline.advance'
   | 'candidate.shortlist'
   | 'candidate.bookmark'
   | 'candidate.submit'

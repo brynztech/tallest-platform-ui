@@ -15,6 +15,7 @@ import {
   updateCandidateCompensation,
 } from '../../app/(shell)/my-roles/[id]/_lib/shortlist'
 import { fetchPipelineSubmissions } from '../../app/(shell)/_lib/recruiter-data'
+import { visibleByAssignment } from '@brynzit/recruiting'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -81,5 +82,23 @@ describe('Feature 6 — acting_user_id on scoped fetches', () => {
     )
     await fetchPipelineSubmissions([{ id: 'req-1', client: null }] as never[])
     expect(String(fetchMock.mock.calls[0][0])).not.toContain('acting_user_id')
+  })
+})
+
+describe('Requisition scoping — recruiters only act on assigned roles', () => {
+  it('visibleByAssignment filters for recruiters and passes everything for managers', () => {
+    const reqs = [{ id: 'req-mine' }, { id: 'req-theirs' }]
+
+    // Recruiter: only assigned roles reach the picker (Submit Candidate,
+    // Cross List, Your Clients, Pipeline all source their list from this).
+    expect(
+      visibleByAssignment(reqs, { assignedIds: ['req-mine'], canViewAll: false }),
+    ).toEqual([{ id: 'req-mine' }])
+
+    // Manager/admin: unfiltered, even with no assignment rows of their own.
+    expect(visibleByAssignment(reqs, { assignedIds: [], canViewAll: true })).toEqual(reqs)
+
+    // Recruiter with no assignments sees nothing — not everything.
+    expect(visibleByAssignment(reqs, { assignedIds: [], canViewAll: false })).toEqual([])
   })
 })

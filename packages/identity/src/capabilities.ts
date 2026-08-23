@@ -10,6 +10,7 @@ export const ALL_CAPABILITIES: readonly Capability[] = [
   'client.manage',
   'requisition.manage',
   'pipeline.configure',
+  'pipeline.advance',
   'candidate.shortlist',
   'candidate.bookmark',
   'candidate.submit',
@@ -40,6 +41,14 @@ export const ROLE_LABELS: Record<Role, string> = {
  * turned off, a recruiter submits directly — that is pipeline configuration,
  * not an approval capability. The gate approval capability governs the explicit
  * internal review step only.
+ *
+ * Note on the pipeline board: recruiters intentionally do NOT hold
+ * `pipeline.advance` either. Once a candidate is submitted, moving them
+ * between stages, annotating them, and dropping them belongs to whoever owns
+ * the client relationship (the Account Manager who set the role up) — the
+ * recruiter watches their candidates progress and is notified on every change
+ * (see the backend's NOTIFICATION_EVENTS.md). `/pipeline` therefore renders
+ * read-only for recruiters.
  */
 export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
   recruiter: [
@@ -54,6 +63,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'client.manage',
     'requisition.manage',
     'pipeline.configure',
+    'pipeline.advance',
     'candidate.shortlist',
     'candidate.bookmark',
     'candidate.submit',
@@ -64,6 +74,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
   quality_manager: [
     'role.view_all',
     'pipeline.configure',
+    'pipeline.advance',
     'candidate.shortlist',
     'candidate.bookmark',
     'candidate.submit',

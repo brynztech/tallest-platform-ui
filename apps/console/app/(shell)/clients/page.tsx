@@ -13,13 +13,12 @@ import {
   TableRow,
 } from '@brynzit/ui/components/ui/table'
 import {
-  clientIdsKey,
   fetchOpsClients,
-  fetchRequisitionsForClients,
   formatShortDate,
   recruiterQueryKeys,
   RECRUITER_STALE_TIME_MS,
 } from '../_lib/recruiter-data'
+import { useScopedRequisitions } from '../_lib/use-scoped-requisitions'
 import { isLiveRequisitionStatus } from '../_lib/requisition-status'
 
 export default function ClientsPage() {
@@ -30,22 +29,22 @@ export default function ClientsPage() {
   })
 
   const clients = clientsQuery.data ?? []
-  const requisitionsQuery = useQuery({
-    queryKey: recruiterQueryKeys.requisitions(clientIdsKey(clients)),
-    queryFn: () => fetchRequisitionsForClients(clients),
-    enabled: clientsQuery.isSuccess,
-    staleTime: RECRUITER_STALE_TIME_MS,
-  })
-
-  const requisitions = requisitionsQuery.data ?? []
+  // A recruiter's client list shows only the roles assigned to them; the
+  // clients themselves are unchanged (a client with no assigned role simply
+  // renders empty). Managers/admins keep the full view.
+  const {
+    requisitions,
+    isLoading: requisitionsLoading,
+    error: requisitionsError,
+  } = useScopedRequisitions(clients, clientsQuery.isSuccess)
   const requisitionsByClient = new Map<string, typeof requisitions>()
   for (const requisition of requisitions) {
     const clientId = requisition.client_id ?? '__unassigned__'
     requisitionsByClient.set(clientId, [...(requisitionsByClient.get(clientId) ?? []), requisition])
   }
 
-  const isLoading = clientsQuery.isLoading || requisitionsQuery.isLoading
-  const hasError = clientsQuery.error || requisitionsQuery.error
+  const isLoading = clientsQuery.isLoading || requisitionsLoading
+  const hasError = clientsQuery.error || requisitionsError
 
   if (isLoading) {
     return (
