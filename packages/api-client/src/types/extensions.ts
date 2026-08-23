@@ -24,4 +24,8 @@ export type LeadQueueItemExtended = components['schemas']['LeadQueueItem'] & {
  */
 export type SubmissionResponseExtended = components['schemas']['SubmissionResponse'] & {
   current_stage_id?: string | null
+  // Sensitive per-candidate compensation (backend FEATURE_SPEC.md Feature 3).
+  // Null when the backend's assignment-scoped visibility check withholds them.
+  candidate_ctc?: number | null
+  candidate_ectc?: number | null
 }

@@ -168,6 +168,18 @@ No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skill
 > This section is managed by `generate-claude-profile` -- do not edit manually.
 <!-- GSD:profile-end -->
 
+## Recruiter-Module Feature Set (cross-repo tracking docs)
+
+The 2026-08 recruiter-module work (JD upload intake, submit state, CTC/ECTC, notifications
+passthrough, pipeline scoping) is documented across both repos. The backend repo is the source
+of truth for behavior and API contracts:
+
+- Spec: `../talent-platform/FEATURE_SPEC.md` · API: `../talent-platform/API_CHANGES.md` ·
+  Events: `../talent-platform/NOTIFICATION_EVENTS.md`
+- This repo: [ARCHITECTURE_NOTES.md](ARCHITECTURE_NOTES.md) (UI/state patterns found before
+  building), [TEST_PLAN.md](TEST_PLAN.md), [AGENT_SETUP_NOTES.md](AGENT_SETUP_NOTES.md),
+  [docs/recruiter-module-features.md](docs/recruiter-module-features.md)
+
 ## Prompt Contract
 
 Before executing any substantive task, decide these five from my prompt and state them back to me:

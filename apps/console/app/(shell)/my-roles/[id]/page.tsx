@@ -30,6 +30,7 @@ import {
   patchSubmissionStatus,
   submitInterestedCandidates,
   triggerRecruiterMatch,
+  updateCandidateCompensation,
   canSubmitApplications,
   MatchNotAssignedError,
   SubmissionConflictError,
@@ -97,10 +98,13 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
     enabled: enabled && !!req?.client_id,
   })
 
-  const shortlistQueryKey = ['recruiter-shortlist', id] as const
+  const shortlistQueryKey = ['recruiter-shortlist', id, actingUser.id] as const
   const { data: shortlist, isLoading: shortlistLoading } = useQuery({
     queryKey: shortlistQueryKey,
-    queryFn: () => fetchRecruiterShortlist(id),
+    // Recruiters send their own id so the backend enforces assignment scoping
+    // (403 if unassigned) — managers with role.view_all have no assignment
+    // rows, so they use the unscoped legacy-caller convention.
+    queryFn: () => fetchRecruiterShortlist(id, canViewAll ? undefined : actingUser.id),
     enabled,
     // Matching runs as an async background job — light polling keeps the
     // shortlist current without a manual refresh, matching the BD pipeline
@@ -150,6 +154,25 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
       } else {
         toast.error('Failed to update candidate — try again.')
       }
+    },
+  })
+
+  // ---- Compensation (CTC/ECTC) ----
+  const compensationMutation = useMutation({
+    mutationFn: (vars: { candidateId: string; ctc: number | null; ectc: number | null }) =>
+      // Same scoping convention as the shortlist fetch: managers with
+      // role.view_all have no assignment rows, so they use the trusted
+      // unscoped call; recruiters are checked server-side.
+      updateCandidateCompensation(vars.candidateId, canViewAll ? undefined : actingUser.id, {
+        ctc: vars.ctc,
+        ectc: vars.ectc,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: shortlistQueryKey })
+      toast('Compensation updated.')
+    },
+    onError: () => {
+      toast.error('Failed to update compensation — try again.')
     },
   })
 
@@ -234,6 +257,24 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
   const canSubmit = canSubmitApplications(submissions)
   const activeSubmissions = submissions.filter((s) => !s.submitted_at)
   const submittedSubmissions = submissions.filter((s) => s.submitted_at)
+  // Why the Submit button is disabled — surfaced as a native title tooltip
+  // (this app's existing disabled-button-explanation convention, see
+  // pipeline-candidate-card.tsx).
+  const lastSubmittedAt = submittedSubmissions
+    .map((s) => s.submitted_at)
+    .filter(Boolean)
+    .sort()
+    .at(-1)
+  // "Already submitted" only when there is genuinely nothing actionable left;
+  // if screened-out actives remain, the actionable truth is "mark one
+  // Interested", even when a prior batch was already submitted.
+  const submitDisabledReason = canSubmit
+    ? undefined
+    : submissions.some((s) => s.status === 'shortlisted')
+      ? 'Screen every candidate before submitting.'
+      : activeSubmissions.length === 0 && submittedSubmissions.length > 0
+        ? `Already submitted on ${new Date(lastSubmittedAt as string).toLocaleDateString()}.`
+        : 'Mark at least one candidate Interested first.'
 
   return (
     <div className="overflow-y-auto px-6 py-6">
@@ -293,15 +334,19 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
             action (notifies the Account Manager), so it gets its own solid
             success-green treatment plus a confirm step rather than firing
             on a single click. */}
-        <Button
-          size="sm"
-          className="bg-[oklch(0.45_0.15_145)] text-white hover:bg-[oklch(0.45_0.15_145)]/90"
-          disabled={!canSubmit}
-          onClick={() => setSubmitDialogOpen(true)}
-        >
-          <Send className="mr-1 size-4" />
-          Submit Applications
-        </Button>
+        {/* Disabled buttons swallow pointer events, so the explanatory title
+            lives on a wrapper span — the tooltip still shows on hover. */}
+        <span title={submitDisabledReason}>
+          <Button
+            size="sm"
+            className="bg-[oklch(0.45_0.15_145)] text-white hover:bg-[oklch(0.45_0.15_145)]/90"
+            disabled={!canSubmit}
+            onClick={() => setSubmitDialogOpen(true)}
+          >
+            <Send className="mr-1 size-4" />
+            Submit Applications
+          </Button>
+        </span>
       </div>
 
       <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
@@ -351,6 +396,10 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
                   status: 'snoozed',
                   snoozedUntil,
                 })
+              }
+              onSaveCompensation={(ctc, ectc) =>
+                submission.candidate_id &&
+                compensationMutation.mutate({ candidateId: submission.candidate_id, ctc, ectc })
               }
             />
           ))}

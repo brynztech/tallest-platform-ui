@@ -39,6 +39,10 @@ export interface ShortlistSubmission {
   candidate_email: string | null
   candidate_title: string | null
   candidate_skills: string[] | null
+  // Assignment-scoped compensation (backend FEATURE_SPEC.md Feature 3) —
+  // null when the backend withholds them from this caller.
+  candidate_ctc?: number | null
+  candidate_ectc?: number | null
 }
 
 export interface ShortlistResponse {
@@ -54,13 +58,51 @@ export class SubmissionConflictError extends Error {
   }
 }
 
-/** Always passes include_pending=true — the recruiter's full working set (contract requirement). */
-export async function fetchRecruiterShortlist(requisitionId: string): Promise<ShortlistResponse> {
+/**
+ * Always passes include_pending=true — the recruiter's full working set
+ * (contract requirement). actingUserId (optional): sent as acting_user_id so
+ * the backend enforces assignment scoping server-side (403 if not assigned) —
+ * omit for managers with role.view_all, who have no assignment rows.
+ */
+export async function fetchRecruiterShortlist(
+  requisitionId: string,
+  actingUserId?: string,
+): Promise<ShortlistResponse> {
+  const params = new URLSearchParams({ include_pending: 'true' })
+  if (actingUserId) params.set('acting_user_id', actingUserId)
   const res = await fetch(
-    `${apiBase()}/api/v1/supply/shortlists/${encodeURIComponent(requisitionId)}?include_pending=true`,
+    `${apiBase()}/api/v1/supply/shortlists/${encodeURIComponent(requisitionId)}?${params}`,
   )
   if (!res.ok) throw new Error(`Failed to load shortlist: ${res.status}`)
   return (await res.json()) as ShortlistResponse
+}
+
+export interface CompensationResponse {
+  candidate_id: string
+  ctc: number | null
+  ectc: number | null
+}
+
+/** Set a candidate's current/expected CTC. When actingUserId is given, the
+ * backend 403s unless that user has a requisition assignment covering this
+ * candidate; omit it for managers with role.view_all (the trusted-console
+ * convention, same as fetchRecruiterShortlist). */
+export async function updateCandidateCompensation(
+  candidateId: string,
+  actingUserId: string | undefined,
+  body: { ctc: number | null; ectc: number | null },
+): Promise<CompensationResponse> {
+  const query = actingUserId ? `?acting_user_id=${encodeURIComponent(actingUserId)}` : ''
+  const res = await fetch(
+    `${apiBase()}/api/v1/supply/candidates/${encodeURIComponent(candidateId)}/compensation${query}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  )
+  if (!res.ok) throw new Error(`Failed to update compensation: ${res.status}`)
+  return (await res.json()) as CompensationResponse
 }
 
 export interface PatchSubmissionBody {

@@ -277,6 +277,24 @@ export const opsHandlers: HttpHandler[] = [
     )
   }),
 
+  // 11a. POST /api/v1/ops/requisitions/:req_id/jd/upload — upload-to-JD intake
+  // (recruiter-module Feature 1). Returns a plausible parsed result so the
+  // wizard's review step renders in mock mode.
+  http.post(`${API_BASE}/api/v1/ops/requisitions/:req_id/jd/upload`, ({ params }) => {
+    return HttpResponse.json(
+      {
+        requisition_id: params.req_id as string,
+        status: 'draft',
+        role: 'Senior Backend Engineer',
+        seniority: 'senior',
+        skills: ['Python', 'FastAPI', 'PostgreSQL'],
+        compensation_range: '$150k-$180k',
+        target_start_date: null,
+      } satisfies components['schemas']['ParseJDResponse'],
+      { status: 200 },
+    )
+  }),
+
   // 11b. PATCH /api/v1/ops/requisitions/:req_id — update requisition fields
   // NOTE: MSW-only — no live PATCH /api/v1/ops/requisitions/{req_id} endpoint (api.d.ts patch?: never)
   http.patch(`${API_BASE}/api/v1/ops/requisitions/:req_id`, async ({ params, request }) => {

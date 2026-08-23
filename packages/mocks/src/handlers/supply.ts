@@ -369,6 +369,21 @@ export const supplyHandlers: HttpHandler[] = [
     })
   }),
 
+  // 7b. PATCH /api/v1/supply/candidates/:candidate_id/compensation — set CTC/ECTC
+  // (recruiter-module Feature 3). Mock trusts every caller (no assignment
+  // check in mock mode, same as the shortlists GET ignoring acting_user_id).
+  http.patch(
+    `${API_BASE}/api/v1/supply/candidates/:candidate_id/compensation`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { ctc?: number | null; ectc?: number | null }
+      return HttpResponse.json({
+        candidate_id: params.candidate_id as string,
+        ctc: body.ctc ?? null,
+        ectc: body.ectc ?? null,
+      })
+    },
+  ),
+
   // 8. PATCH /api/v1/supply/shortlists/:submission_id — update submission status
   // 409 if the submission is already approved/rejected (terminal); snoozed_until
   // is stored when status === 'snoozed' and cleared otherwise, mirroring the

@@ -87,13 +87,28 @@ export async function fetchOpsInterviews(statusFilter = 'all') {
   return response.json() as Promise<OpsInterview[]>
 }
 
-export async function fetchPipelineSubmissions(requisitions: RequisitionWithClient[]) {
+/**
+ * actingUserId (optional): sent as acting_user_id so the backend enforces
+ * assignment scoping server-side (403 → that requisition's rows drop out via
+ * allSettled). acting_user_id isn't in the generated api.d.ts yet, so this
+ * uses native fetch per the documented convention (apps/console/CLAUDE.md
+ * gotcha #5). Omit for managers with role.view_all.
+ */
+export async function fetchPipelineSubmissions(
+  requisitions: RequisitionWithClient[],
+  actingUserId?: string,
+) {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
   const results = await Promise.allSettled(
     requisitions.map(async (requisition) => {
-      const { data, error } = await apiClient.GET('/api/v1/supply/shortlists/{requisition_id}', {
-        params: { path: { requisition_id: requisition.id } },
-      })
-      if (error) throw error
+      const query = actingUserId
+        ? `?acting_user_id=${encodeURIComponent(actingUserId)}`
+        : ''
+      const response = await fetch(
+        `${base}/api/v1/supply/shortlists/${encodeURIComponent(requisition.id)}${query}`,
+      )
+      if (!response.ok) throw new Error(`Failed to load shortlist: ${response.status}`)
+      const data = (await response.json()) as { submissions?: SupplySubmission[] }
       return (data.submissions ?? []).map((submission) => ({
         ...submission,
         requisition,

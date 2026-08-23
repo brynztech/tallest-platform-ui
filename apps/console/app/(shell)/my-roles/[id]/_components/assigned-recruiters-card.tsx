@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SEED_USERS, useCan } from '@brynzit/identity'
+import { SEED_USERS, useActingUser, useCan } from '@brynzit/identity'
 import { toast } from 'sonner'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
@@ -33,6 +33,7 @@ function userName(userId: string) {
 export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
   const can = useCan()
   const canManage = can('requisition.manage')
+  const actingUser = useActingUser()
   const queryClient = useQueryClient()
   const [selectedUserId, setSelectedUserId] = useState('')
 
@@ -48,7 +49,7 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
   }
 
   const assignMutation = useMutation({
-    mutationFn: (userId: string) => assignRecruiter(userId, reqId),
+    mutationFn: (userId: string) => assignRecruiter(userId, reqId, actingUser.id),
     onSuccess: (_data, userId) => {
       invalidate(userId)
       setSelectedUserId('')

@@ -13,6 +13,10 @@ export interface NotificationResponse {
   id: string
   requisition_id: string
   message: string
+  /** Event discriminator — see ../talent-platform/NOTIFICATION_EVENTS.md. */
+  notification_type?: string
+  /** Deep-link data (submission_id, candidate_id, …) per event type. */
+  payload?: Record<string, unknown> | null
   created_at: string
   read_at: string | null
 }

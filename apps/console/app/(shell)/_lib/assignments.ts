@@ -30,11 +30,17 @@ export async function fetchRequisitionAssignees(reqId: string): Promise<string[]
 }
 
 /** Assign a recruiter to a requisition (idempotent on the backend). */
-export async function assignRecruiter(userId: string, reqId: string): Promise<void> {
+export async function assignRecruiter(
+  userId: string,
+  reqId: string,
+  assignedBy?: string,
+): Promise<void> {
   const response = await fetch(`${apiBase()}/api/v1/ops/assignments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userId, requisition_id: reqId }),
+    // assigned_by: who made this assignment — drives the backend's
+    // CTC/ECTC assigner-visibility rule (backend FEATURE_SPEC.md Feature 3).
+    body: JSON.stringify({ user_id: userId, requisition_id: reqId, assigned_by: assignedBy }),
   })
   if (!response.ok) throw new Error(`Failed to assign recruiter: ${response.status}`)
 }

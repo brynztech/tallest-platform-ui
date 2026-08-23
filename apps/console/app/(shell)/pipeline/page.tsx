@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
+import { useActingUser, useCan } from '@brynzit/identity'
 import { definePipeline } from '@brynzit/pipeline'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
@@ -32,9 +33,17 @@ import {
 import { toPipelineDefinition } from './_lib/pipeline-bridge'
 import { AWAITING_REVIEW_STAGE_ID, groupSubmissionsByPipelineStage } from './_lib/group-submissions'
 import { PipelineCandidateCard } from './_components/pipeline-candidate-card'
+import { assignmentQueryKeys, fetchAssignedRequisitionIds } from '../_lib/assignments'
 
 export default function CandidatePipelinePage() {
   const searchParams = useSearchParams()
+  const actingUser = useActingUser()
+  const can = useCan()
+  // Plain recruiters only ever see their own assigned requisitions here —
+  // enforced both in this picker and server-side via acting_user_id on the
+  // shortlist fetch (backend FEATURE_SPEC.md Feature 6). Managers/admins with
+  // role.view_all keep the unfiltered picker.
+  const canViewAll = can('role.view_all')
   const [selectedReqId, setSelectedReqId] = useState('')
   const stageView = searchParams.get('stage') === 'rejected' ? 'rejected' : 'active'
   const clientsQuery = useQuery({
@@ -49,14 +58,32 @@ export default function CandidatePipelinePage() {
     enabled: clientsQuery.isSuccess,
     staleTime: RECRUITER_STALE_TIME_MS,
   })
-  const requisitions = requisitionsQuery.data ?? []
+  const assignedIdsQuery = useQuery({
+    queryKey: assignmentQueryKeys.forUser(actingUser.id),
+    queryFn: () => fetchAssignedRequisitionIds(actingUser.id),
+    enabled: !canViewAll,
+    staleTime: 60_000,
+  })
+  const requisitions = useMemo(() => {
+    const all = requisitionsQuery.data ?? []
+    if (canViewAll) return all
+    const assigned = new Set(assignedIdsQuery.data ?? [])
+    return all.filter((requisition) => assigned.has(requisition.id))
+  }, [requisitionsQuery.data, canViewAll, assignedIdsQuery.data])
   const activeReqId = selectedReqId || requisitions[0]?.id || ''
   const activeReq = requisitions.find((requisition) => requisition.id === activeReqId) ?? null
   const hiringProcess = activeReq ? getHiringProcess(activeReq) : { stages: [] as HiringStage[] }
-  const pipelineQueryKey = recruiterQueryKeys.pipeline(activeReqId)
+  // Keyed by acting user too: the scoped (recruiter) and unscoped (manager)
+  // responses differ, and identities are switchable at runtime — a shared key
+  // would serve one persona's cached rows to the other within staleTime.
+  const pipelineQueryKey = recruiterQueryKeys.pipeline(`${activeReqId}:${actingUser.id}`)
   const submissionsQuery = useQuery({
     queryKey: pipelineQueryKey,
-    queryFn: () => fetchPipelineSubmissions(activeReq ? [activeReq] : []),
+    queryFn: () =>
+      fetchPipelineSubmissions(
+        activeReq ? [activeReq] : [],
+        canViewAll ? undefined : actingUser.id,
+      ),
     enabled: requisitionsQuery.isSuccess && Boolean(activeReq),
     staleTime: RECRUITER_STALE_TIME_MS,
     // staleTime alone only affects refetch-on-remount/refocus — a candidate's
@@ -84,8 +111,15 @@ export default function CandidatePipelinePage() {
     return definePipeline(toPipelineDefinition(activeReqId, hiringProcess.stages))
   }, [activeReqId, hiringProcess.stages])
   const isLoading =
-    clientsQuery.isLoading || requisitionsQuery.isLoading || submissionsQuery.isLoading
-  const hasError = clientsQuery.error || requisitionsQuery.error || submissionsQuery.error
+    clientsQuery.isLoading ||
+    requisitionsQuery.isLoading ||
+    submissionsQuery.isLoading ||
+    (!canViewAll && assignedIdsQuery.isLoading)
+  const hasError =
+    clientsQuery.error ||
+    requisitionsQuery.error ||
+    submissionsQuery.error ||
+    (!canViewAll && assignedIdsQuery.error)
 
   if (isLoading) {
     return (
