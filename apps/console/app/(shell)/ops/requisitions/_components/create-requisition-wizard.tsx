@@ -40,6 +40,7 @@ import {
 } from '@/(shell)/_lib/assignments'
 import { updateRequisitionStatus } from '../[id]/_lib/lifecycle'
 import {
+  fetchJd,
   generateJd,
   titlesDiffer,
   type JobDescription,
@@ -178,14 +179,25 @@ export function CreateRequisitionWizard({
       }
       return uploadJdDocument(id, jdFile)
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setParsed(result)
       setSeniorityDraft(result.seniority ?? '')
       setSkillsDraft((result.skills ?? []).join(', '))
       setCompensationDraft(result.compensation_range ?? '')
       setUseGeneratedTitle(titlesDiffer(title, result.role))
+      // The upload also structures the document into the JD template
+      // (preserving wording) — fetch it so the review step renders the same
+      // JdPreview as the generate flow. If structuring failed server-side,
+      // this 404s and the flat editable review renders as the fallback.
+      try {
+        const structured = await fetchJd(result.requisition_id)
+        setJd(structured)
+        queryClient.setQueryData(['ops-requisition-jd', result.requisition_id], structured)
+      } catch {
+        // fall back to the flat parsed-fields review
+      }
       setStep('preview')
-      toast('JD parsed — review the extracted fields.')
+      toast('JD parsed — review it before publishing.')
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Could not parse the uploaded JD — try another file.')
@@ -203,8 +215,11 @@ export function CreateRequisitionWizard({
         // typed title (generate intake never touches title server-side).
         await patchRequisitionTitle(reqId, title.trim())
       }
-      if (parsed) {
-        // Upload intake: apply the review step's edits before publishing.
+      if (parsed && !jd) {
+        // Upload intake, flat-review fallback only (no structured JD): apply
+        // the editable review's values. When the structured JD rendered, no
+        // editable fields were shown — patching the unshown drafts here would
+        // overwrite the structuring output's columns with parse values.
         await patchRequisitionFields(reqId, {
           seniority: seniorityDraft.trim() || null,
           skills: skillsDraft.split(',').map((s) => s.trim()).filter(Boolean),
@@ -501,7 +516,9 @@ export function CreateRequisitionWizard({
           <div className="space-y-4">
             {showTitleChoice ? (
               <div className="rounded-lg border border-border p-3 text-sm">
-                <p className="mb-2 font-medium">The generated title differs from what you typed.</p>
+                <p className="mb-2 font-medium">
+                  The {parsed ? 'parsed' : 'generated'} title differs from what you typed.
+                </p>
                 <label className="flex items-start gap-2">
                   <input
                     type="radio"
@@ -518,13 +535,32 @@ export function CreateRequisitionWizard({
                     checked={useGeneratedTitle}
                     onChange={() => setUseGeneratedTitle(true)}
                   />
-                  <span>Use generated: {generatedTitle}</span>
+                  <span>Use {parsed ? 'parsed' : 'generated'}: {generatedTitle}</span>
                 </label>
               </div>
             ) : null}
             <div className="rounded-lg border border-border bg-muted/40 p-3">
               <JdPreview jd={jd} />
             </div>
+            {(parsed?.interview_process?.length ?? 0) > 0 && (
+              <div className="rounded-lg border border-border p-3 text-sm">
+                <p className="mb-1 font-medium">Hiring process (from the JD)</p>
+                <p className="text-muted-foreground">
+                  {(() => {
+                    const stages = (parsed?.interview_process ?? []).filter(
+                      (s) => s.trim().toLowerCase() !== 'hired',
+                    )
+                    const withGate = /recruiter|internal|hr screen/i.test(stages[0] ?? '')
+                      ? stages
+                      : ['Recruiter Review', ...stages]
+                    return withGate.join(' → ')
+                  })()}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Configured as this role&apos;s pipeline — editable later via Edit Process.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

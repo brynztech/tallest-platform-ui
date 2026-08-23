@@ -349,6 +349,12 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
                   <RefreshCw className="mr-1 size-4" />
                   Regenerate
                 </Button>
+                {uploadedJd?.object_key ? (
+                  <Button variant="outline" onClick={openOriginal}>
+                    <Download className="mr-1 size-4" />
+                    Download original
+                  </Button>
+                ) : null}
                 <Button variant="outline" asChild>
                   <a href={jdDownloadUrl(req.id)} download>
                     <Download className="mr-1 size-4" />
