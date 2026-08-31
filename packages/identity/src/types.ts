@@ -30,6 +30,7 @@ export type Capability =
   | 'candidate.hard_block'
   | 'internal_ops.view'
   | 'admin.view'
+  | 'assistant.view'
 
 /** A person acting inside a workspace. */
 export interface User {

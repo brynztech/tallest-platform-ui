@@ -106,3 +106,23 @@ This is the pattern to extend (preset durations → 3/6/9 months instead of
 week/month/quarter; add Interested/Not Interested/No-Response as additional
 `action` values) rather than building a parallel status system for the
 supply-side candidate shortlist.
+
+## Labels in fixed-width surfaces (docked panel, sidebar, narrow cards)
+
+One line, always. These surfaces have a known width, so a wrapped label is a
+label written too long rather than a layout problem to solve.
+
+- Budget at `text-sm`: **~18 characters** for a card in the 400px docked
+  assistant panel laid out two across (~156px of text per card).
+- Authored labels: shorten the label, not the layout. Keep the long form in
+  whatever the label triggers — `_lib/starters.ts` splits exactly this way,
+  with a short `title` shown on the card and a full `prompt` that gets sent.
+- Data-supplied labels (chat titles, candidate names, client names): apply
+  `truncate`. Clipping is predictable; reflow moves everything under it.
+- Watch out: inside a Radix `ScrollArea`, `truncate` silently does nothing —
+  the viewport wraps children in a `display: table` div that sizes to content.
+  Force it back with `[&_[data-slot=scroll-area-viewport]>div]:!block`.
+
+Enforced for the assistant's starter cards by
+`src/__tests__/assistant.test.ts`, so an over-long label fails the suite rather
+than quietly wrapping in one surface.

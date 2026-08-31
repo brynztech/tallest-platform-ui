@@ -1,4 +1,5 @@
 // No 'use client' — Server Component
+import { AssistantWidget } from './assistant/_components/assistant-widget'
 import { SidebarNav } from './_components/sidebar-nav'
 import { TopNav } from './_components/top-nav'
 
@@ -10,6 +11,7 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
         <SidebarNav />
         <main className="min-w-0 flex-1 overflow-y-auto bg-transparent">{children}</main>
       </div>
+      <AssistantWidget />
     </div>
   )
 }

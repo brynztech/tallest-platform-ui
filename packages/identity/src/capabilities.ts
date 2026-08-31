@@ -19,6 +19,7 @@ export const ALL_CAPABILITIES: readonly Capability[] = [
   'candidate.hard_block',
   'internal_ops.view',
   'admin.view',
+  'assistant.view',
 ] as const
 
 /** Human-readable role labels for UI. */
@@ -57,6 +58,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'candidate.bookmark',
     'candidate.submit',
     'submission.override_ai',
+    'assistant.view',
   ],
   account_manager: [
     'role.view_all',
@@ -70,6 +72,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'submission.override_ai',
     'candidate.hard_block',
     'internal_ops.view',
+    'assistant.view',
   ],
   quality_manager: [
     'role.view_all',
@@ -82,6 +85,7 @@ export const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'submission.override_ai',
     'candidate.hard_block',
     'internal_ops.view',
+    'assistant.view',
   ],
   admin: ALL_CAPABILITIES,
 }

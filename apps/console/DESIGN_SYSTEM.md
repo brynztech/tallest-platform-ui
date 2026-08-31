@@ -89,6 +89,15 @@ behavior.
 - Forms: `react-hook-form` plus Zod for validation; keep labels explicit and errors close to fields.
 - Tables and queues: prioritize scannability, keyboard focus, and stable row/card heights.
 - Sheets/dialogs: for review workflows that need context without page navigation.
+- **Labels in fixed-width surfaces fit on one line.** A docked panel, a sidebar
+  or a narrow card has a known width, so a label that wraps to two lines is a
+  label that was written too long — not a layout to accommodate. Wrapping makes
+  an even grid ragged, changes card heights, and pushes whatever sits below it
+  around. Budget: the 400px docked assistant panel, two cards across, leaves
+  roughly **18 characters** at `text-sm`. Keep the visible label short and put
+  the long form in what the label *triggers*, never in the label itself. Where
+  the text is user- or data-supplied and cannot be shortened (chat titles,
+  candidate names), `truncate` it — clipping is predictable, reflow is not.
 
 ## Interaction
 
@@ -108,4 +117,6 @@ Before shipping console UI changes, check:
 - Long pages scroll in `main` while the top nav and sidebar remain stable.
 - Active, hover, focus, and disabled states are visibly distinct.
 - The page still reads well at the current desktop viewport width used by the internal team.
+- No label in a fixed-width surface (panel, sidebar, narrow card) has wrapped to
+  a second line; data-supplied text truncates instead of wrapping.
 - Public-site styling has not leaked into console screens.
