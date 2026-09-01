@@ -6,13 +6,14 @@ import {
 
 type SubmissionResponse = components['schemas']['SubmissionResponse']
 
+// The four live scoring components (backend API_CHANGES.md 2026-09-01):
+// signal_composite moved to per-JD judgment, domain_match was removed as a
+// never-computed constant. Keys here drive the score-edit dialog directly.
 export const SHORTLIST_SCORE_KEYS = [
   'semantic_similarity',
   'skill_exact',
   'skill_cluster',
   'seniority_fit',
-  'domain_match',
-  'signal_composite',
 ] as const
 
 export type ShortlistScoreKey = (typeof SHORTLIST_SCORE_KEYS)[number]

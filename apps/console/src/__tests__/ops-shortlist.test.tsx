@@ -103,16 +103,12 @@ describe('Shortlist status badge logic (OPS-04)', () => {
         skill_exact: 13.12,
         skill_cluster: 14,
         seniority_fit: 18,
-        domain_match: 6.75,
-        signal_composite: 4.65,
       }),
     ).toEqual({
       semantic_similarity: 16.57,
       skill_exact: 13.12,
       skill_cluster: 14,
       seniority_fit: 18,
-      domain_match: 6.75,
-      signal_composite: 4.65,
     })
   })
 
