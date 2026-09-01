@@ -409,6 +409,45 @@ The read-only Awaiting Review/Rejected cards (`CandidatePipelineCard` in
 with/without/with-stale `current_stage_id`; rejected excluded). No render
 test for the page or its new card/popover components.
 
+## Match evidence card (2026-09-01)
+
+The backend's facts/judgment work (talent-platform `API_CHANGES.md`
+2026-09-01) added card data to `match_rationale` on every submission:
+per-JD-flag verdicts with verbatim resume quotes, a judgment score/status,
+the role whose vector won the match, and the whole career with
+company-store stats (size, funding stage, revenue, YC batch — or an honest
+"unknown company").
+
+Rendering, both surfaces from one component:
+
+- `app/(shell)/_components/match-evidence.tsx` — `MatchEvidenceSections`:
+  "Why they surfaced" (matched role + proof bullet), "Career" (all roles,
+  matched one ●-highlighted, per-company stats with a native `<details>`
+  for the one-line description), "Flags" (✓/✗/? with the quote under each,
+  hard requirements badged `requirement`, never auto-excluding), and "Ask
+  in screen" (flags no resume can answer). Icon color tracks favorability:
+  a red flag that is `not_met` renders green.
+- `app/(shell)/_components/match-evidence-data.ts` — JSX-free types +
+  defensive `parseMatchEvidence` (returns null on pre-change entries so old
+  cards render exactly as before), `companyStatLine`,
+  `judgmentStatusLabel`. Split from the .tsx because of console gotcha #3
+  (vitest cannot transform .tsx imports); logic tests live in
+  `src/__tests__/match-evidence.test.ts`.
+- Recruiter card (`my-roles/[id]/.../shortlist-candidate-card.tsx`): a
+  collapsed `<details>` "Match evidence · judgment N" between skills and
+  compensation.
+- AM shortlist table (`ops/requisitions/[id]/.../shortlist-table.tsx`):
+  the expanded "Show why" rationale cell renders the full sections below
+  the existing matched/gaps chips (outside the toggle button — `<details>`
+  cannot nest in a `<button>`). `ShortlistEntry` gained `evidence`
+  (parsed in `normalizeShortlistSubmission`; relative import there keeps
+  vitest's resolver happy).
+
+Degraded states render honestly, not blankly: `no_facts` → "resume needs
+re-parsing", `skipped_budget` → "not judged this run (budget cap)",
+`failed` → "judgment unavailable"; `no_flags`/pre-change entries add
+nothing.
+
 ## Verification
 
 `pnpm --filter @brynzit/console exec tsc --noEmit` and

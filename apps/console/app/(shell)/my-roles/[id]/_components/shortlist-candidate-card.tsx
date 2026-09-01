@@ -7,6 +7,8 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Clock, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MatchEvidenceSections } from '@/(shell)/_components/match-evidence'
+import { parseMatchEvidence } from '@/(shell)/_components/match-evidence-data'
 import type { ShortlistSubmission, SubmissionStatus } from '../_lib/shortlist'
 import { isTerminalStatus, scoreColor, statusBadgeClass, statusLabel } from '../_lib/status'
 import { RecruiterSnoozePopover } from './recruiter-snooze-popover'
@@ -55,6 +57,7 @@ export function ShortlistCandidateCard({
       ? `Already submitted on ${new Date(submission.submitted_at).toLocaleDateString()}`
       : undefined
   const score = submission.match_score
+  const evidence = parseMatchEvidence(submission.match_rationale)
 
   function handleSnoozePopoverOpenChange(open: boolean) {
     setSnoozeOpen(open)
@@ -116,6 +119,25 @@ export function ShortlistCandidateCard({
               </Badge>
             ))}
           </div>
+        )}
+
+        {evidence && (
+          // Native disclosure keeps the queue dense; expand for the full
+          // evidence card (matched role, career + company stats, flag
+          // verdicts with quotes, screen questions).
+          <details className="rounded-md border border-border px-3 py-2">
+            <summary className="cursor-pointer text-xs font-medium">
+              Match evidence
+              {evidence.judgmentScore != null && (
+                <span className="ml-1 text-muted-foreground">
+                  · judgment {Math.round(evidence.judgmentScore)}
+                </span>
+              )}
+            </summary>
+            <div className="mt-2">
+              <MatchEvidenceSections evidence={evidence} />
+            </div>
+          </details>
         )}
 
         <CompensationRow

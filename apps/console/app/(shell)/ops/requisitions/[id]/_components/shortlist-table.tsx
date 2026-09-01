@@ -46,6 +46,7 @@ import {
   type ShortlistScoreKey,
   type ShortlistScoreOverrides,
 } from './shortlist-utils'
+import { MatchEvidenceSections } from '@/(shell)/_components/match-evidence'
 
 type CandidateSearchResult = components['schemas']['CandidateSearchResult']
 
@@ -393,6 +394,7 @@ export function ShortlistTable({
         const entry = info.row.original
         const isExpanded = expandedRationales.has(entry.candidate_id)
         return (
+          <div className="max-w-[560px]">
           <button
             type="button"
             className="max-w-[560px] py-2 text-left"
@@ -448,6 +450,14 @@ export function ShortlistTable({
               </div>
             )}
           </button>
+          {isExpanded && entry.evidence && (
+            // Outside the toggle button: the evidence card carries its own
+            // native <details> disclosures, which cannot nest in a <button>.
+            <div className="mt-3 border-t border-border pt-3">
+              <MatchEvidenceSections evidence={entry.evidence} />
+            </div>
+          )}
+          </div>
         )
       },
     }),

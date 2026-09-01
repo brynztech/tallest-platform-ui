@@ -1,4 +1,8 @@
 import type { components } from '@brynzit/api-client'
+import {
+  parseMatchEvidence,
+  type MatchEvidence,
+} from '../../../../_components/match-evidence-data'
 
 type SubmissionResponse = components['schemas']['SubmissionResponse']
 
@@ -29,6 +33,8 @@ export type ShortlistEntry = {
   gaps: string[]
   score_breakdown: Record<string, number>
   missing_must_have: string[]
+  /** Judgment verdicts + matched role + career, when the backend sent them. */
+  evidence: MatchEvidence | null
 }
 
 export function shortlistStatusBadgeClass(status: string): string {
@@ -52,6 +58,9 @@ export function normalizeShortlistSubmission(
   return {
     submission_id: submission.id,
     candidate_id: submission.candidate_id ?? '',
+    evidence: parseMatchEvidence(
+      (submission.match_rationale ?? null) as Record<string, unknown> | null,
+    ),
     candidate_name: submission.candidate_name ?? null,
     current_title: submission.candidate_title ?? null,
     fit_score: submission.match_score ?? null,
