@@ -114,6 +114,11 @@ jobs:
           fi
 
           pnpm install --frozen-lockfile
+
+          # Next.js's .next/cache can reuse a previous build's NEXT_PUBLIC_*
+          # inlining even when .env.production changed, silently shipping a
+          # stale client bundle. Force a clean build every deploy.
+          rm -rf apps/web/.next apps/console/.next
           pnpm --filter @brynzit/web build
           pnpm --filter @brynzit/console build
 
