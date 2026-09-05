@@ -94,8 +94,12 @@ jobs:
           CONSOLE_BACKEND_URL="${DEV_BACKEND_API_URL:-}"
           CONSOLE_ADMIN_TOKEN="${DEV_ADMIN_API_TOKEN:-}"
 
+          # Empty on purpose: the browser bundle calls same-origin /api/v1/*,
+          # which next.config.ts rewrites server-side to BACKEND_API_URL. Keeps
+          # the staff session cookie same-site even though the console and
+          # backend live on separate EC2 hosts here — see next.config.ts.
           cat > apps/console/.env.production <<EOF
-          NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+          NEXT_PUBLIC_API_URL=
           NEXT_PUBLIC_API_MOCKING=disabled
           BACKEND_API_URL=${CONSOLE_BACKEND_URL:-$NEXT_PUBLIC_API_URL}
           ADMIN_API_TOKEN=$CONSOLE_ADMIN_TOKEN
