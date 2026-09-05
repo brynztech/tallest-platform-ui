@@ -340,6 +340,7 @@ export const supplyHandlers: HttpHandler[] = [
         github_public_repos: isUnenriched ? null : 31,
         github_top_languages: isUnenriched ? null : ['TypeScript', 'JavaScript', 'Python'],
         resume_file_path: isUnenriched ? null : '/resumes/david-park-2026.pdf',
+        resume_available: !isUnenriched,
         extraction_method: isUnenriched ? null : 'pdf',
       },
     } satisfies components['schemas']['supply__schemas__candidates__CandidateProfileResponse'])

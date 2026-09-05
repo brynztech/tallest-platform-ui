@@ -37,7 +37,12 @@ export default function MyRolesPage() {
     queryKey: assignmentQueryKeys.forUser(actingUser.id),
     queryFn: () => fetchAssignedRequisitionIds(actingUser.id),
     enabled: !canViewAll,
-    staleTime: 60_000,
+    // An account manager can assign this recruiter a role at any time from a
+    // different session — short staleTime + refetch-on-focus (overriding the
+    // app default of false) means switching back to this tab picks it up,
+    // instead of only on a hard refresh.
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   })
 
   const isLoading = reqsLoading || (!canViewAll && assignmentsLoading)

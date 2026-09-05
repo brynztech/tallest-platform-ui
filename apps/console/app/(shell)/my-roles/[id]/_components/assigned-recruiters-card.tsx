@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { SEED_USERS, useActingUser, useCan } from '@brynzit/identity'
+import { useActingUser, useCan } from '@brynzit/identity'
 import { toast } from 'sonner'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
@@ -21,14 +21,13 @@ import {
   fetchRequisitionAssignees,
   unassignRecruiter,
 } from '@/(shell)/_lib/assignments'
-
-function userName(userId: string) {
-  return SEED_USERS.find((u) => u.id === userId)?.name ?? userId
-}
+import { listAssignableRecruiters } from '../../../../_lib/staff-auth'
 
 /**
- * Who works this role. Everyone with access to this page can see the list;
- * adding/removing recruiters requires requisition.manage (AM + Admin).
+ * Who works this role. Everyone with access to this page can see the list
+ * (recruiters.view is granted to every role — see
+ * platform/staff_auth.py::ROLE_SCOPES); adding/removing recruiters requires
+ * requisition.manage (AM + Admin).
  */
 export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
   const can = useCan()
@@ -40,7 +39,21 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
   const { data: assigneeIds = [] } = useQuery({
     queryKey: assignmentQueryKeys.forRequisition(reqId),
     queryFn: () => fetchRequisitionAssignees(reqId),
+    // Another manager can assign/unassign a recruiter here at any time —
+    // refetch-on-focus (overriding the app default of false) picks that up
+    // on tab switch instead of only on a hard refresh.
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   })
+
+  const { data: allRecruiters = [] } = useQuery({
+    queryKey: ['staff-auth', 'recruiters'],
+    queryFn: listAssignableRecruiters,
+  })
+
+  function userName(userId: string) {
+    return allRecruiters.find((r) => r.id === userId)?.username ?? userId
+  }
 
   const invalidate = (userId: string) => {
     queryClient.invalidateQueries({ queryKey: assignmentQueryKeys.forRequisition(reqId) })
@@ -67,7 +80,7 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
     onError: () => toast.error('Failed to remove recruiter — try again.'),
   })
 
-  const candidates = assignableRecruiters(SEED_USERS, assigneeIds)
+  const candidates = assignableRecruiters(allRecruiters, assigneeIds)
 
   return (
     <div className="mb-6">
@@ -101,7 +114,7 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
               <SelectContent>
                 {candidates.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name}
+                    {user.username}
                   </SelectItem>
                 ))}
               </SelectContent>

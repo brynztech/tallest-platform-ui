@@ -14,22 +14,28 @@
  * Run against a local prod build (static route behaviour does NOT reproduce in
  * `next dev`, which renders every request dynamically):
  *   pnpm --filter @brynzit/console build && pnpm --filter @brynzit/console start -p 3101
- *   BASE_URL=http://localhost:3101 pnpm exec playwright test apps/console/e2e/admin-tabs.spec.ts
+ *   E2E_STAFF_ADMIN_USERNAME=... E2E_STAFF_ADMIN_PASSWORD=... \
+ *     BASE_URL=http://localhost:3101 pnpm exec playwright test apps/console/e2e/admin-tabs.spec.ts
  */
 import { expect, test } from '@playwright/test'
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:3101'
+const ADMIN_USERNAME = process.env.E2E_STAFF_ADMIN_USERNAME
+const ADMIN_PASSWORD = process.env.E2E_STAFF_ADMIN_PASSWORD
 
-// /admin now requires the admin.view capability (see rbac.spec.ts) — the
-// default seed identity is a recruiter, who is correctly blocked from it.
-// These tests are about tab-switching behavior, not RBAC, so every test in
-// this file runs as the admin seed user via an init script that sets the
-// acting-user id before the app's first script runs, rather than the slower
-// path of clicking through the identity switcher per test.
+// /admin now requires the admin.view capability (see rbac.spec.ts) — a
+// recruiter is correctly blocked from it. These tests are about tab-switching
+// behavior, not RBAC, so every test in this file runs as the real admin
+// account. Requires a live backend + an existing admin (see the backend's
+// scripts/bootstrap_admin.py) — skips itself without the env vars, same as
+// staff-auth.spec.ts and rbac.spec.ts.
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('brynzit.identity.actingUserId', 'usr_admin')
-  })
+  test.skip(!ADMIN_USERNAME || !ADMIN_PASSWORD, 'set E2E_STAFF_ADMIN_USERNAME/PASSWORD to run')
+  await page.goto(`${BASE}/signin`, { waitUntil: 'domcontentloaded' })
+  await page.getByLabel('Username').fill(ADMIN_USERNAME!)
+  await page.getByLabel('Password').fill(ADMIN_PASSWORD!)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(`${BASE}/dashboard`)
 })
 
 test.describe('Admin tabs survive a hard reload', () => {

@@ -60,7 +60,12 @@ export function useScopedRequisitions(
     queryKey: assignmentQueryKeys.forUser(actingUser.id),
     queryFn: () => fetchAssignedRequisitionIds(actingUser.id),
     enabled: !canViewAll,
-    staleTime: 60_000,
+    // Someone else (an account manager) can assign a role to this recruiter
+    // at any time — short staleTime + refetch-on-focus (overriding the app
+    // default of false) means switching back to this tab picks it up without
+    // a hard refresh, instead of only on the next full remount.
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   })
 
   const requisitions = useMemo(

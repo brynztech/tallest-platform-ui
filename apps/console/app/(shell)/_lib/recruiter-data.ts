@@ -42,16 +42,21 @@ export const RECRUITER_STALE_TIME_MS = 30_000
 export async function fetchOpsClients() {
   const { data, error } = await apiClient.GET('/api/v1/ops/clients')
   if (error) throw error
-  return dedupeClientsByName(data ?? [])
+  return dedupeClientsById(data ?? [])
 }
 
-function dedupeClientsByName(clients: OpsClient[]) {
-  const uniqueByName = new Map<string, OpsClient>()
+// Keyed by id, not name: two distinct clients can legitimately share a
+// display name (e.g. two "TechCorp Inc" records for different engagements),
+// and deduping by name silently dropped the second one along with every
+// requisition under it — found live when a real assignment to that client's
+// requisition never showed up on the recruiter's My Roles page. id is unique
+// by construction, so this only ever collapses genuine duplicate fetches.
+function dedupeClientsById(clients: OpsClient[]) {
+  const uniqueById = new Map<string, OpsClient>()
   for (const client of clients) {
-    const key = client.name.trim().toLowerCase()
-    if (!uniqueByName.has(key)) uniqueByName.set(key, client)
+    if (!uniqueById.has(client.id)) uniqueById.set(client.id, client)
   }
-  return [...uniqueByName.values()]
+  return [...uniqueById.values()]
 }
 
 export async function fetchClientRequisitions(client: OpsClient): Promise<RequisitionWithClient[]> {

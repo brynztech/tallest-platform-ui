@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import type { User } from '@brynzit/identity'
+import type { AssignableRecruiter } from '../../app/_lib/staff-auth'
 import { assignableRecruiters } from '../../app/(shell)/_lib/assignments'
 
-const users: User[] = [
-  { id: 'usr_recruiter', name: 'Priya Recruiter', email: 'p@x.com', role: 'recruiter', title: 'Recruiter' },
-  { id: 'usr_recruiter_2', name: 'Ravi Recruiter', email: 'r@x.com', role: 'recruiter', title: 'Recruiter' },
-  { id: 'usr_account_manager', name: 'Sam Account', email: 's@x.com', role: 'account_manager', title: 'AM' },
-  { id: 'usr_admin', name: 'Admin', email: 'a@x.com', role: 'admin', title: 'Admin' },
+// Role/active filtering happens server-side (GET /auth/users/recruiters) —
+// every row here is already a recruiter; this helper only excludes assigned ones.
+const recruiters: AssignableRecruiter[] = [
+  { id: 'usr_recruiter', username: 'priya' },
+  { id: 'usr_recruiter_2', username: 'ravi' },
 ]
 
 describe('assignableRecruiters', () => {
-  it('offers only recruiter-role users', () => {
-    const result = assignableRecruiters(users, [])
+  it('offers everyone when none are assigned', () => {
+    const result = assignableRecruiters(recruiters, [])
     expect(result.map((u) => u.id)).toEqual(['usr_recruiter', 'usr_recruiter_2'])
   })
 
   it('excludes recruiters already assigned', () => {
-    const result = assignableRecruiters(users, ['usr_recruiter'])
+    const result = assignableRecruiters(recruiters, ['usr_recruiter'])
     expect(result.map((u) => u.id)).toEqual(['usr_recruiter_2'])
   })
 
   it('is empty when every recruiter is assigned', () => {
-    expect(assignableRecruiters(users, ['usr_recruiter', 'usr_recruiter_2'])).toEqual([])
+    expect(assignableRecruiters(recruiters, ['usr_recruiter', 'usr_recruiter_2'])).toEqual([])
   })
 })

@@ -9,9 +9,15 @@ replace anything above it.
 
 The internal ops tool for a 2-4 person recruiting team. One Next.js app, one
 route group `(shell)`, four operational sections (BD, Ops, Supply, Admin) plus
-a recruiter-portal surface (submit, pipeline, my-roles, matchmaker, etc.). No
-real auth in v1 — an identity switcher (top-right) picks one of 4 seeded
-accounts (`@brynzit/identity`'s `SEED_USERS`), persisted to `localStorage`.
+a recruiter-portal surface (submit, pipeline, my-roles, matchmaker, etc.).
+
+Real staff auth now exists (`/signin`, `/admin/signin`, admin-managed
+username/password, real session gate on every `(shell)` route) — see
+`docs/console-staff-auth.md`. It runs *alongside*, not instead of, the
+identity switcher (top-right; `@brynzit/identity`'s `SEED_USERS`,
+`localStorage`-persisted): the switcher still drives every existing
+capability gate (nav visibility, `/admin`), independent of who is really
+signed in. See `docs/console-admin-and-rbac.md` §6 for the current split.
 
 Design direction: dense, keyboard-friendly queues for review screens
 (Linear/Attio feel), richer card layouts for detail views. Light theme only —

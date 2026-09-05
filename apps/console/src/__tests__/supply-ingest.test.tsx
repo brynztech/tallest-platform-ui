@@ -17,6 +17,7 @@ describe('Supply — Ingest (SUP-03)', () => {
           availability_status: 'available',
           extraction_method: null,
           resume_file_path: null,
+          resume_available: false,
         },
       }),
     ).toBe(false)
@@ -31,6 +32,7 @@ describe('Supply — Ingest (SUP-03)', () => {
           availability_status: 'available',
           extraction_method: 'groq_llama4_scout',
           resume_file_path: 'resume.pdf',
+          resume_available: true,
         },
       }),
     ).toBe(true)

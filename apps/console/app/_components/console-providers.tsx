@@ -1,8 +1,9 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { IdentityProvider } from '@brynzit/identity'
 import { MSWProvider } from './msw-provider'
+import { StaffAuthProvider } from '../_lib/staff-auth-context'
+import { IdentityBridge } from '../_lib/identity-bridge'
 
 // QueryClient created outside component to avoid re-creation on renders
 const queryClient = new QueryClient({
@@ -21,7 +22,9 @@ export function ConsoleProviders({ children }: { children: React.ReactNode }) {
   return (
     <MSWProvider>
       <QueryClientProvider client={queryClient}>
-        <IdentityProvider>{children}</IdentityProvider>
+        <StaffAuthProvider>
+          <IdentityBridge>{children}</IdentityBridge>
+        </StaffAuthProvider>
       </QueryClientProvider>
     </MSWProvider>
   )

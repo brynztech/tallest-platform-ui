@@ -1,23 +1,13 @@
 'use client'
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import { hasCapability } from './capabilities'
-import { DEFAULT_USER_ID, DEFAULT_WORKSPACE, SEED_USERS } from './seed'
-import { readStoredUserId, writeStoredUserId } from './storage'
+import { DEFAULT_WORKSPACE } from './seed'
 import type { Capability, User, Workspace } from './types'
 
 interface IdentityContextValue {
   workspace: Workspace
-  users: readonly User[]
   actingUser: User
-  setActingUser: (userId: string) => void
   can: (capability: Capability) => boolean
 }
 
@@ -25,56 +15,30 @@ const IdentityContext = createContext<IdentityContextValue | null>(null)
 
 export interface IdentityProviderProps {
   children: React.ReactNode
-  /** Override the available users (defaults to the seed users). */
-  users?: readonly User[]
+  /**
+   * The real signed-in user, supplied by the host app's own auth layer. This
+   * package is intentionally headless (see index.ts) — it has no opinion on
+   * how you authenticate or where `actingUser` comes from, only on what a
+   * role can do once you tell it who is acting. There is no switcher and no
+   * stored preference here anymore: `actingUser` IS who is signed in.
+   */
+  actingUser: User
   /** Workspace scope (defaults to the single Brynzit workspace). */
   workspace?: Workspace
-  /** Acting user id used for the first render before storage is read. */
-  defaultUserId?: string
 }
 
 export function IdentityProvider({
   children,
-  users = SEED_USERS,
+  actingUser,
   workspace = DEFAULT_WORKSPACE,
-  defaultUserId = DEFAULT_USER_ID,
 }: IdentityProviderProps) {
-  // Deterministic on both server and first client render → no hydration
-  // mismatch. The stored preference is applied after mount below.
-  const initialUserId = users.some((u) => u.id === defaultUserId)
-    ? defaultUserId
-    : users[0].id
-  const [actingUserId, setActingUserId] = useState<string>(initialUserId)
-
-  useEffect(() => {
-    const stored = readStoredUserId()
-    if (stored && users.some((u) => u.id === stored)) {
-      setActingUserId(stored)
-    }
-  }, [users])
-
-  const setActingUser = useCallback(
-    (userId: string) => {
-      setActingUserId((prev) => (users.some((u) => u.id === userId) ? userId : prev))
-      writeStoredUserId(userId)
-    },
-    [users],
-  )
-
-  const actingUser = useMemo(
-    () => users.find((u) => u.id === actingUserId) ?? users[0],
-    [users, actingUserId],
-  )
-
   const value = useMemo<IdentityContextValue>(
     () => ({
       workspace,
-      users,
       actingUser,
-      setActingUser,
       can: (capability: Capability) => hasCapability(actingUser.role, capability),
     }),
-    [workspace, users, actingUser, setActingUser],
+    [workspace, actingUser],
   )
 
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>
@@ -88,19 +52,9 @@ function useIdentity(): IdentityContextValue {
   return ctx
 }
 
-/** The full identity context (workspace, users, acting user, switcher, can). */
-export function useIdentityContext(): IdentityContextValue {
-  return useIdentity()
-}
-
-/** The currently acting user. */
+/** The currently signed-in user. */
 export function useActingUser(): User {
   return useIdentity().actingUser
-}
-
-/** Switch the acting user by id (persists the preference). */
-export function useSetActingUser(): (userId: string) => void {
-  return useIdentity().setActingUser
 }
 
 /**

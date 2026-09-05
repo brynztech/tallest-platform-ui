@@ -8,9 +8,9 @@
  */
 
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '@brynzit/api-client'
-import { SEED_USERS, useActingUser } from '@brynzit/identity'
+import { useActingUser } from '@brynzit/identity'
 import { toast } from 'sonner'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Checkbox } from '@brynzit/ui/components/ui/checkbox'
@@ -33,11 +33,7 @@ import {
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
 import { CheckCircle2, FileUp, RefreshCw, Sparkles } from 'lucide-react'
-import {
-  assignableRecruiters,
-  assignRecruiter,
-  assignmentQueryKeys,
-} from '@/(shell)/_lib/assignments'
+import { assignRecruiter, assignmentQueryKeys } from '@/(shell)/_lib/assignments'
 import { updateRequisitionStatus } from '../[id]/_lib/lifecycle'
 import {
   fetchJd,
@@ -56,14 +52,11 @@ import {
   JD_UPLOAD_MAX_BYTES,
   type ParsedJd,
 } from '../_lib/create-requisition'
+import { listAssignableRecruiters } from '../../../../_lib/staff-auth'
 
 type Client = components['schemas']['ClientResponse']
 type Step = 'form' | 'preview' | 'assign' | 'done'
 type IntakeMode = 'generate' | 'upload'
-
-function recruiterName(userId: string) {
-  return SEED_USERS.find((user) => user.id === userId)?.name ?? userId
-}
 
 export function CreateRequisitionWizard({
   open,
@@ -76,6 +69,10 @@ export function CreateRequisitionWizard({
 }) {
   const queryClient = useQueryClient()
   const actingUser = useActingUser()
+  const { data: recruiters = [] } = useQuery({
+    queryKey: ['staff-auth', 'recruiters'],
+    queryFn: listAssignableRecruiters,
+  })
   const [step, setStep] = useState<Step>('form')
   const [intakeMode, setIntakeMode] = useState<IntakeMode>('generate')
   const [reqId, setReqId] = useState<string | null>(null)
@@ -103,7 +100,6 @@ export function CreateRequisitionWizard({
   const showTitleChoice = titlesDiffer(title, generatedTitle)
   const finalTitle = useGeneratedTitle && showTitleChoice ? generatedTitle : title.trim()
   const clientName = clients.find((client) => client.id === clientId)?.name ?? ''
-  const recruiters = assignableRecruiters(SEED_USERS, [])
 
   function reset() {
     setStep('form')
@@ -230,7 +226,9 @@ export function CreateRequisitionWizard({
       await Promise.all(
         selectedRecruiterIds.map((userId) => assignRecruiter(userId, reqId, actingUser.id)),
       )
-      return selectedRecruiterIds.map(recruiterName)
+      return selectedRecruiterIds.map(
+        (userId) => recruiters.find((r) => r.id === userId)?.username ?? userId,
+      )
     },
     onSuccess: (names) => {
       setAssignedNames(names)
@@ -583,12 +581,7 @@ export function CreateRequisitionWizard({
                         )
                       }}
                     />
-                    <span>
-                      {user.name}
-                      {user.title ? (
-                        <span className="text-muted-foreground"> · {user.title}</span>
-                      ) : null}
-                    </span>
+                    <span>{user.username}</span>
                   </label>
                 )
               })

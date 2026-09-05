@@ -28,6 +28,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout */
+        post: operations["logout_api_v1_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_v1_auth_users_get"];
+        put?: never;
+        /** Create User */
+        post: operations["create_user_api_v1_auth_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users/recruiters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Assignable Recruiters
+         * @description Active recruiters only — the requisition-assignment picker's data
+         *     source. Registered before /users/{user_id} would matter if both were the
+         *     same HTTP method; they're not (GET vs PATCH), so there's no route-order
+         *     ambiguity, but keep this literal path ahead of any future GET on
+         *     /users/{user_id} if one is ever added.
+         */
+        get: operations["list_assignable_recruiters_api_v1_auth_users_recruiters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update User */
+        patch: operations["update_user_api_v1_auth_users__user_id__patch"];
+        trace?: never;
+    };
     "/api/v1/bd/imports": {
         parameters: {
             query?: never;
@@ -205,33 +315,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/bd/webhooks/instantly/reply": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Receive Instantly Reply
-         * @description Receive Instantly reply_received webhook (BD-DELIVER-02, D-04).
-         *
-         *     Security:
-         *       T-5-04: request.body() called FIRST before any parsing — raw bytes consumed
-         *               before the JSON parser or Pydantic touch the stream.
-         *       T-5-01: X-Webhook-Secret header value is NEVER logged; only presence is used.
-         *       T-5-03: validate_webhook_signature uses hmac.compare_digest internally.
-         *       T-5-02: Redis SET NX EX atomic dedup — duplicate returns 200 immediately.
-         */
-        post: operations["receive_instantly_reply_api_v1_bd_webhooks_instantly_reply_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/bd/leads": {
         parameters: {
             query?: never;
@@ -247,7 +330,7 @@ export interface paths {
          *     Params: status (default review_queue), min_score, max_score, search (company name
          *     substring, case-insensitive), cursor (UUID of last seen lead), limit (default 50, max 200).
          *     Pass status=all to bypass status filter.
-         *     No auth — consistent with Phase 3-5 (D-01).
+         *     Auth: X-Admin-Token via router-level require_admin.
          */
         get: operations["list_leads_api_v1_bd_leads_get"];
         put?: never;
@@ -364,6 +447,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bd/webhooks/instantly/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive Instantly Reply
+         * @description Receive Instantly reply_received webhook (BD-DELIVER-02, D-04).
+         *
+         *     Security:
+         *       T-5-04: request.body() called FIRST before any parsing — raw bytes consumed
+         *               before the JSON parser or Pydantic touch the stream.
+         *       T-5-01: X-Webhook-Secret header value is NEVER logged; only presence is used.
+         *       T-5-03: validate_webhook_signature uses hmac.compare_digest internally.
+         *       T-5-02: Redis SET NX EX atomic dedup — duplicate returns 200 immediately.
+         */
+        post: operations["receive_instantly_reply_api_v1_bd_webhooks_instantly_reply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/assignments": {
         parameters: {
             query?: never;
@@ -376,6 +486,34 @@ export interface paths {
          * @description Requisition ids assigned to a user (drives the recruiter 'My Roles' view).
          */
         get: operations["get_assignments_endpoint_api_v1_ops_assignments_get"];
+        put?: never;
+        /**
+         * Create Assignment Endpoint
+         * @description Assign a recruiter to a requisition (idempotent). 404 if the requisition is unknown.
+         */
+        post: operations["create_assignment_endpoint_api_v1_ops_assignments_post"];
+        /**
+         * Delete Assignment Endpoint
+         * @description Unassign a recruiter from a requisition (idempotent no-op if absent).
+         */
+        delete: operations["delete_assignment_endpoint_api_v1_ops_assignments_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/requisitions/{req_id}/assignees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Requisition Assignees Endpoint
+         * @description User ids assigned to a requisition (empty list for unknown requisitions).
+         */
+        get: operations["get_requisition_assignees_endpoint_api_v1_ops_requisitions__req_id__assignees_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -494,6 +632,29 @@ export interface paths {
         patch: operations["patch_requisition_endpoint_api_v1_ops_requisitions__req_id__patch"];
         trace?: never;
     };
+    "/api/v1/ops/requisitions/{req_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Requisition Status Endpoint
+         * @description Close/fill a requisition (or otherwise set its status).
+         *
+         *     404 if the requisition doesn't exist. 409 if it's already closed/filled —
+         *     those are terminal, no reopening supported.
+         */
+        patch: operations["update_requisition_status_endpoint_api_v1_ops_requisitions__req_id__status_patch"];
+        trace?: never;
+    };
     "/api/v1/ops/requisitions/{req_id}/parse-jd": {
         parameters: {
             query?: never;
@@ -517,6 +678,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/requisitions/{req_id}/jd/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Jd Endpoint
+         * @description Feature 1 (FEATURE_SPEC.md): upload a PDF/DOCX JD and parse it into
+         *     structured requisition fields via the existing parse-jd path.
+         *
+         *     404 unknown requisition. 422 unsupported type or unreadable/empty
+         *     extraction. 413 over the size cap. Fields land on the requisition (still
+         *     draft in the wizard flow) for review before publish — parse_jd_for_
+         *     requisition already skips matching for drafts.
+         */
+        post: operations["upload_jd_endpoint_api_v1_ops_requisitions__req_id__jd_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/requisitions/{req_id}/jd/original-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Uploaded Jd Url Endpoint
+         * @description Presigned URL for the originally uploaded JD document.
+         *
+         *     404 if no uploaded JD file is stored for this requisition (never uploaded,
+         *     or uploaded while the documents bucket was unconfigured).
+         */
+        get: operations["get_uploaded_jd_url_endpoint_api_v1_ops_requisitions__req_id__jd_original_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/requisitions/{req_id}/jd/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Jd Endpoint
+         * @description Generate the JD from the requirement paragraph + company website + memos.
+         *
+         *     Synchronous: the console opens the preview on the response. 422 if no
+         *     company website was supplied — a JD built from the requirement paragraph
+         *     alone is the partial output the generator is written to refuse.
+         */
+        post: operations["generate_jd_endpoint_api_v1_ops_requisitions__req_id__jd_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/requisitions/{req_id}/jd": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Jd Endpoint
+         * @description The stored JD. 404 until one has been generated.
+         */
+        get: operations["get_jd_endpoint_api_v1_ops_requisitions__req_id__jd_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/requisitions/{req_id}/jd/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Jd Endpoint
+         * @description Stream the stored JD as a .docx in the Brynz template.
+         *
+         *     DOCX only: the console renders the same JD JSON to HTML, so PDF is the
+         *     browser's print dialog rather than a second template to keep in sync.
+         */
+        get: operations["download_jd_endpoint_api_v1_ops_requisitions__req_id__jd_download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/requisitions/{req_id}/match": {
         parameters: {
             query?: never;
@@ -532,6 +809,17 @@ export interface paths {
          *
          *     Scheduling is async (fire-and-forget background task). Shortlist available
          *     via GET /ops/requisitions/{req_id}/shortlist after matching completes.
+         *
+         *     acting_user_id: optional. When provided (recruiter-triggered match), the
+         *     caller must be assigned to this requisition in ops_assignments, checked
+         *     synchronously here — before scheduling — so an unauthorized recruiter gets
+         *     a real 403 response rather than a 202 whose background task silently fails
+         *     later. Omitted entirely (the existing Account-Manager/Ops-page caller):
+         *     zero behavior change. See ops.services.matching.assert_recruiter_assigned
+         *     for exactly what security guarantee this is (and is not).
+         *
+         *     409 if the requisition is already closed/filled — checked right after the
+         *     404 exists-check, before the (more expensive) assignment check.
          */
         post: operations["trigger_matching_endpoint_api_v1_ops_requisitions__req_id__match_post"];
         delete?: never;
@@ -557,6 +845,68 @@ export interface paths {
         get: operations["get_shortlist_endpoint_api_v1_ops_requisitions__req_id__shortlist_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/requisitions/{req_id}/request-more-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request More Candidates Endpoint
+         * @description Account Manager/Admin asks every recruiter assigned to this requisition
+         *     for more candidates. 404 unknown requisition. 409 if closed/filled.
+         *     Zero assigned recruiters is valid — 0 notifications, not an error.
+         */
+        post: operations["request_more_candidates_endpoint_api_v1_ops_requisitions__req_id__request_more_candidates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Notifications Endpoint
+         * @description Notifications for a user, newest first (unread_only=true by default).
+         */
+        get: operations["list_notifications_endpoint_api_v1_ops_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Notification Read Endpoint
+         * @description Mark a notification read (idempotent; 404 if unknown).
+         */
+        post: operations["mark_notification_read_endpoint_api_v1_ops_notifications__notification_id__read_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -816,6 +1166,8 @@ export interface paths {
         /**
          * Internal Review Queue
          * @description Submissions awaiting internal approval before the client sees them.
+         *
+         *     Returns the `limit` newest items plus the exact `total` backlog count.
          */
         get: operations["internal_review_queue_api_v1_supply_internal_review_queue_get"];
         put?: never;
@@ -884,6 +1236,15 @@ export interface paths {
         /**
          * Get Shortlist
          * @description Get all submissions for a requisition with joined candidate details.
+         *
+         *     include_pending=False (default, used by the Account-Manager Ops page):
+         *     only shows candidates the recruiter has actively flagged as interested
+         *     (or already approved/rejected). include_pending=True (recruiter's own
+         *     tracking view) also shows not-yet-screened and screened-out candidates.
+         *
+         *     acting_user_id: optional self-declared caller id (same convention as the
+         *     match-trigger endpoint). When provided, 403 unless the caller is assigned
+         *     to this requisition or is its assigner — FEATURE_SPEC.md Feature 6.
          */
         get: operations["get_shortlist_api_v1_supply_shortlists__requisition_id__get"];
         put?: never;
@@ -892,6 +1253,52 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/candidates/{candidate_id}/resume-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Candidate Resume Url
+         * @description Presigned URL for the candidate's stored resume file.
+         *
+         *     404 if no file is stored (candidate ingested before persistence existed,
+         *     or uploaded while the documents bucket was unconfigured).
+         */
+        get: operations["get_candidate_resume_url_api_v1_supply_candidates__candidate_id__resume_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/candidates/{candidate_id}/compensation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Candidate Compensation
+         * @description Set a candidate's current/expected CTC (FEATURE_SPEC.md Feature 3).
+         *
+         *     404 unknown candidate. 403 if acting_user_id is provided and has no
+         *     requisition assignment covering this candidate.
+         */
+        patch: operations["patch_candidate_compensation_api_v1_supply_candidates__candidate_id__compensation_patch"];
         trace?: never;
     };
     "/api/v1/supply/shortlists/{requisition_id}/manual-add": {
@@ -960,12 +1367,86 @@ export interface paths {
         head?: never;
         /**
          * Patch Submission
-         * @description Approve or reject a shortlisted submission.
+         * @description Recruiter-categorize or approve/reject a shortlisted submission.
          *
-         *     T-10-14: Pydantic pattern="^(approved|rejected)$" rejects any other status value.
+         *     T-10-14: Pydantic pattern validates status against the 6-value vocabulary.
          *     T-10-18: Structlog records submission_id + status for audit trail.
          */
         patch: operations["patch_submission_api_v1_supply_shortlists__submission_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{requisition_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Applications
+         * @description Recruiter's final "Submit Applications" action for a requisition.
+         *
+         *     404 unknown requisition. 409 if any submission is still raw/un-screened
+         *     ("shortlisted") — the recruiter must screen everyone in the current batch
+         *     first. Idempotent: marks every interested-and-not-yet-submitted submission
+         *     with submitted_at=now(); calling again with nothing new submits 0.
+         */
+        post: operations["submit_applications_api_v1_supply_shortlists__requisition_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{submission_id}/advance-stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Advance Stage
+         * @description Advance an approved kanban candidate to the next hiring-process stage.
+         *
+         *     404 unknown submission. 409 if the requisition is closed/filled, the
+         *     submission isn't "approved", the current stage no longer exists in the
+         *     requisition's (possibly reconfigured) hiring process, or already at the
+         *     final stage.
+         */
+        post: operations["advance_stage_api_v1_supply_shortlists__submission_id__advance_stage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{submission_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Submission Notes Endpoint
+         * @description List all interaction notes for a submission, oldest first. Empty list if none.
+         */
+        get: operations["list_submission_notes_endpoint_api_v1_supply_shortlists__submission_id__notes_get"];
+        put?: never;
+        /**
+         * Add Submission Note Endpoint
+         * @description Append an interaction note for a submission. 404 unknown submission.
+         */
+        post: operations["add_submission_note_endpoint_api_v1_supply_shortlists__submission_id__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/supply/candidates/{candidate_id}/engagement/generate": {
@@ -1023,6 +1504,10 @@ export interface paths {
          *
          *     Runs enrichment as a background task so the endpoint returns immediately.
          *     Used as an admin/debug fallback when auto-enrichment did not run (D-11).
+         *
+         *     404 if the candidate does not exist (checked here, on the request session —
+         *     the background task must NOT use it: get_db commits and closes on request
+         *     teardown, racing any task still holding the session).
          */
         post: operations["trigger_enrich_api_v1_supply_candidates__candidate_id__enrich_post"];
         delete?: never;
@@ -1139,6 +1624,176 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/supply/backfill/reparse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Reparse Backfill
+         * @description Kick off the re-parse backfill; poll GET /backfill/reparse/{run_id}.
+         *
+         *     Dispatches to a Celery worker when one answers a ping, else runs as a
+         *     fire-and-forget asyncio task in the API process (the repo's established
+         *     degraded mode for machines with no worker — job_board/router.py sets the
+         *     precedent). Do not run matching while this is in flight: rankings over a
+         *     half-re-parsed pool are misleading.
+         */
+        post: operations["trigger_reparse_backfill_api_v1_supply_backfill_reparse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/backfill/reparse/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reparse Backfill Report
+         * @description Progress/result report for a re-parse run (counts + failure ids).
+         */
+        get: operations["get_reparse_backfill_report_api_v1_supply_backfill_reparse__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/shortlists/{submission_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Record Outcome Endpoint
+         * @description Record what the client actually decided — the label the scoring
+         *     system's calibration runs against. 422 on unknown labels.
+         */
+        patch: operations["record_outcome_endpoint_api_v1_supply_shortlists__submission_id__outcome_patch"];
+        trace?: never;
+    };
+    "/api/v1/supply/outcomes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Outcomes Endpoint
+         * @description The eval dataset: every labeled submission with the scores the system
+         *     gave at the time (optional ?requisition_id= filter).
+         */
+        get: operations["list_outcomes_endpoint_api_v1_supply_outcomes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Conversations
+         * @description Past chats for one acting user, newest first — the history picker.
+         *
+         *     Scoped by `acting_user_id` on the same client-asserted trust model as the
+         *     rest of the recruiter module (§3): this is scoping, not authentication.
+         *
+         *     Conversations with no events are omitted. Opening the widget used to mint a
+         *     conversation whether or not anything was said, and an empty row is noise in
+         *     a history list, not history.
+         *
+         *     `q` matches any message in the conversation, not just the opening one —
+         *     what you remember about a past chat is rarely its first line.
+         */
+        get: operations["list_conversations_api_v1_assistant_conversations_get"];
+        put?: never;
+        /** Create Conversation */
+        post: operations["create_conversation_api_v1_assistant_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Message */
+        post: operations["post_message_api_v1_assistant_conversations__conversation_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Events */
+        get: operations["get_events_api_v1_assistant_conversations__conversation_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/turns/{turn_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Turn */
+        post: operations["cancel_turn_api_v1_assistant_conversations__conversation_id__turns__turn_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/candidate/onboarding/start": {
         parameters: {
             query?: never;
@@ -1200,6 +1855,280 @@ export interface paths {
         };
         /** Get Resume Status */
         get: operations["get_resume_status_api_v1_candidate_profile_resume_status__parse_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/candidate/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Applications */
+        get: operations["list_applications_api_v1_candidate_applications_get"];
+        put?: never;
+        /** Create Application */
+        post: operations["create_application_api_v1_candidate_applications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public Jobs
+         * @description The candidate job feed: scraped ATS postings + open client requisitions,
+         *     merged, filtered by admin visibility policy, and ranked against the caller's
+         *     profile when they are signed in.
+         *
+         *     Open to anonymous visitors — they get the same inventory ordered by recency,
+         *     with no match badges. `location` is accepted for the older client contract
+         *     and is treated as a free-text query term.
+         */
+        get: operations["public_jobs_api_v1_public_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Job Detail */
+        get: operations["public_job_detail_api_v1_public_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/companies/seed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Seed Companies
+         * @description Register the starter list of verified-live companies
+         *     (job_board/seed_companies.py). Idempotent — safe to call repeatedly.
+         */
+        post: operations["seed_companies_api_v1_job_board_companies_seed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Companies */
+        get: operations["get_companies_api_v1_job_board_companies_get"];
+        put?: never;
+        /**
+         * Add Company
+         * @description Register a company's ATS board to track. Idempotent by canonical
+         *     domain — re-registering the same company under a different display
+         *     name or URL casing ("Acme" vs "https://www.acme.com") returns the
+         *     existing row instead of creating a duplicate.
+         */
+        post: operations["add_company_api_v1_job_board_companies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/companies/{company_id}/crawl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crawl One */
+        post: operations["crawl_one_api_v1_job_board_companies__company_id__crawl_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/crawl-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crawl All */
+        post: operations["crawl_all_api_v1_job_board_crawl_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sources
+         * @description Registered scrapers, for the console's source picker.
+         *
+         *     Driven by the adapter registry, so adding a scraper makes it appear here with
+         *     no change to this endpoint. `enabled=False` sources (e.g. the unverified
+         *     Recruitee adapter) are listed but not registerable.
+         */
+        get: operations["list_sources_api_v1_job_board_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/ingestion-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Ingestion Runs */
+        get: operations["get_ingestion_runs_api_v1_job_board_ingestion_runs_get"];
+        put?: never;
+        /**
+         * Start Ingestion Run
+         * @description Start a crawl and return immediately with a pollable run record.
+         *
+         *     202, not 200: the crawl fans out to every tracked company's ATS and cannot
+         *     finish inside a request. Returns 409 if a run is already active, which also
+         *     makes double-clicking the button harmless.
+         */
+        post: operations["start_ingestion_run_api_v1_job_board_ingestion_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/ingestion-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Ingestion Run */
+        get: operations["get_ingestion_run_api_v1_job_board_ingestion_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/visibility-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Visibility Rules */
+        get: operations["read_visibility_rules_api_v1_job_board_visibility_rules_get"];
+        /**
+         * Write Visibility Rules
+         * @description Update the policy. Bumping `rules_version` invalidates every cached feed
+         *     page platform-wide, so a change takes effect on the next request.
+         */
+        put: operations["write_visibility_rules_api_v1_job_board_visibility_rules_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/visibility-rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Visibility Rules
+         * @description How many jobs a candidate would see under the supplied policy, WITHOUT
+         *     saving it.
+         *
+         *     This exists because `max_age_days=7` against the current data yields zero
+         *     visible jobs — an admin saving that blind would silently empty the candidate
+         *     site with no feedback.
+         */
+        post: operations["preview_visibility_rules_api_v1_job_board_visibility_rules_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-board/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search
+         * @description Keyword search over ingested jobs. Hard-restricted to US/IN for now
+         *     — `country` (if given) must be "US" or "IN".
+         */
+        get: operations["search_api_v1_job_board_jobs_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1442,6 +2371,11 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_upload_jd_endpoint_api_v1_ops_requisitions__req_id__jd_upload_post */
+        Body_upload_jd_endpoint_api_v1_ops_requisitions__req_id__jd_upload_post: {
+            /** File */
+            file: string;
+        };
         /** Body_upload_resume_api_v1_candidate_profile_resume_post */
         Body_upload_resume_api_v1_candidate_profile_resume_post: {
             /** File */
@@ -1568,6 +2502,52 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** CandidateApplicationCreate */
+        CandidateApplicationCreate: {
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** CandidateApplicationResponse */
+        CandidateApplicationResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Job Id
+             * Format: uuid
+             */
+            job_id: string;
+            /** Job Title */
+            job_title?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "applied" | "reviewing" | "shortlisted" | "interview" | "offer" | "rejected";
+            /** Substep Label */
+            substep_label?: string | null;
+            /**
+             * Applied At
+             * Format: date-time
+             */
+            applied_at: string;
+        };
+        /** CandidateApplicationsResponse */
+        CandidateApplicationsResponse: {
+            /** Items */
+            items: components["schemas"]["CandidateApplicationResponse"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
         /**
          * CandidateDeleteResponse
          * @description Summary of a permanent candidate deletion.
@@ -1618,7 +2598,7 @@ export interface components {
             /** Remote Preference */
             remote_preference?: ("remote_only" | "hybrid" | "onsite" | "flexible") | null;
             /** Seniority */
-            seniority?: ("junior" | "mid" | "senior" | "staff" | "principal") | null;
+            seniority?: ("intern" | "junior" | "mid" | "senior" | "staff" | "lead" | "principal" | "director" | "exec") | null;
             /** Linkedin Url */
             linkedin_url?: string | null;
             /** Github Url */
@@ -1701,6 +2681,20 @@ export interface components {
              */
             created_at: string;
         };
+        /** CompensationResponse */
+        CompensationResponse: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /** Ctc */
+            ctc: number | null;
+            /** Ectc */
+            ectc: number | null;
+            /** Notice Period Days */
+            notice_period_days: number | null;
+        };
         /** ContactDetail */
         ContactDetail: {
             /**
@@ -1730,6 +2724,48 @@ export interface components {
             verified: boolean | null;
             /** Last Enriched At */
             last_enriched_at: string | null;
+        };
+        /** ConversationList */
+        ConversationList: {
+            /** Conversations */
+            conversations: components["schemas"]["ConversationSummary"][];
+        };
+        /** ConversationResponse */
+        ConversationResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Acting User Id */
+            acting_user_id: string;
+            /** View All */
+            view_all: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ConversationSummary
+         * @description One row in the history list — enough to recognise a past chat, no more.
+         */
+        ConversationSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Preview */
+            preview: string | null;
+            /** Message Count */
+            message_count: number;
         };
         /** CostBreakdownRow */
         CostBreakdownRow: {
@@ -1761,6 +2797,45 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["CostBreakdownRow"][];
         };
+        /** CrawlSummary */
+        CrawlSummary: {
+            /**
+             * Tracked Company Id
+             * Format: uuid
+             */
+            tracked_company_id: string;
+            /** Source */
+            source: string;
+            /** Fetched */
+            fetched: number;
+            /** Matched Country Filter */
+            matched_country_filter: number;
+            /** Inserted */
+            inserted: number;
+            /** Updated */
+            updated: number;
+            /** Closed */
+            closed: number;
+            /**
+             * Rejected
+             * @default 0
+             */
+            rejected: number;
+            /** Error */
+            error?: string | null;
+        };
+        /** CreateAssignmentRequest */
+        CreateAssignmentRequest: {
+            /** User Id */
+            user_id: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Assigned By */
+            assigned_by?: string | null;
+        };
         /** CreateBookmarkRequest */
         CreateBookmarkRequest: {
             /** User Id */
@@ -1781,6 +2856,16 @@ export interface components {
             primary_contact_name?: string | null;
             /** Primary Contact Email */
             primary_contact_email?: string | null;
+        };
+        /** CreateConversationRequest */
+        CreateConversationRequest: {
+            /** Acting User Id */
+            acting_user_id: string;
+            /**
+             * View All
+             * @default false
+             */
+            view_all: boolean;
         };
         /** CreateInterviewRequest */
         CreateInterviewRequest: {
@@ -1848,6 +2933,36 @@ export interface components {
             compensation_range?: string | null;
             /** Target Start Date */
             target_start_date?: string | null;
+            /**
+             * Status
+             * @default open
+             * @enum {string}
+             */
+            status: "open" | "draft";
+        };
+        /**
+         * CreateSubmissionNoteRequest
+         * @description Request body for POST /supply/shortlists/{submission_id}/notes.
+         *
+         *     Mirrors ops.schemas.clients.CreateNoteRequest — append-only, plain text.
+         */
+        CreateSubmissionNoteRequest: {
+            /** Text */
+            text: string;
+            /** Author */
+            author?: string | null;
+        };
+        /** CreateUserRequest */
+        CreateUserRequest: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "recruiter" | "account_manager" | "quality_manager" | "admin";
         };
         /**
          * CsvIngestResponse
@@ -1919,6 +3034,41 @@ export interface components {
             /** Scheduled Day */
             scheduled_day: number;
         };
+        /** EventResponse */
+        EventResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Turn Id
+             * Format: uuid
+             */
+            turn_id: string;
+            /** Seq */
+            seq: number;
+            /** Kind */
+            kind: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** EventsPage */
+        EventsPage: {
+            /** Events */
+            events: components["schemas"]["EventResponse"][];
+            /** Turn Status */
+            turn_status: string | null;
+            /** Partial */
+            partial?: string | null;
+        };
         /**
          * GenerateEngagementRequest
          * @description Request body for POST /supply/candidates/{id}/engagement/generate.
@@ -1926,6 +3076,39 @@ export interface components {
         GenerateEngagementRequest: {
             /** Requisition Id */
             requisition_id?: string | null;
+        };
+        /**
+         * GenerateJDRequest
+         * @description Body for POST /ops/requisitions/{req_id}/jd/generate.
+         *
+         *     `requirement_text` and a company website are both required inputs — a JD
+         *     generated from the requirement paragraph alone is exactly the partial
+         *     output the generator prompt is written to refuse. `website_content` is the
+         *     paste-in escape hatch for sites that block server-side fetches.
+         */
+        GenerateJDRequest: {
+            /** Requirement Text */
+            requirement_text: string;
+            /** Website Url */
+            website_url?: string | null;
+            /** Website Content */
+            website_content?: string | null;
+            /** Reference Memos */
+            reference_memos?: string[];
+            /** Resdex Memo */
+            resdex_memo?: string | null;
+            /** Extra Green Flags */
+            extra_green_flags?: string | null;
+            /** Extra Red Flags */
+            extra_red_flags?: string | null;
+            /** Recruiter Name */
+            recruiter_name?: string | null;
+            /** Recruiter Title */
+            recruiter_title?: string | null;
+            /** Recruiter Email */
+            recruiter_email?: string | null;
+            /** Recruiter Website */
+            recruiter_website?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2003,6 +3186,54 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** IngestionRunListResponse */
+        IngestionRunListResponse: {
+            /** Items */
+            items: components["schemas"]["IngestionRunOut"][];
+            /** Total */
+            total: number;
+        };
+        /** IngestionRunOut */
+        IngestionRunOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Trigger */
+            trigger: string;
+            /** Triggered By */
+            triggered_by: string | null;
+            /** Started At */
+            started_at: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Companies Total */
+            companies_total: number;
+            /** Companies Done */
+            companies_done: number;
+            /** Jobs Fetched */
+            jobs_fetched: number;
+            /** Jobs Inserted */
+            jobs_inserted: number;
+            /** Jobs Updated */
+            jobs_updated: number;
+            /** Jobs Closed */
+            jobs_closed: number;
+            /** Jobs Rejected */
+            jobs_rejected: number;
+            /** Errors */
+            errors: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** InternalReviewItem */
         InternalReviewItem: {
             /**
@@ -2043,6 +3274,11 @@ export interface components {
         InternalReviewQueueResponse: {
             /** Items */
             items: components["schemas"]["InternalReviewItem"][];
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
         };
         /** InterviewResponse */
         InterviewResponse: {
@@ -2069,6 +3305,174 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * JDFooter
+         * @description Injected server-side from the request/settings — never model-generated.
+         */
+        JDFooter: {
+            /**
+             * Recruiter Name
+             * @default
+             */
+            recruiter_name: string;
+            /**
+             * Recruiter Title
+             * @default
+             */
+            recruiter_title: string;
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /**
+             * Website
+             * @default
+             */
+            website: string;
+        };
+        /**
+         * JDQuickFacts
+         * @description The summary table. Omit a key when the requirement paragraph does not state it.
+         */
+        JDQuickFacts: {
+            /**
+             * Location
+             * @default
+             */
+            location: string;
+            /**
+             * Employment
+             * @default
+             */
+            employment: string;
+            /**
+             * Experience
+             * @default
+             */
+            experience: string;
+            /**
+             * Salary
+             * @default
+             */
+            salary: string;
+            /**
+             * Work Type
+             * @default
+             */
+            work_type: string;
+            /**
+             * Company
+             * @default
+             */
+            company: string;
+            /**
+             * Stage
+             * @default
+             */
+            stage: string;
+            /**
+             * Team Size
+             * @default
+             */
+            team_size: string;
+            /**
+             * Equity
+             * @default
+             */
+            equity: string;
+        };
+        /** JDRequirements */
+        JDRequirements: {
+            /** Must Have */
+            must_have?: string[];
+            /** Nice To Have */
+            nice_to_have?: string[];
+        };
+        /** JDTitleBlock */
+        JDTitleBlock: {
+            /** Role Title */
+            role_title: string;
+            /**
+             * Company
+             * @default
+             */
+            company: string;
+            /**
+             * Location
+             * @default
+             */
+            location: string;
+            /**
+             * Work Type
+             * @default
+             */
+            work_type: string;
+            /**
+             * Stage
+             * @default
+             */
+            stage: string;
+        };
+        /**
+         * JobDescriptionResponse
+         * @description The stored JD, in the shape the console's JD preview renders.
+         */
+        JobDescriptionResponse: {
+            title_block: components["schemas"]["JDTitleBlock"];
+            quick_facts?: components["schemas"]["JDQuickFacts"];
+            /**
+             * About Company
+             * @default
+             */
+            about_company: string;
+            /**
+             * About Role
+             * @default
+             */
+            about_role: string;
+            /** What Youll Own */
+            what_youll_own?: string[];
+            requirements?: components["schemas"]["JDRequirements"];
+            /** Green Flags */
+            green_flags?: string[];
+            /** Red Flags */
+            red_flags?: string[];
+            /** Benefits */
+            benefits?: string[];
+            /** Interview Process */
+            interview_process?: string[];
+            footer?: components["schemas"]["JDFooter"];
+            /** Hard Requirements */
+            hard_requirements?: string[];
+            /** Application Requirements */
+            application_requirements?: string[];
+            /**
+             * Resdex Search Criteria
+             * @default
+             */
+            resdex_search_criteria: string;
+            /** Core Skills */
+            core_skills?: string[];
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Generated At */
+            generated_at?: string | null;
+        };
+        /** JobSearchResponse */
+        JobSearchResponse: {
+            /** Items */
+            items: components["schemas"]["ScrapedJobOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** KanbanColumn */
         KanbanColumn: {
@@ -2205,6 +3609,13 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** LoginRequest */
+        LoginRequest: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
         /**
          * ManualAddShortlistRequest
          * @description Manually add a candidate with required human scoring feedback.
@@ -2229,12 +3640,18 @@ export interface components {
         };
         /**
          * ManualRemoveShortlistRequest
-         * @description Remove a shortlisted candidate with required human scoring feedback.
+         * @description Remove a shortlisted candidate — e.g. a quick "remove from pipeline"
+         *     action off the kanban board, where no re-scoring is happening.
+         *
+         *     score_overrides is optional: the heavier Ops-page manual-remove flow can
+         *     still supply it (unchanged behavior, still recorded as training feedback);
+         *     a kanban-card removal can omit it, in which case no feedback row is
+         *     fabricated with fake scores (see manually_remove_candidate_from_shortlist).
          */
         ManualRemoveShortlistRequest: {
             /** Reason */
             reason: string;
-            score_overrides: components["schemas"]["ShortlistScoreComponents"];
+            score_overrides?: components["schemas"]["ShortlistScoreComponents"] | null;
         };
         /** NoteResponse */
         NoteResponse: {
@@ -2259,6 +3676,37 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** NotificationResponse */
+        NotificationResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Message */
+            message: string;
+            /**
+             * Notification Type
+             * @default more_candidates_requested
+             */
+            notification_type: string;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Read At */
+            read_at?: string | null;
         };
         /** OutreachSequenceResponse */
         OutreachSequenceResponse: {
@@ -2338,6 +3786,8 @@ export interface components {
             compensation_range: string | null;
             /** Target Start Date */
             target_start_date: string | null;
+            /** Interview Process */
+            interview_process?: string[];
         };
         /** PatchClientRequest */
         PatchClientRequest: {
@@ -2399,12 +3849,18 @@ export interface components {
         /**
          * PatchSubmissionRequest
          * @description Request body for PATCH /supply/shortlists/{submission_id}.
+         *
+         *     Status vocabulary: recruiter-screening states (interested, not_interested,
+         *     no_response, snoozed) are intermediate and can still transition to the
+         *     terminal states (approved, rejected) that gate client-facing visibility.
          */
         PatchSubmissionRequest: {
             /** Status */
             status: string;
             /** Notes */
             notes?: string | null;
+            /** Snoozed Until */
+            snoozed_until?: string | null;
         };
         /** PlacementResponse */
         PlacementResponse: {
@@ -2435,6 +3891,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** PostMessageRequest */
+        PostMessageRequest: {
+            /** Body */
+            body: string;
         };
         /** PromptContentResponse */
         PromptContentResponse: {
@@ -2468,6 +3929,100 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** PublicJobItem */
+        PublicJobItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Company Name */
+            company_name?: string | null;
+            /**
+             * Employment Type
+             * @default full_time
+             * @enum {string}
+             */
+            employment_type: "full_time" | "part_time" | "contract" | "internship" | "temporary";
+            /** Location */
+            location?: string | null;
+            /**
+             * Remote
+             * @default false
+             */
+            remote: boolean;
+            /** Seniority */
+            seniority?: string | null;
+            /** Skills */
+            skills?: string[];
+            /** Date Posted */
+            date_posted: string;
+            /** Description Summary */
+            description_summary?: string | null;
+            /** Compensation Min */
+            compensation_min?: number | null;
+            /** Compensation Max */
+            compensation_max?: number | null;
+            /** Match Strength */
+            match_strength?: ("strong" | "partial" | "none") | null;
+            /**
+             * Job Kind
+             * @default client_requisition
+             * @enum {string}
+             */
+            job_kind: "scraped" | "client_requisition";
+            /** Source */
+            source?: string | null;
+            /** Source Url */
+            source_url?: string | null;
+            /** Country */
+            country?: string | null;
+            /** City */
+            city?: string | null;
+            /** Remote Mode */
+            remote_mode?: ("onsite" | "hybrid" | "remote") | null;
+            /** Role Family */
+            role_family?: string | null;
+            /** Compensation Currency */
+            compensation_currency?: string | null;
+            /** Compensation Period */
+            compensation_period?: ("year" | "month" | "hour") | null;
+            /** Match Reasons */
+            match_reasons?: string[];
+            /** Skills Display */
+            skills_display?: string[];
+            /** Compensation Label */
+            compensation_label?: string | null;
+            /**
+             * Openings
+             * @default 1
+             */
+            openings: number;
+        };
+        /** PublicJobsResponse */
+        PublicJobsResponse: {
+            /** Items */
+            items: components["schemas"]["PublicJobItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /**
+             * Personalized
+             * @default false
+             */
+            personalized: boolean;
+        };
         /** QuotaResponse */
         QuotaResponse: {
             /** Model */
@@ -2480,6 +4035,43 @@ export interface components {
             percent: number;
             /** Warning */
             warning: boolean;
+        };
+        /** RecordOutcomeRequest */
+        RecordOutcomeRequest: {
+            /** Outcome */
+            outcome?: string | null;
+        };
+        /**
+         * RecruiterOut
+         * @description Deliberately narrower than StaffUserOut — no role/status/created_at/created_by.
+         *     account_manager and quality_manager can reach this (recruiters.assign
+         *     scope), and it must not leak anything beyond "these are the assignable
+         *     recruiters right now.
+         */
+        RecruiterOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Username */
+            username: string;
+        };
+        /**
+         * RegisterCompanyRequest
+         * @description Register a company's board. `source` is validated against the live
+         *     adapter registry rather than a hardcoded list, so adding a scraper makes it
+         *     registerable with no change here.
+         */
+        RegisterCompanyRequest: {
+            /** Source */
+            source: string;
+            /** Board Token */
+            board_token: string;
+            /** Website Url */
+            website_url: string;
+            /** Display Name */
+            display_name?: string | null;
         };
         /** RejectOutreachRequest */
         RejectOutreachRequest: {
@@ -2508,6 +4100,33 @@ export interface components {
             next_allowed_contact_at?: string | null;
             /** Recruiter Notes */
             recruiter_notes?: string | null;
+        };
+        /** ReparseBackfillRequest */
+        ReparseBackfillRequest: {
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+            /**
+             * Concurrency
+             * @default 2
+             */
+            concurrency: number;
+            /** Limit */
+            limit?: number | null;
+            /** Candidate Ids */
+            candidate_ids?: string[] | null;
+        };
+        /** RequestMoreCandidatesResponse */
+        RequestMoreCandidatesResponse: {
+            /** Notified Count */
+            notified_count: number;
+        };
+        /** RequisitionAssigneesResponse */
+        RequisitionAssigneesResponse: {
+            /** User Ids */
+            user_ids: string[];
         };
         /** RequisitionResponse */
         RequisitionResponse: {
@@ -2610,6 +4229,79 @@ export interface components {
             gaps?: string[] | null;
         };
         /**
+         * ScrapedJobOut
+         * @description Raw ingested posting, as served by the admin-facing search.
+         */
+        ScrapedJobOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Company Name */
+            company_name: string;
+            /** Canonical Domain */
+            canonical_domain: string;
+            /** Source */
+            source: string;
+            /** Source Url */
+            source_url?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Region */
+            region?: string | null;
+            /** City */
+            city?: string | null;
+            /** Remote Mode */
+            remote_mode?: ("onsite" | "hybrid" | "remote") | null;
+            /** Employment Type */
+            employment_type?: ("full_time" | "part_time" | "contract" | "internship" | "temporary") | null;
+            /** Seniority */
+            seniority?: ("intern" | "junior" | "mid" | "senior" | "staff" | "lead" | "principal" | "director" | "exec") | null;
+            /** Role Family */
+            role_family?: string | null;
+            /** Skills */
+            skills?: string[];
+            /**
+             * Skills Source
+             * @default none
+             * @enum {string}
+             */
+            skills_source: "ats" | "llm_extracted" | "manual" | "none";
+            /** Description Summary */
+            description_summary?: string | null;
+            /** Compensation Min */
+            compensation_min?: number | null;
+            /** Compensation Max */
+            compensation_max?: number | null;
+            /** Compensation Currency */
+            compensation_currency?: string | null;
+            /** Compensation Period */
+            compensation_period?: ("year" | "month" | "hour") | null;
+            /** Date Posted */
+            date_posted?: string | null;
+            /**
+             * Quality Score
+             * @default 0
+             */
+            quality_score: number;
+            /**
+             * Visibility
+             * @default visible
+             * @enum {string}
+             */
+            visibility: "visible" | "hidden" | "pending_review";
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
          * ShortlistResponse
          * @description Response for GET /supply/shortlists/{requisition_id}.
          */
@@ -2637,9 +4329,15 @@ export interface components {
             skill_cluster: number;
             /** Seniority Fit */
             seniority_fit: number;
-            /** Domain Match */
+            /**
+             * Domain Match
+             * @default 0
+             */
             domain_match: number;
-            /** Signal Composite */
+            /**
+             * Signal Composite
+             * @default 0
+             */
             signal_composite: number;
         };
         /** SkippedRow */
@@ -2652,6 +4350,45 @@ export interface components {
             reason: string;
             /** Existing Lead Id */
             existing_lead_id?: string | null;
+        };
+        /**
+         * SourceOut
+         * @description A registered scraper, for the admin console's source picker.
+         */
+        SourceOut: {
+            /** Source */
+            source: string;
+            /** Display Name */
+            display_name: string;
+            /** Requires Board Token */
+            requires_board_token: boolean;
+            /** Enabled */
+            enabled: boolean;
+            /** Notes */
+            notes: string;
+            /** Docs Url */
+            docs_url: string | null;
+        };
+        /** StaffUserOut */
+        StaffUserOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Username */
+            username: string;
+            /** Role */
+            role: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string | null;
         };
         /** SubmissionHistoryItem */
         SubmissionHistoryItem: {
@@ -2696,6 +4433,31 @@ export interface components {
             updated_at: string;
         };
         /**
+         * SubmissionNoteResponse
+         * @description Mirrors ops.schemas.clients.NoteResponse.
+         */
+        SubmissionNoteResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Text */
+            text: string;
+            /** Author */
+            author: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
          * SubmissionResponse
          * @description Single submission record returned by shortlist endpoints.
          */
@@ -2722,6 +4484,16 @@ export interface components {
             status: string;
             /** Supply Notes */
             supply_notes?: string | null;
+            /** Snoozed Until */
+            snoozed_until?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /** Current Stage Id */
+            current_stage_id?: string | null;
+            /** Outcome */
+            outcome?: string | null;
+            /** Outcome At */
+            outcome_at?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2746,6 +4518,20 @@ export interface components {
             candidate_location?: string | null;
             /** Total Years Experience */
             total_years_experience?: number | null;
+            /** Candidate Ctc */
+            candidate_ctc?: number | null;
+            /** Candidate Ectc */
+            candidate_ectc?: number | null;
+            /** Candidate Notice Period Days */
+            candidate_notice_period_days?: number | null;
+        };
+        /**
+         * SubmitApplicationsResponse
+         * @description Response for POST /supply/shortlists/{requisition_id}/submit.
+         */
+        SubmitApplicationsResponse: {
+            /** Submitted Count */
+            submitted_count: number;
         };
         /**
          * TalentPoolSearchResponse
@@ -2788,6 +4574,11 @@ export interface components {
             resume_file_path?: string | null;
             /** Extraction Method */
             extraction_method?: string | null;
+            /**
+             * Resume Available
+             * @default false
+             */
+            resume_available: boolean;
         };
         /** TimelineEvent */
         TimelineEvent: {
@@ -2812,6 +4603,79 @@ export interface components {
              */
             occurred_at: string;
         };
+        /** TrackedCompanyOut */
+        TrackedCompanyOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Source */
+            source: string;
+            /** Board Token */
+            board_token: string;
+            /** Display Name */
+            display_name: string;
+            /** Website Url */
+            website_url: string;
+            /** Canonical Domain */
+            canonical_domain: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** TurnResponse */
+        TurnResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+        };
+        /**
+         * UpdateCompensationRequest
+         * @description Body for PATCH /supply/candidates/{candidate_id}/compensation.
+         *
+         *     True PATCH semantics: an omitted field is left untouched (handled via
+         *     exclude_unset at the endpoint); an explicit null clears the value.
+         *     Upper bound matches the Numeric(12, 2) column — without it an oversized
+         *     value would surface as a DB error (500) instead of a 422.
+         */
+        UpdateCompensationRequest: {
+            /** Ctc */
+            ctc?: number | null;
+            /** Ectc */
+            ectc?: number | null;
+            /** Notice Period Days */
+            notice_period_days?: number | null;
+        };
+        /**
+         * UpdateRequisitionStatusRequest
+         * @description Body for PATCH /ops/requisitions/{req_id}/status.
+         *
+         *     `closed`/`filled` are terminal — update_requisition_status raises 409 on
+         *     any further transition attempt once one of those is set (no reopening).
+         */
+        UpdateRequisitionStatusRequest: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "matching_complete" | "closed" | "filled";
+        };
+        /** UpdateUserRequest */
+        UpdateUserRequest: {
+            /** Role */
+            role?: ("recruiter" | "account_manager" | "quality_manager" | "admin") | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2824,6 +4688,71 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * VisibilityImpact
+         * @description What a policy would show right now — rendered next to the admin form so
+         *     a rule that empties the candidate site is visible before it is saved.
+         */
+        VisibilityImpact: {
+            /** Total Active */
+            total_active: number;
+            /** Visible */
+            visible: number;
+            /** Hidden */
+            hidden: number;
+            /** By Country */
+            by_country?: {
+                [key: string]: number;
+            };
+            /** Warning */
+            warning?: string | null;
+        };
+        /** VisibilityRulesOut */
+        VisibilityRulesOut: {
+            /** Max Age Days */
+            max_age_days: number | null;
+            /** Allowed Countries */
+            allowed_countries: string[];
+            /** Allowed Sources */
+            allowed_sources: string[];
+            /** Min Quality Score */
+            min_quality_score: number;
+            /** Require Compensation */
+            require_compensation: boolean;
+            /** Blocked Company Domains */
+            blocked_company_domains: string[];
+            /** Blocked Title Patterns */
+            blocked_title_patterns: string[];
+            /** Rules Version */
+            rules_version: number;
+            /** Updated By */
+            updated_by: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * VisibilityRulesUpdate
+         * @description Partial update — only supplied fields change (`exclude_unset`).
+         */
+        VisibilityRulesUpdate: {
+            /** Max Age Days */
+            max_age_days?: number | null;
+            /** Allowed Countries */
+            allowed_countries?: string[] | null;
+            /** Allowed Sources */
+            allowed_sources?: string[] | null;
+            /** Min Quality Score */
+            min_quality_score?: number | null;
+            /** Require Compensation */
+            require_compensation?: boolean | null;
+            /** Blocked Company Domains */
+            blocked_company_domains?: string[] | null;
+            /** Blocked Title Patterns */
+            blocked_title_patterns?: string[] | null;
         };
         /** CandidateProfileResponse */
         candidate__schemas__CandidateProfileResponse: {
@@ -2969,6 +4898,222 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentEventSchema"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                staff_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_auth_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                staff_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffUserOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_user_api_v1_auth_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                staff_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_assignable_recruiters_api_v1_auth_users_recruiters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                staff_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruiterOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_v1_auth_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: {
+                staff_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffUserOut"];
                 };
             };
             /** @description Validation Error */
@@ -3266,28 +5411,6 @@ export interface operations {
             };
         };
     };
-    receive_instantly_reply_api_v1_bd_webhooks_instantly_reply_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
     list_leads_api_v1_bd_leads_get: {
         parameters: {
             query?: {
@@ -3428,6 +5551,28 @@ export interface operations {
             };
         };
     };
+    receive_instantly_reply_api_v1_bd_webhooks_instantly_reply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     get_assignments_endpoint_api_v1_ops_assignments_get: {
         parameters: {
             query: {
@@ -3446,6 +5591,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssignmentsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_assignment_endpoint_api_v1_ops_assignments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionAssigneesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_assignment_endpoint_api_v1_ops_assignments_delete: {
+        parameters: {
+            query: {
+                user_id: string;
+                requisition_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_requisition_assignees_endpoint_api_v1_ops_requisitions__req_id__assignees_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionAssigneesResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3805,6 +6044,41 @@ export interface operations {
             };
         };
     };
+    update_requisition_status_endpoint_api_v1_ops_requisitions__req_id__status_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRequisitionStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     parse_jd_endpoint_api_v1_ops_requisitions__req_id__parse_jd_post: {
         parameters: {
             query?: never;
@@ -3840,9 +6114,176 @@ export interface operations {
             };
         };
     };
-    trigger_matching_endpoint_api_v1_ops_requisitions__req_id__match_post: {
+    upload_jd_endpoint_api_v1_ops_requisitions__req_id__jd_upload_post: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_jd_endpoint_api_v1_ops_requisitions__req_id__jd_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseJDResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_uploaded_jd_url_endpoint_api_v1_ops_requisitions__req_id__jd_original_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_jd_endpoint_api_v1_ops_requisitions__req_id__jd_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateJDRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDescriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_jd_endpoint_api_v1_ops_requisitions__req_id__jd_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDescriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_jd_endpoint_api_v1_ops_requisitions__req_id__jd_download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_matching_endpoint_api_v1_ops_requisitions__req_id__match_post: {
+        parameters: {
+            query?: {
+                acting_user_id?: string | null;
+            };
             header?: never;
             path: {
                 req_id: string;
@@ -3893,6 +6334,100 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_more_candidates_endpoint_api_v1_ops_requisitions__req_id__request_more_candidates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                req_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMoreCandidatesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_endpoint_api_v1_ops_notifications_get: {
+        parameters: {
+            query: {
+                user_id: string;
+                unread_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_notification_read_endpoint_api_v1_ops_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4363,7 +6898,9 @@ export interface operations {
     };
     internal_review_queue_api_v1_supply_internal_review_queue_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4377,6 +6914,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InternalReviewQueueResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4454,7 +7000,10 @@ export interface operations {
     };
     get_shortlist_api_v1_supply_shortlists__requisition_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_pending?: boolean;
+                acting_user_id?: string | null;
+            };
             header?: never;
             path: {
                 requisition_id: string;
@@ -4470,6 +7019,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShortlistResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_candidate_resume_url_api_v1_supply_candidates__candidate_id__resume_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_candidate_compensation_api_v1_supply_candidates__candidate_id__compensation_patch: {
+        parameters: {
+            query?: {
+                acting_user_id?: string | null;
+            };
+            header?: never;
+            path: {
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCompensationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompensationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4610,6 +7229,134 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_applications_api_v1_supply_shortlists__requisition_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requisition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitApplicationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    advance_stage_api_v1_supply_shortlists__submission_id__advance_stage_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_submission_notes_endpoint_api_v1_supply_shortlists__submission_id__notes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionNoteResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_submission_note_endpoint_api_v1_supply_shortlists__submission_id__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSubmissionNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionNoteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4914,6 +7661,308 @@ export interface operations {
             };
         };
     };
+    trigger_reparse_backfill_api_v1_supply_backfill_reparse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReparseBackfillRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reparse_backfill_report_api_v1_supply_backfill_reparse__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_outcome_endpoint_api_v1_supply_shortlists__submission_id__outcome_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_outcomes_endpoint_api_v1_supply_outcomes_get: {
+        parameters: {
+            query?: {
+                requisition_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_conversations_api_v1_assistant_conversations_get: {
+        parameters: {
+            query: {
+                acting_user_id: string;
+                limit?: number;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_conversation_api_v1_assistant_conversations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateConversationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_message_api_v1_assistant_conversations__conversation_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_events_api_v1_assistant_conversations__conversation_id__events_get: {
+        parameters: {
+            query?: {
+                after_seq?: number;
+            };
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventsPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_turn_api_v1_assistant_conversations__conversation_id__turns__turn_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                turn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     start_onboarding_api_v1_candidate_onboarding_start_post: {
         parameters: {
             query?: never;
@@ -5051,6 +8100,577 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResumeParseStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_applications_api_v1_candidate_applications_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateApplicationsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_application_api_v1_candidate_applications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateApplicationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateApplicationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_jobs_api_v1_public_jobs_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                q?: string | null;
+                country?: string | null;
+                role_type?: string | null;
+                employment_type?: string | null;
+                seniority?: string | null;
+                role_family?: string | null;
+                location?: string | null;
+                skills?: string | null;
+                remote?: boolean;
+                remote_mode?: string | null;
+                posted_within_days?: number | null;
+                has_compensation?: boolean;
+                match_only?: boolean;
+                sort?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicJobsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_job_detail_api_v1_public_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicJobItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    seed_companies_api_v1_job_board_companies_seed_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackedCompanyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_companies_api_v1_job_board_companies_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackedCompanyOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_company_api_v1_job_board_companies_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterCompanyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackedCompanyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    crawl_one_api_v1_job_board_companies__company_id__crawl_post: {
+        parameters: {
+            query?: {
+                q?: string | null;
+            };
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrawlSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    crawl_all_api_v1_job_board_crawl_all_post: {
+        parameters: {
+            query?: {
+                q?: string | null;
+            };
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrawlSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sources_api_v1_job_board_sources_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ingestion_runs_api_v1_job_board_ingestion_runs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestionRunListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_ingestion_run_api_v1_job_board_ingestion_runs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestionRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ingestion_run_api_v1_job_board_ingestion_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestionRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_visibility_rules_api_v1_job_board_visibility_rules_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_visibility_rules_api_v1_job_board_visibility_rules_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibilityRulesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityRulesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_visibility_rules_api_v1_job_board_visibility_rules_preview_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibilityRulesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibilityImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_v1_job_board_jobs_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                country?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobSearchResponse"];
                 };
             };
             /** @description Validation Error */

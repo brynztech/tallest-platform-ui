@@ -1,4 +1,4 @@
-import type { User } from '@brynzit/identity'
+import type { AssignableRecruiter } from '../../_lib/staff-auth'
 
 export const assignmentQueryKeys = {
   forUser: (userId: string) => ['assignments', userId] as const,
@@ -54,11 +54,12 @@ export async function unassignRecruiter(userId: string, reqId: string): Promise<
   if (!response.ok) throw new Error(`Failed to unassign recruiter: ${response.status}`)
 }
 
-/** Recruiters who can still be assigned: recruiter role, not already assigned. */
+/** Recruiters who can still be assigned: not already assigned. Role/active
+ * filtering already happened server-side (GET /auth/users/recruiters). */
 export function assignableRecruiters(
-  users: readonly User[],
+  recruiters: readonly AssignableRecruiter[],
   assignedIds: readonly string[],
-): User[] {
+): AssignableRecruiter[] {
   const assigned = new Set(assignedIds)
-  return users.filter((u) => u.role === 'recruiter' && !assigned.has(u.id))
+  return recruiters.filter((r) => !assigned.has(r.id))
 }

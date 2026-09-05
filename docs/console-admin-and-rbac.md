@@ -258,3 +258,17 @@ of a Vitest component render. Both are legitimate, not just a workaround for
 person who writes a new component test with plain JSX, and is worth someone
 dedicating real time to (ideally with the `next.js` + `vite` + `vitest`
 version matrix in hand) rather than re-discovering by bisection each time.
+
+## 6. Relationship to real staff auth (2026-09-04)
+
+The RBAC in this doc is `@brynzit/identity`'s acting-user **switcher** —
+client-side only, no real session. A separate, real backend session
+(username/password, admin-managed) now exists alongside it — see
+[console-staff-auth.md](console-staff-auth.md). The two are **not yet
+unified**: signing in via `/signin` establishes a real session gate
+(`RequireStaffSession`, redirect-to-sign-in for any unauthenticated console
+route) but does not change which capabilities the switcher grants. `/admin`
+(this doc's Job Sources tab and friends) is still gated by the switcher's
+`admin.view` capability; the new session's own admin-only surface lives at
+the separate `/admin/users` route instead, to avoid conflating the two
+systems before a deliberate migration.

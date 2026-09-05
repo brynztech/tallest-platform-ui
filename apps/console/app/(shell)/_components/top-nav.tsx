@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { INTERNAL_OPS_ITEMS, TOP_NAV_ITEMS } from '../_lib/recruiter-portal'
 import { cn } from '@brynzit/ui/lib/utils'
-import { IdentitySwitcher } from './identity-switcher'
+import { CurrentUserBadge } from './current-user-badge'
 import { NotificationBell } from './notification-bell'
+import { SignOutButton } from './sign-out-button'
 
 export function TopNav() {
   const pathname = usePathname()
@@ -58,7 +59,8 @@ export function TopNav() {
 
       <div className="flex items-center gap-2">
         <NotificationBell />
-        <IdentitySwitcher />
+        <CurrentUserBadge />
+        <SignOutButton />
       </div>
     </header>
   )

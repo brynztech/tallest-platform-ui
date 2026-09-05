@@ -1,16 +1,28 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActingUser } from '@brynzit/identity'
 import { Bell, Check } from 'lucide-react'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '@brynzit/ui/components/ui/popover'
+import { cn } from '@brynzit/ui/lib/utils'
 import {
   fetchUnreadNotifications,
   markNotificationRead,
   notificationQueryKey,
+  type NotificationResponse,
 } from '../_lib/notifications'
+
+/** requisition_assigned's payload carries where to send the click — see
+ * ops/services/assignments.py::_notify_new_assignee. Other event types have
+ * no destination yet and just render as plain text. */
+function notificationHref(notification: NotificationResponse): string | null {
+  if (notification.notification_type !== 'requisition_assigned') return null
+  const requisitionId = notification.payload?.requisition_id
+  return typeof requisitionId === 'string' ? `/my-roles/${requisitionId}` : null
+}
 
 /**
  * Shell-level notification bell — works regardless of which page is open
@@ -19,6 +31,7 @@ import {
 export function NotificationBell() {
   const actingUser = useActingUser()
   const queryClient = useQueryClient()
+  const router = useRouter()
 
   const { data: notifications = [] } = useQuery({
     queryKey: notificationQueryKey(actingUser.id),
@@ -79,12 +92,26 @@ export function NotificationBell() {
               No new notifications.
             </p>
           ) : (
-            notifications.map((n) => (
+            notifications.map((n) => {
+              const href = notificationHref(n)
+              return (
               <div
                 key={n.id}
                 className="flex items-start justify-between gap-2 border-b border-border/60 px-3 py-2 last:border-0"
               >
-                <div className="min-w-0">
+                <div
+                  className={cn('min-w-0', href && 'cursor-pointer')}
+                  role={href ? 'button' : undefined}
+                  tabIndex={href ? 0 : undefined}
+                  onClick={
+                    href
+                      ? () => {
+                          readMutation.mutate(n.id)
+                          router.push(href)
+                        }
+                      : undefined
+                  }
+                >
                   <p className="text-sm">{n.message}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(n.created_at).toLocaleString()}
@@ -100,7 +127,8 @@ export function NotificationBell() {
                   <Check className="size-4" />
                 </button>
               </div>
-            ))
+              )
+            })
           )}
         </div>
       </PopoverContent>
