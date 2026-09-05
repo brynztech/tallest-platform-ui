@@ -120,7 +120,15 @@ jobs:
           # stale client bundle. Force a clean build every deploy.
           rm -rf apps/web/.next apps/console/.next
           pnpm --filter @brynzit/web build
-          pnpm --filter @brynzit/console build
+
+          # NEXT_PUBLIC_API_URL is exported for this whole remote shell (apps/web
+          # needs the real absolute URL) — an already-set process env var beats
+          # .env.production in Next's own precedence order, so without this
+          # override the console's build would silently re-inherit the real
+          # backend URL instead of the empty value meant to activate its
+          # same-origin proxy (next.config.ts). Override it empty for this one
+          # command only; apps/web above is unaffected.
+          NEXT_PUBLIC_API_URL= pnpm --filter @brynzit/console build
 
           sudo tee /etc/systemd/system/brynzit-web.service >/dev/null <<'EOF'
           [Unit]
