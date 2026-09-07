@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { INTERNAL_OPS_ITEMS, TOP_NAV_ITEMS } from '../_lib/recruiter-portal'
 import { cn } from '@brynzit/ui/lib/utils'
+import { Badge } from '@brynzit/ui/components/ui/badge'
+import { INTERNAL_OPS_ITEMS, TOP_NAV_ITEMS } from '../_lib/recruiter-portal'
 import { CurrentUserBadge } from './current-user-badge'
 import { NotificationBell } from './notification-bell'
 import { SignOutButton } from './sign-out-button'
@@ -17,26 +18,17 @@ export function TopNav() {
   )
 
   return (
-    <header className="flex h-14 shrink-0 items-center border-b border-border/70 bg-white/90 px-4 shadow-sm shadow-slate-200/70 backdrop-blur">
-      <Link href="/dashboard" className="flex min-w-[210px] items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20">
-          B
-        </span>
-        <span className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-semibold leading-4">Brynzit Console</span>
-          <span className="text-muted-foreground truncate text-xs leading-4">
-            {isInternalOps ? 'Internal operations' : 'Recruiter portal'}
-          </span>
+    <header className="flex h-16 shrink-0 items-center gap-6 border-b border-[#ECEAE4] bg-card px-6">
+      <Link href="/dashboard" className="flex flex-col gap-0.5 leading-tight">
+        <span className="text-base font-semibold text-foreground">Brynzit Console</span>
+        <span className="text-xs text-muted-foreground">
+          {isInternalOps ? 'Internal operations' : 'Recruiter portal'}
         </span>
       </Link>
 
-      {isInternalOps && (
-        <span className="ml-3 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-          Internal Ops
-        </span>
-      )}
+      {isInternalOps && <Badge variant="outline">Internal Ops</Badge>}
 
-      <nav className="mx-auto flex items-center gap-5" aria-label="Recruiter top navigation">
+      <nav aria-label="Recruiter top navigation" className="flex items-center gap-1">
         {TOP_NAV_ITEMS.map((item) => {
           const activePrefixes = item.activePrefixes ?? [item.href]
           const isActive = activePrefixes.some(
@@ -46,9 +38,10 @@ export function TopNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150 ease-out',
-                isActive && 'bg-primary/10 text-primary',
+                'rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground',
+                isActive && 'bg-secondary font-medium text-foreground',
               )}
             >
               {item.label}
@@ -57,7 +50,7 @@ export function TopNav() {
         })}
       </nav>
 
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2">
         <NotificationBell />
         <CurrentUserBadge />
         <SignOutButton />

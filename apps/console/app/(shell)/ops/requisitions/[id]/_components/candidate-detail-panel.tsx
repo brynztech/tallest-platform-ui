@@ -78,6 +78,9 @@ export function CandidateDetailPanel({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
+        // The header carries its own close button; without this, Radix stacks
+        // its default X on top of it.
+        showCloseButton={false}
         className="w-[560px] max-w-[90vw] overflow-y-auto border-l border-border bg-card p-0"
       >
         {/* Sticky header */}

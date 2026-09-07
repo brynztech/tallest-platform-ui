@@ -3,9 +3,10 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
+import { Card } from '@brynzit/ui/components/ui/card'
 import { Label } from '@brynzit/ui/components/ui/label'
+import { Input } from '@brynzit/ui/components/ui/input'
+import { Button } from '@brynzit/ui/components/ui/button'
 import { staffLogin } from '../_lib/staff-auth'
 import { STAFF_ME_QUERY_KEY } from '../_lib/staff-auth-context'
 
@@ -43,49 +44,48 @@ export function StaffSignInForm({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-5 rounded-lg border border-border bg-white p-8 shadow-sm shadow-slate-200/60"
-      >
-        <div className="text-center">
-          <h1 className="text-lg font-semibold">{title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-        </div>
+    <div className="brynz-page-wash flex min-h-dvh items-center justify-center p-6">
+      <Card className="w-full max-w-sm gap-6 p-8">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5 text-center">
+            <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
+          </div>
 
-        {error && (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        )}
+          {error && (
+            <p role="alert" className="rounded-lg border border-[#F0D9D6] bg-[#FAF0EE] px-3 py-2 text-sm text-[#BA4642]">
+              {error}
+            </p>
+          )}
 
-        <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            autoComplete="username"
-            required
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              autoComplete="username"
+              required
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
 
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
-        </Button>
-      </form>
+          <Button type="submit" disabled={busy} className="mt-1 w-full">
+            {busy ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </form>
+      </Card>
     </div>
   )
 }

@@ -72,10 +72,10 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
 
   if (isCollapsed) {
     return (
-      <div className="flex w-10 flex-shrink-0 flex-col items-center border-r border-border/70 bg-background/35 pt-4">
+      <div className="flex w-12 flex-shrink-0 flex-col items-center border-r border-[#ECEAE4] pt-4">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
+          className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
           aria-label="Expand filter sidebar"
         >
           <ChevronRight className="size-4" />
@@ -85,15 +85,15 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
   }
 
   return (
-    <div className="flex w-[280px] flex-shrink-0 flex-col overflow-y-auto border-r border-border/70 bg-background/35">
+    <div className="flex w-[280px] flex-shrink-0 flex-col overflow-y-auto border-r border-[#ECEAE4]">
       {/* Sidebar header */}
-      <div className="flex items-center justify-between px-4 pb-2 pt-4">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <span className="text-[11px] font-medium tracking-[0.09em] text-[#908E8B] uppercase">
           Filters
         </span>
         <button
           onClick={() => setIsCollapsed(true)}
-          className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
+          className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
           aria-label="Collapse filter sidebar"
         >
           <ChevronLeft className="size-4" />
@@ -104,60 +104,60 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
       <div className="flex flex-1 flex-col gap-4 px-4 pb-4">
         {/* Search query */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-medium">Search</Label>
+          <Label className="text-[13px] font-medium text-foreground">Search</Label>
           <Input
             placeholder="e.g. Python engineer with distributed systems experience"
             value={liveFilters.q}
             onChange={(e) => updateFilter('q', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
+            className="bg-card text-sm"
           />
         </div>
 
         {/* Title */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-medium">Title</Label>
+          <Label className="text-[13px] font-medium text-foreground">Title</Label>
           <Input
             placeholder="e.g. Backend Engineer"
             value={liveFilters.title}
             onChange={(e) => updateFilter('title', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
+            className="bg-card text-sm"
           />
         </div>
 
         {/* Skills */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-medium">Skills</Label>
+          <Label className="text-[13px] font-medium text-foreground">Skills</Label>
           <Input
             placeholder="python, react, fastapi — comma-separated"
             value={liveFilters.skills}
             onChange={(e) => updateFilter('skills', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
+            className="bg-card text-sm"
           />
         </div>
 
         {/* Location */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-medium">Location</Label>
+          <Label className="text-[13px] font-medium text-foreground">Location</Label>
           <Input
             placeholder="e.g. London, Remote"
             value={liveFilters.location}
             onChange={(e) => updateFilter('location', e.target.value)}
             onKeyDown={handleKeyDown}
-            className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10"
+            className="bg-card text-sm"
           />
         </div>
 
         {/* Seniority */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-medium">Seniority</Label>
+          <Label className="text-[13px] font-medium text-foreground">Seniority</Label>
           <Select
             value={liveFilters.seniority}
             onValueChange={(val) => updateFilter('seniority', val)}
           >
-            <SelectTrigger className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10">
+            <SelectTrigger className="w-full bg-card text-sm">
               <SelectValue placeholder="Any seniority" />
             </SelectTrigger>
             <SelectContent>
@@ -172,12 +172,12 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
 
         {/* Max results */}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-medium">Max results</Label>
+          <Label className="text-[13px] font-medium text-foreground">Max results</Label>
           <Select
             value={String(liveFilters.limit)}
             onValueChange={(val) => updateFilter('limit', parseInt(val, 10))}
           >
-            <SelectTrigger className="border-border/70 bg-card/70 text-sm shadow-sm shadow-black/10">
+            <SelectTrigger className="w-full bg-card text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -192,16 +192,16 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
       </div>
 
       {/* Sidebar footer */}
-      <div className="mt-auto border-t border-border/70 px-4 py-3">
+      <div className="mt-auto border-t border-[#ECEAE4] px-4 py-3">
         <Button
           variant="default"
-          className="w-full rounded-xl shadow-sm shadow-primary/15"
+          className="w-full"
           onClick={handleSubmit}
           disabled={isLoading}
         >
           {isLoading ? (
             <>
-              <svg className="mr-2 h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+              <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -220,7 +220,7 @@ export function FilterSidebar({ onSubmit, isLoading }: FilterSidebarProps) {
             </>
           ) : (
             <>
-              <Search className="mr-2 size-4" />
+              <Search className="size-4" />
               Search Candidates
             </>
           )}

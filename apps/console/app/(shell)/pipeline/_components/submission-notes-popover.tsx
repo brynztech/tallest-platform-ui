@@ -55,28 +55,28 @@ export function SubmissionNotesPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="icon-sm" variant="outline" aria-label="Notes">
+        <Button size="icon-sm" variant="ghost" aria-label="Notes">
           <MessageSquare className="size-3.5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" sideOffset={4} className="w-80 p-3">
-        <h4 className="mb-3 text-sm font-semibold">Notes</h4>
+      <PopoverContent side="bottom" align="start" sideOffset={4} className="w-80 rounded-xl p-4">
+        <h4 className="mb-3 text-sm font-semibold text-foreground">Notes</h4>
 
-        <div className="mb-3 flex max-h-60 flex-col gap-2 overflow-y-auto">
+        <div className="mb-3 flex max-h-60 flex-col gap-3 overflow-y-auto">
           {notesQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading notes…</p>
           ) : notesQuery.isError ? (
-            <p className="text-sm text-destructive">Couldn&apos;t load notes.</p>
+            <p className="text-sm text-[#BA4642]">Couldn&apos;t load notes.</p>
           ) : sortedNotes.length === 0 ? (
-            <p className="text-sm italic text-muted-foreground">No notes yet.</p>
+            <p className="text-sm text-muted-foreground">No notes yet.</p>
           ) : (
             sortedNotes.map((note) => (
-              <div key={note.id} className="rounded-lg bg-muted/30 px-4 py-3">
+              <div key={note.id} className="rounded-lg bg-muted px-3 py-2">
                 <p className="mb-1 text-xs text-muted-foreground">
                   {new Date(note.created_at).toLocaleString()}
                   {note.author ? ` · ${note.author}` : ''}
                 </p>
-                <p className="text-sm whitespace-pre-wrap">{note.text}</p>
+                <p className="text-sm whitespace-pre-wrap text-foreground">{note.text}</p>
               </div>
             ))
           )}
@@ -88,7 +88,7 @@ export function SubmissionNotesPopover({
               value={noteText}
               onChange={(event) => setNoteText(event.target.value)}
               placeholder="Add a note…"
-              className="min-h-[70px] resize-none text-sm"
+              className="min-h-[70px] resize-none rounded-lg text-sm"
             />
             <Button
               className="mt-2 ml-auto block"

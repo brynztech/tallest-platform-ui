@@ -33,7 +33,15 @@ const VERDICT_ORDER: Record<FlagVerdict['verdict'], number> = {
   not_assessable: 3,
 }
 
-export function MatchEvidenceSections({ evidence }: { evidence: MatchEvidence }) {
+export function MatchEvidenceSections({
+  evidence,
+  /** Suppress the career list when the surrounding screen already renders the
+   *  same roles (the candidate panel puts them in its Experience section). */
+  hideCareer = false,
+}: {
+  evidence: MatchEvidence
+  hideCareer?: boolean
+}) {
   const { matchedRole, career, verdicts, judgmentScore, judgmentStatus } = evidence
   const screenQuestions = verdicts.filter((v) => v.verdict === 'not_assessable')
   const judged = verdicts
@@ -74,7 +82,7 @@ export function MatchEvidenceSections({ evidence }: { evidence: MatchEvidence })
         </div>
       )}
 
-      {career.length > 0 && (
+      {!hideCareer && career.length > 0 && (
         <div>
           <p className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Career</p>
           <ul className="flex flex-col gap-1">

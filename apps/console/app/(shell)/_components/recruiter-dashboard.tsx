@@ -112,7 +112,7 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
   if (isLoading) {
     return (
       <div className="p-6">
-        <p className="text-muted-foreground text-sm">Loading recruiter overview...</p>
+        <p className="text-sm text-muted-foreground">Loading recruiter overview...</p>
       </div>
     )
   }
@@ -120,7 +120,7 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
   if (hasError) {
     return (
       <div className="p-6">
-        <p className="text-destructive text-sm">
+        <p className="text-sm text-[#BA4642]">
           Couldn&apos;t load recruiter overview from the current Ops data.
         </p>
       </div>
@@ -128,16 +128,16 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 px-6 py-6">
+    <div className="flex flex-col gap-5 p-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-[-0.03em]">{title}</h1>
+            <h1 className="text-xl font-semibold text-foreground">{title}</h1>
             <Badge variant={canViewAll ? 'secondary' : 'outline'}>
               {canViewAll ? 'All roles' : 'My work'}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             {canViewAll
               ? 'Live pipeline across every client role, shortlist, interview, and placement.'
               : `Live pipeline for the roles assigned to ${actingUser.name}.`}
@@ -199,9 +199,9 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Where to act</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Where to act</CardTitle>
         </CardHeader>
-        <CardContent className="text-muted-foreground flex flex-col gap-3 text-sm md:flex-row md:items-center">
+        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground md:flex-row md:items-center">
           <p className="flex-1">
             Every number above reflects live records. Open a role to review its AI Matchmaker
             suggestions and shortlist, or clear the internal quality-review queue.
@@ -236,12 +236,14 @@ function MetricCard({
   return (
     <Card>
       <CardContent className="flex h-full flex-col gap-3 pt-6">
-        <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-          <span className="text-primary">{icon}</span>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-secondary text-muted-foreground">
+            {icon}
+          </span>
           {label}
         </div>
-        <p className="text-2xl font-semibold tracking-[-0.03em]">{value}</p>
-        <p className="text-muted-foreground text-xs">{description}</p>
+        <p className="text-2xl font-semibold text-foreground">{value}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   )

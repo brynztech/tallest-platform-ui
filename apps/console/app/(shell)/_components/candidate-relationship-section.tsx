@@ -1,9 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
-import { Separator } from '@brynzit/ui/components/ui/separator'
+import { cn } from '@brynzit/ui/lib/utils'
 import {
   candidateMemorySummary,
   candidateRelationshipQueryKeys,
@@ -12,7 +11,33 @@ import {
   relationshipGuardForTarget,
   type CandidateRelationshipBundle,
 } from '../_lib/candidate-relationship'
-import { AlertTriangle, History, ShieldCheck } from 'lucide-react'
+import { humanizeStatus, statusToneClass } from '../_lib/status-tone'
+import { AlertTriangle, FileText, Mail, ShieldCheck } from 'lucide-react'
+
+/** Uppercase eyebrow above a section (app/CLAUDE.md §3.7), with an optional
+ * plain-language count beside it. */
+function Eyebrow({ children, meta }: { children: React.ReactNode; meta?: string }) {
+  return (
+    <p className="flex items-baseline gap-2 text-[11px] font-medium tracking-[0.09em] text-[#908E8B] uppercase">
+      {children}
+      {meta ? <span className="normal-case text-muted-foreground">{meta}</span> : null}
+    </p>
+  )
+}
+
+function StatusPill({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center gap-[5px] rounded-full border px-2 py-[3px] text-[11px] leading-none font-medium whitespace-nowrap',
+        statusToneClass(status),
+      )}
+    >
+      <span className="size-[5px] rounded-full bg-current" />
+      {humanizeStatus(status)}
+    </span>
+  )
+}
 
 export function CandidateRelationshipSection({
   candidateId,
@@ -33,26 +58,21 @@ export function CandidateRelationshipSection({
   if (!candidateId) return null
 
   return (
-    <>
-      <Separator />
-      <section>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          RELATIONSHIP MEMORY
+    <section className="flex flex-col gap-2.5">
+      <Eyebrow>Relationship memory</Eyebrow>
+      {isLoading ? (
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
+      ) : error || !data ? (
+        <p className="text-sm text-muted-foreground">
+          Relationship history is unavailable right now.
         </p>
-        {isLoading ? (
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        ) : error || !data ? (
-          <p className="text-sm text-muted-foreground">
-            Relationship history is unavailable right now.
-          </p>
-        ) : (
-          <RelationshipMemory bundle={data} clientId={clientId} requisitionId={requisitionId} />
-        )}
-      </section>
-    </>
+      ) : (
+        <RelationshipMemory bundle={data} clientId={clientId} requisitionId={requisitionId} />
+      )}
+    </section>
   )
 }
 
@@ -70,115 +90,137 @@ function RelationshipMemory({
   const recentTimeline = bundle.timeline.slice(0, 4)
 
   return (
-    <div className="flex flex-col gap-4">
-      {memory.total > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant="outline">{memory.total} submissions</Badge>
-          {memory.active > 0 && <Badge variant="secondary">{memory.active} active</Badge>}
-          {memory.rejected > 0 && <Badge variant="outline">{memory.rejected} rejected</Badge>}
-          {memory.placed > 0 && (
-            <Badge className="bg-[oklch(0.45_0.15_145)] text-white">{memory.placed} placed</Badge>
-          )}
-        </div>
-      )}
-
-      <div className="rounded-lg border bg-muted/20 p-3">
-        <div className="flex items-start gap-2">
-          {guard.level === 'clear' ? (
-            <ShieldCheck className="mt-0.5 size-4 text-[oklch(0.45_0.15_145)]" />
-          ) : (
-            <AlertTriangle className="mt-0.5 size-4 text-amber-600" />
-          )}
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-medium">{guard.title}</p>
-              <Badge variant={guard.level === 'block' ? 'destructive' : guard.level === 'warn' ? 'secondary' : 'outline'}>
-                {guard.level}
-              </Badge>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{guard.description}</p>
+    <div className="flex flex-col gap-5">
+      {/* Contact guard */}
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-muted p-4">
+        {guard.level === 'clear' ? (
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#317A4F]" />
+        ) : (
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[#905300]" />
+        )}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[13px] font-medium text-foreground">{guard.title}</p>
+            <StatusPill status={guard.level} />
           </div>
+          <p className="mt-1 text-xs text-muted-foreground">{guard.description}</p>
         </div>
       </div>
 
-      <div className="grid gap-2 text-sm">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground">Relationship status</span>
-          <Badge variant={bundle.relationship.status === 'do_not_contact' ? 'destructive' : 'secondary'}>
-            {bundle.relationship.status.replace(/_/g, ' ')}
-          </Badge>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground">Contact preference</span>
-          <span className="text-right">{bundle.relationship.contact_preference ?? 'Not set'}</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-muted-foreground">Next allowed contact</span>
-          <span className="text-right">
+      {/* Key/value facts */}
+      <div className="flex flex-col">
+        <FactRow label="Relationship status">
+          <StatusPill status={bundle.relationship.status} />
+        </FactRow>
+        <FactRow label="Contact preference">
+          <span className="text-[13px] text-foreground">
+            {bundle.relationship.contact_preference ?? 'Not set'}
+          </span>
+        </FactRow>
+        <FactRow label="Next allowed contact" last>
+          <span className="text-[13px] text-foreground">
             {formatRelationshipDate(bundle.relationship.next_allowed_contact_at)}
           </span>
-        </div>
+        </FactRow>
       </div>
 
       {bundle.relationship.recruiter_notes && (
-        <div className="rounded-lg border bg-background p-3">
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Recruiter note</p>
-          <p className="text-sm">{bundle.relationship.recruiter_notes}</p>
+        <div className="rounded-xl border border-border p-4">
+          <Eyebrow>Recruiter note</Eyebrow>
+          <p className="mt-2 text-[13px] text-foreground">{bundle.relationship.recruiter_notes}</p>
         </div>
       )}
 
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <History className="size-4 text-muted-foreground" />
-          <p className="text-sm font-medium">Submission history</p>
-        </div>
+      {/* Submission history */}
+      <div className="flex flex-col gap-2.5">
+        <Eyebrow
+          meta={
+            memory.total > 0
+              ? `${memory.total} submission${memory.total === 1 ? '' : 's'}`
+              : undefined
+          }
+        >
+          Submission history
+        </Eyebrow>
         {bundle.submissions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No prior submissions recorded.</p>
+          <p className="text-[13px] text-muted-foreground">No prior submissions recorded.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {bundle.submissions.slice(0, 4).map((submission) => (
-              <div key={submission.id} className="rounded-lg border bg-background p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {submission.client_name ?? 'Client'} · {submission.role_title ?? 'Role'}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {submission.current_stage_name ?? submission.status}
-                      {submission.rejection_stage ? ` · rejected at ${submission.rejection_stage}` : ''}
-                    </p>
-                  </div>
-                  <Badge variant={submission.status === 'rejected' ? 'outline' : 'secondary'}>
-                    {submission.status}
-                  </Badge>
-                </div>
-                {submission.rejection_reason && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {submission.rejection_reason}
+              <div
+                key={submission.id}
+                className="flex items-start justify-between gap-3 rounded-xl bg-muted px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-foreground">
+                    {submission.client_name ?? 'Client'} · {submission.role_title ?? 'Role'}
                   </p>
-                )}
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {submission.current_stage_name ?? humanizeStatus(submission.status)}
+                    {submission.rejection_stage ? ` · rejected at ${submission.rejection_stage}` : ''}
+                  </p>
+                  {submission.rejection_reason && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {submission.rejection_reason}
+                    </p>
+                  )}
+                </div>
+                <StatusPill status={submission.status} />
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {/* Recent timeline */}
       {recentTimeline.length > 0 && (
-        <div>
-          <p className="mb-2 text-sm font-medium">Recent timeline</p>
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
+          <Eyebrow>Recent timeline</Eyebrow>
+          <div className="flex flex-col gap-3">
             {recentTimeline.map((event) => (
-              <div key={event.id} className="rounded-lg bg-muted/20 p-3">
-                <p className="text-sm font-medium">{event.title}</p>
-                {event.body && <p className="mt-1 text-xs text-muted-foreground">{event.body}</p>}
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {formatRelationshipDate(event.occurred_at)} · {event.visibility}
-                </p>
+              <div key={event.id} className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-secondary text-muted-foreground">
+                  {event.visibility === 'internal' ? (
+                    <FileText className="size-4" />
+                  ) : (
+                    <Mail className="size-4" />
+                  )}
+                </span>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-[13px] font-medium text-foreground">{event.title}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="size-1.5 shrink-0 rounded-full bg-[#386CA0]" />
+                    {event.body ? <span>{event.body} · </span> : null}
+                    <span>{formatRelationshipDate(event.occurred_at)}</span>
+                  </p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function FactRow({
+  label,
+  children,
+  last = false,
+}: {
+  label: string
+  children: React.ReactNode
+  last?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-3 py-2.5',
+        !last && 'border-b border-[#ECEAE4]',
+      )}
+    >
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      {children}
     </div>
   )
 }

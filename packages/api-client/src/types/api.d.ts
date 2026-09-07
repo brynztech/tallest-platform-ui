@@ -3070,6 +3070,42 @@ export interface components {
             partial?: string | null;
         };
         /**
+         * ExperienceItem
+         * @description One role from `talent_pool.experience`, shaped for the profile response.
+         *
+         *     Deliberately not `resume_parser_config.ExperienceEntry` — importing that
+         *     module registers a prompt in PROMPT_REGISTRY as a side effect, which a
+         *     schema module has no business triggering. `bullets` is omitted: it is the
+         *     verbatim resume text kept for matching, not profile display.
+         */
+        ExperienceItem: {
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Company
+             * @default
+             */
+            company: string;
+            /**
+             * Duration
+             * @default
+             */
+            duration: string;
+            /**
+             * Years
+             * @default 0
+             */
+            years: number;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+        };
+        /**
          * GenerateEngagementRequest
          * @description Request body for POST /supply/candidates/{id}/engagement/generate.
          */
@@ -4044,9 +4080,8 @@ export interface components {
         /**
          * RecruiterOut
          * @description Deliberately narrower than StaffUserOut — no role/status/created_at/created_by.
-         *     account_manager and quality_manager can reach this (recruiters.assign
-         *     scope), and it must not leak anything beyond "these are the assignable
-         *     recruiters right now.
+         *     Every signed-in role can reach this (recruiters.view scope) — it must not
+         *     leak anything beyond "these are the currently active recruiters".
          */
         RecruiterOut: {
             /**
@@ -4574,6 +4609,8 @@ export interface components {
             resume_file_path?: string | null;
             /** Extraction Method */
             extraction_method?: string | null;
+            /** Experience */
+            experience?: components["schemas"]["ExperienceItem"][] | null;
             /**
              * Resume Available
              * @default false

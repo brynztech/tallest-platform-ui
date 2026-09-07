@@ -3,41 +3,76 @@
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 @import "@brynzit/ui/styles/theme.css";
 
-/* apps/console overrides: light, calm operational palette */
+/* apps/console overrides: Brynz Design System — warm cream product surface.
+   Values sourced from tokens/colors.css + tokens/radii.css in the design
+   system folder; azure ring/50 opacity lands close to the DS's
+   rgba(139,176,230,.45) focus ring. */
 :root {
-  --color-background: oklch(0.985 0.006 255);
-  --color-foreground: oklch(0.18 0.015 255);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.18 0.015 255);
-  --color-muted: oklch(0.955 0.008 255);
-  --color-muted-foreground: oklch(0.48 0.018 255);
-  --color-border: oklch(0.89 0.012 255);
-  --color-input: oklch(0.9 0.012 255);
-  --color-secondary: oklch(0.945 0.012 255);
-  --color-secondary-foreground: oklch(0.22 0.018 255);
-  --color-accent: oklch(0.94 0.018 261);
-  --color-accent-foreground: oklch(0.22 0.05 261);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.18 0.015 255);
-  --color-primary: oklch(0.52 0.17 261.3);
-  --color-primary-foreground: oklch(0.99 0 0);
-  --color-ring: oklch(0.62 0.14 261.3);
-  --color-sidebar: oklch(0.975 0.007 255);
-  --radius: 0.625rem;
+  --color-background: #fcfaf7;
+  --color-foreground: #16120c;
+  --color-card: #fefefc;
+  --color-card-foreground: #16120c;
+  --color-muted: #f8f7f3;
+  --color-muted-foreground: #6b6965;
+  --color-border: #e4e3df;
+  --color-input: #e4e3df;
+  --color-secondary: #f2f0ea;
+  --color-secondary-foreground: #6b6965;
+  --color-accent: #f2f6fb;
+  --color-accent-foreground: #16120c;
+  --color-popover: #fefefc;
+  --color-popover-foreground: #16120c;
+  --color-destructive: #ba4642;
+  --color-destructive-foreground: #fefefc;
+  --color-primary: #0c0b09;
+  --color-primary-foreground: #fefefc;
+  --color-ring: #8bb0e6;
+  --color-sidebar: #fcfaf7;
+  --radius: 0.75rem;
 }
 
 .light {
-  --color-background: oklch(0.985 0.006 255);
-  --color-foreground: oklch(0.18 0.015 255);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.18 0.015 255);
-  --color-muted: oklch(0.955 0.008 255);
-  --color-muted-foreground: oklch(0.48 0.018 255);
-  --color-border: oklch(0.89 0.012 255);
-  --color-ring: oklch(0.62 0.14 261.3);
-  --color-sidebar: oklch(0.975 0.007 255);
+  --color-background: #fcfaf7;
+  --color-foreground: #16120c;
+  --color-card: #fefefc;
+  --color-card-foreground: #16120c;
+  --color-muted: #f8f7f3;
+  --color-muted-foreground: #6b6965;
+  --color-border: #e4e3df;
+  --color-input: #e4e3df;
+  --color-secondary: #f2f0ea;
+  --color-secondary-foreground: #6b6965;
+  --color-accent: #f2f6fb;
+  --color-accent-foreground: #16120c;
+  --color-popover: #fefefc;
+  --color-popover-foreground: #16120c;
+  --color-destructive: #ba4642;
+  --color-destructive-foreground: #fefefc;
+  --color-primary: #0c0b09;
+  --color-primary-foreground: #fefefc;
+  --color-ring: #8bb0e6;
+  --color-sidebar: #fcfaf7;
 }
 
 html {
   background: var(--color-background);
+}
+
+/* Tailwind v4 dropped the default gray border-color (preflight now does
+   `border-color: inherit`, which bottoms out at `currentColor`). Several
+   @brynzit/ui components (Card, Dialog/Popover/Select content, Button's
+   outline variant) use a bare `border` utility with no paired color class,
+   so without this they render a near-black border instead of the design
+   system's hairline. Restores Tailwind v3's old default. */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+}
+
+/* The one sanctioned gradient in the design system: a barely-perceptible
+   cream-to-blue atmospheric wash behind the whole product (never behind
+   individual content). Shared by the shell layout and the sign-in screen. */
+.brynz-page-wash {
+  background: linear-gradient(180deg, #fcfaf7 0%, #fcfaf7 40%, #f2f6fb 76%, #e9f0fa 100%);
 }

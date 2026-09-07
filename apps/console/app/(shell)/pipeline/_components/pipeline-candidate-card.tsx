@@ -5,9 +5,8 @@ import type { QueryKey } from '@tanstack/react-query'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { Pipeline } from '@brynzit/pipeline'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
-import { Card, CardContent } from '@brynzit/ui/components/ui/card'
+import { Card } from '@brynzit/ui/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -22,15 +21,22 @@ import { ChevronRight } from 'lucide-react'
 import type { PipelineSubmission } from '../../_lib/recruiter-data'
 import { nextPipelineStage } from '../_lib/pipeline-bridge'
 import { AdvanceStageConflictError, advanceSubmissionStage, manualRemoveFromPipeline } from '../_lib/pipeline-actions'
+import { PipelineCardHead } from './pipeline-card-head'
 import { SubmissionNotesPopover } from './submission-notes-popover'
 
 interface PipelineCandidateCardProps {
   submission: PipelineSubmission
   pipeline: Pipeline
   pipelineQueryKey: QueryKey
+  onOpenProfile: (submission: PipelineSubmission) => void
 }
 
-export function PipelineCandidateCard({ submission, pipeline, pipelineQueryKey }: PipelineCandidateCardProps) {
+export function PipelineCandidateCard({
+  submission,
+  pipeline,
+  pipelineQueryKey,
+  onOpenProfile,
+}: PipelineCandidateCardProps) {
   const queryClient = useQueryClient()
   const [removeOpen, setRemoveOpen] = useState(false)
   const [reason, setReason] = useState('')
@@ -67,50 +73,33 @@ export function PipelineCandidateCard({ submission, pipeline, pipelineQueryKey }
 
   return (
     <>
-      <Card>
-        <CardContent className="flex flex-col gap-2 px-3 py-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold">
-                {submission.candidate_name ?? submission.candidate_id}
-              </h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {submission.candidate_title ?? 'Candidate'} · {submission.requisition.title}
-              </p>
-            </div>
-            <Badge variant="outline">{submission.status}</Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {submission.requisition.client?.name ?? 'Client'} · Match score{' '}
-            {submission.match_score ?? 'not scored'}
-          </p>
+      <Card className="gap-0 overflow-hidden py-0 shadow-[0_1px_2px_rgba(22,18,12,0.04)]">
+        <PipelineCardHead submission={submission} onOpenProfile={onOpenProfile} />
 
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!next || advanceMutation.isPending}
-              title={next ? undefined : 'Already at the final stage'}
-              onClick={() => advanceMutation.mutate()}
-            >
-              <ChevronRight className="mr-1 size-3.5" />
+        <div className="flex flex-col gap-2 border-t border-dashed border-border px-4 pt-3 pb-4">
+          <Button
+            size="sm"
+            className="w-full min-w-0 gap-1 px-2 text-[11px]"
+            disabled={!next || advanceMutation.isPending}
+            title={next ? undefined : 'Already at the final stage'}
+            onClick={() => advanceMutation.mutate()}
+          >
+            <span className="min-w-0 truncate">
               {advanceMutation.isPending
                 ? 'Advancing…'
                 : next
                   ? `Advance to ${next.label}`
                   : 'Advance'}
-            </Button>
+            </span>
+            <ChevronRight className="size-3.5" />
+          </Button>
+          <div className="flex items-center gap-2">
             <SubmissionNotesPopover submissionId={submission.id} />
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setRemoveOpen(true)}
-            >
+            <Button size="sm" variant="ghost" onClick={() => setRemoveOpen(true)}>
               Remove
             </Button>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <Dialog
@@ -120,9 +109,11 @@ export function PipelineCandidateCard({ submission, pipeline, pipelineQueryKey }
           if (!open) setReason('')
         }}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Remove from pipeline</DialogTitle>
+            <DialogTitle className="text-base font-semibold text-foreground">
+              Remove from pipeline
+            </DialogTitle>
             <DialogDescription>
               {submission.candidate_name ?? 'This candidate'} will be removed from the pipeline.
               Explain why.
@@ -139,7 +130,8 @@ export function PipelineCandidateCard({ submission, pipeline, pipelineQueryKey }
           </div>
           <DialogFooter>
             <Button
-              variant="destructive"
+              variant="outline"
+              className="border-[#F0D9D6] bg-[#FAF0EE] text-[#BA4642] hover:bg-[#f6e4e1] hover:text-[#BA4642]"
               disabled={!canSubmitRemove || removeMutation.isPending}
               onClick={() => removeMutation.mutate()}
             >

@@ -6,9 +6,10 @@ import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useActingUser, useCan } from '@brynzit/identity'
 import { definePipeline } from '@brynzit/pipeline'
+import { cn } from '@brynzit/ui/lib/utils'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
-import { Card, CardContent } from '@brynzit/ui/components/ui/card'
+import { Card } from '@brynzit/ui/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
+import { ChevronRight, Workflow } from 'lucide-react'
 import {
   fetchOpsClients,
   fetchPipelineSubmissions,
@@ -24,15 +26,15 @@ import {
   type PipelineSubmission,
 } from '../_lib/recruiter-data'
 import { useScopedRequisitions } from '../_lib/use-scoped-requisitions'
-import {
-  getHiringProcess,
-  stageKindLabel,
-  type HiringStage,
-} from '../ops/requisitions/[id]/_lib/hiring-process'
+import { getHiringProcess, type HiringStage } from '../ops/requisitions/[id]/_lib/hiring-process'
 import { toPipelineDefinition } from './_lib/pipeline-bridge'
 import { AWAITING_REVIEW_STAGE_ID, groupSubmissionsByPipelineStage } from './_lib/group-submissions'
+import { CandidateProfileSheet } from '../_components/candidate-profile-sheet'
 import { PipelineCandidateCard } from './_components/pipeline-candidate-card'
+import { PipelineCardHead } from './_components/pipeline-card-head'
 import { SubmissionNotesPopover } from './_components/submission-notes-popover'
+
+const KANBAN_WASH = 'linear-gradient(180deg, #F6F3F4 0%, #E9F0FA 100%)'
 
 export default function CandidatePipelinePage() {
   const searchParams = useSearchParams()
@@ -48,6 +50,10 @@ export default function CandidatePipelinePage() {
   // does the advancing, annotating, and removing.
   const canAdvance = can('pipeline.advance')
   const [selectedReqId, setSelectedReqId] = useState('')
+  // One panel for the whole board, opened by any card's name. Same component
+  // supply search / my-roles / ops requisitions use, so a candidate reads the
+  // same wherever you meet them.
+  const [openProfile, setOpenProfile] = useState<PipelineSubmission | null>(null)
   const stageView = searchParams.get('stage') === 'rejected' ? 'rejected' : 'active'
   const clientsQuery = useQuery({
     queryKey: recruiterQueryKeys.clients,
@@ -115,7 +121,7 @@ export default function CandidatePipelinePage() {
   if (hasError) {
     return (
       <div className="p-6">
-        <p className="text-sm text-destructive">
+        <p className="text-sm text-[#BA4642]">
           Couldn&apos;t load pipeline from requisition shortlists.
         </p>
       </div>
@@ -123,34 +129,53 @@ export default function CandidatePipelinePage() {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-5 px-6 py-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div className="flex min-h-full flex-col gap-6 p-6">
+      <div className="flex flex-col gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-[-0.03em]">Candidate Pipeline</h1>
+            <h1 className="text-xl font-semibold text-foreground">Candidate Pipeline</h1>
             {/* Say why the actions are absent — a board with no buttons and no
                 explanation reads as broken rather than as read-only. */}
             <Badge variant="secondary" className="text-xs">
               {canAdvance ? 'Can edit' : 'View only'}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
             {canAdvance
               ? "Columns come from the selected requisition's Ops-configured hiring process."
               : 'Track your submitted candidates as they move. Your Account Manager advances stages and adds notes — you’re notified on every change.'}
           </p>
-          <div className="mt-3 flex gap-2">
-            <Button asChild size="sm" variant={stageView === 'active' ? 'default' : 'outline'}>
-              <Link href="/pipeline">Active</Link>
-            </Button>
-            <Button asChild size="sm" variant={stageView === 'rejected' ? 'default' : 'outline'}>
-              <Link href="/pipeline?stage=rejected">Rejected</Link>
-            </Button>
-          </div>
         </div>
-        <div className="flex flex-col gap-2 md:min-w-[360px] md:flex-row">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex w-fit gap-0.5 rounded-[10px] border border-border bg-card p-1">
+            <Link
+              href="/pipeline"
+              aria-current={stageView === 'active' ? 'page' : undefined}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150',
+                stageView === 'active'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-muted',
+              )}
+            >
+              Active
+            </Link>
+            <Link
+              href="/pipeline?stage=rejected"
+              aria-current={stageView === 'rejected' ? 'page' : undefined}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150',
+                stageView === 'rejected'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-muted',
+              )}
+            >
+              Rejected
+            </Link>
+          </div>
+          <div className="flex-1" />
           <Select value={activeReqId} onValueChange={setSelectedReqId} disabled={!requisitions.length}>
-            <SelectTrigger>
+            <SelectTrigger className="w-[320px]">
               <SelectValue placeholder="Select requisition" />
             </SelectTrigger>
             <SelectContent>
@@ -163,6 +188,7 @@ export default function CandidatePipelinePage() {
           </Select>
           <Button asChild size="sm" variant="outline">
             <Link href={activeReq ? `/ops/requisitions/${activeReq.id}` : '/ops/requisitions'}>
+              <Workflow className="size-4" />
               Configure
             </Link>
           </Button>
@@ -170,8 +196,8 @@ export default function CandidatePipelinePage() {
       </div>
 
       {!activeReq ? (
-        <div className="rounded-xl border bg-card p-8 text-center">
-          <h2 className="text-lg font-semibold">No requisitions available</h2>
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <h2 className="text-base font-semibold text-foreground">No requisitions available</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
             Create a requisition in Ops before building a candidate pipeline.
           </p>
@@ -180,8 +206,8 @@ export default function CandidatePipelinePage() {
           </Button>
         </div>
       ) : submissions.length === 0 ? (
-        <div className="rounded-xl border bg-card p-8 text-center">
-          <h2 className="text-lg font-semibold">No shortlisted candidates yet</h2>
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <h2 className="text-base font-semibold text-foreground">No shortlisted candidates yet</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
             Trigger matching or add candidates on this requisition. The board will use this role&apos;s
             configured hiring process as soon as submissions exist.
@@ -192,9 +218,9 @@ export default function CandidatePipelinePage() {
         </div>
       ) : stageView === 'rejected' ? (
         <div className="grid max-w-sm flex-1">
-          <section className="rounded-xl border border-border/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70">
+          <section className="rounded-xl border border-border bg-card p-3">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Rejected</h2>
+              <h2 className="text-base font-semibold text-foreground">Rejected</h2>
               <Badge variant="secondary">{rejectedSubmissions.length}</Badge>
             </div>
             <div className="flex flex-col gap-3">
@@ -202,50 +228,57 @@ export default function CandidatePipelinePage() {
                 <p className="py-4 text-sm text-muted-foreground">No rejected candidates</p>
               ) : (
                 rejectedSubmissions.map((submission) => (
-                  <CandidatePipelineCard key={submission.id} submission={submission} />
+                  <CandidatePipelineCard
+                    key={submission.id}
+                    submission={submission}
+                    onOpenProfile={setOpenProfile}
+                  />
                 ))
               )}
             </div>
           </section>
         </div>
       ) : (
-        <div
-          className="grid min-w-[900px] flex-1 gap-4 overflow-x-auto"
-          style={{
-            gridTemplateColumns: `repeat(${1 + hiringProcess.stages.length}, minmax(220px, 1fr))`,
-          }}
-        >
-          <section className="rounded-xl border border-border/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold">Awaiting Review</h2>
-                <p className="text-[11px] text-muted-foreground">Screened, pending AM decision</p>
-              </div>
+        <div className="flex flex-1 gap-6 overflow-x-auto pb-2">
+          <section className="flex w-[232px] shrink-0 flex-col">
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
+                Awaiting Review
+              </h2>
               <Badge variant="secondary">{grouped[AWAITING_REVIEW_STAGE_ID].length}</Badge>
             </div>
-            <div className="flex flex-col gap-3">
+            <div
+              className="flex min-h-[180px] flex-1 flex-col gap-2.5 rounded-[10px] border border-[#ECEAE4] p-2.5"
+              style={{ background: KANBAN_WASH }}
+            >
               {grouped[AWAITING_REVIEW_STAGE_ID].length === 0 ? (
-                <p className="py-4 text-sm text-muted-foreground">No candidates awaiting review</p>
+                <p className="pt-7 text-center text-base text-[#908E8B]">No candidates</p>
               ) : (
                 grouped[AWAITING_REVIEW_STAGE_ID].map((submission) => (
-                  <CandidatePipelineCard key={submission.id} submission={submission} />
+                  <CandidatePipelineCard
+                    key={submission.id}
+                    submission={submission}
+                    onOpenProfile={setOpenProfile}
+                  />
                 ))
               )}
             </div>
           </section>
 
           {hiringProcess.stages.map((stage) => (
-            <section key={stage.id} className="rounded-xl border border-border/80 bg-white/85 p-3 shadow-sm shadow-slate-200/70">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold">{stage.name}</h2>
-                  <p className="text-[11px] text-muted-foreground">{stageKindLabel(stage.kind)}</p>
-                </div>
+            <section key={stage.id} className="flex w-[232px] shrink-0 flex-col">
+              <div className="mb-3 flex items-center gap-2">
+                <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
+                  {stage.name}
+                </h2>
                 <Badge variant="secondary">{grouped[stage.id].length}</Badge>
               </div>
-              <div className="flex flex-col gap-3">
+              <div
+                className="flex min-h-[180px] flex-1 flex-col gap-2.5 rounded-[10px] border border-[#ECEAE4] p-2.5"
+                style={{ background: KANBAN_WASH }}
+              >
                 {grouped[stage.id].length === 0 ? (
-                  <p className="py-4 text-sm text-muted-foreground">No candidates</p>
+                  <p className="pt-7 text-center text-base text-[#908E8B]">No candidates</p>
                 ) : (
                   grouped[stage.id].map((submission) =>
                     pipeline && canAdvance ? (
@@ -254,9 +287,14 @@ export default function CandidatePipelinePage() {
                         submission={submission}
                         pipeline={pipeline}
                         pipelineQueryKey={pipelineQueryKey}
+                        onOpenProfile={setOpenProfile}
                       />
                     ) : (
-                      <CandidatePipelineCard key={submission.id} submission={submission} />
+                      <CandidatePipelineCard
+                        key={submission.id}
+                        submission={submission}
+                        onOpenProfile={setOpenProfile}
+                      />
                     ),
                   )
                 )}
@@ -265,6 +303,17 @@ export default function CandidatePipelinePage() {
           ))}
         </div>
       )}
+
+      <CandidateProfileSheet
+        candidateId={openProfile?.candidate_id ?? null}
+        submissionId={openProfile?.id ?? null}
+        requisitionId={activeReqId}
+        isOpen={openProfile !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenProfile(null)
+        }}
+        source="pipeline"
+      />
     </div>
   )
 }
@@ -275,39 +324,31 @@ export default function CandidatePipelinePage() {
  * (following the conversation on your own candidates is the point of the
  * screen); no stage, note, or removal actions.
  */
-function CandidatePipelineCard({ submission }: { submission: PipelineSubmission }) {
+function CandidatePipelineCard({
+  submission,
+  onOpenProfile,
+}: {
+  submission: PipelineSubmission
+  onOpenProfile: (submission: PipelineSubmission) => void
+}) {
   const can = useCan()
   // "Review Shortlist" opens the Ops requisition page, which is gated on
   // internal_ops.view — offering it to a recruiter just dead-ends them in the
   // Access Restricted panel, so only show it to users who can actually open it.
   const canOpenShortlist = can('internal_ops.view')
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 px-3 py-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold">
-              {submission.candidate_name ?? submission.candidate_id}
-            </h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {submission.candidate_title ?? 'Candidate'} · {submission.requisition.title}
-            </p>
-          </div>
-          <Badge variant="outline">{submission.status}</Badge>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {submission.requisition.client?.name ?? 'Client'} · Match score{' '}
-          {submission.match_score ?? 'not scored'}
-        </p>
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <SubmissionNotesPopover submissionId={submission.id} readOnly />
-          {canOpenShortlist ? (
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/ops/requisitions/${submission.requisition.id}`}>Review Shortlist</Link>
-            </Button>
-          ) : null}
-        </div>
-      </CardContent>
+    <Card className="gap-0 overflow-hidden py-0 shadow-[0_1px_2px_rgba(22,18,12,0.04)]">
+      <PipelineCardHead submission={submission} onOpenProfile={onOpenProfile} />
+      <div className="flex items-center gap-2 border-t border-dashed border-border px-4 pt-3 pb-4">
+        <SubmissionNotesPopover submissionId={submission.id} readOnly />
+        {canOpenShortlist ? (
+          <Button asChild size="sm" variant="ghost" className="min-w-0">
+            <Link href={`/ops/requisitions/${submission.requisition.id}`}>
+              <span className="truncate">Review Shortlist</span>
+            </Link>
+          </Button>
+        ) : null}
+      </div>
     </Card>
   )
 }

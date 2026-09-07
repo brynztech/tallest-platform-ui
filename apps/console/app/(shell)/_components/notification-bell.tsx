@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActingUser } from '@brynzit/identity'
 import { Bell, Check } from 'lucide-react'
 import { Badge } from '@brynzit/ui/components/ui/badge'
+import { Button } from '@brynzit/ui/components/ui/button'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '@brynzit/ui/components/ui/popover'
 import { cn } from '@brynzit/ui/lib/utils'
@@ -54,10 +55,12 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
-          className="relative flex size-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground shadow-sm shadow-slate-200/60 transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="relative text-muted-foreground hover:text-foreground"
         >
           <Bell className="size-4" />
           {unreadCount > 0 && (
@@ -68,7 +71,7 @@ export function NotificationBell() {
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="end" sideOffset={4} className="w-80 p-0">
         <div className="flex items-center justify-between px-3 py-2">

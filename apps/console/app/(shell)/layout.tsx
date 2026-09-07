@@ -7,11 +7,11 @@ import { RequireStaffSession } from '../_lib/require-staff-session'
 export default function ShellLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireStaffSession>
-      <div className="flex h-screen flex-col overflow-hidden bg-[linear-gradient(135deg,var(--color-background),oklch(0.965_0.012_261))]">
+      <div className="brynz-page-wash relative flex h-dvh min-h-0 flex-col overflow-hidden">
         <TopNav />
-        <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1">
           <SidebarNav />
-          <main className="min-w-0 flex-1 overflow-y-auto bg-transparent">{children}</main>
+          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
         </div>
         <AssistantWidget />
       </div>

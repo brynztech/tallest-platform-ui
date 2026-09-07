@@ -21,13 +21,17 @@ export function CurrentUserBadge() {
   const actingUser = useActingUser()
 
   return (
-    <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-white px-2 pr-2.5 shadow-sm shadow-slate-200/60">
-      <Avatar size="sm">
-        <AvatarFallback>{initials(actingUser.name)}</AvatarFallback>
+    <div className="flex items-center gap-2 rounded-full border border-border py-1 pr-2.5 pl-1">
+      <Avatar className="size-7">
+        <AvatarFallback className="bg-[#E5E3DC] text-[11px] font-medium text-muted-foreground">
+          {initials(actingUser.name)}
+        </AvatarFallback>
       </Avatar>
       <span className="flex min-w-0 flex-col">
-        <span className="truncate text-xs font-semibold leading-4">{actingUser.name}</span>
-        <span className="text-muted-foreground truncate text-[11px] leading-4">
+        <span className="truncate text-[13px] leading-[1.2] font-medium text-foreground">
+          {actingUser.name}
+        </span>
+        <span className="text-muted-foreground truncate text-[11px] leading-[1.2]">
           {ROLE_LABELS[actingUser.role]}
         </span>
       </span>

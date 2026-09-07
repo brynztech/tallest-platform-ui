@@ -1,6 +1,7 @@
 'use client'
 
 import { LogOut } from 'lucide-react'
+import { Button } from '@brynzit/ui/components/ui/button'
 import { staffLogout } from '../../_lib/staff-auth'
 
 /** Real session sign-out — separate from the acting-user switcher, which has
@@ -8,11 +9,13 @@ import { staffLogout } from '../../_lib/staff-auth'
  * and admin/users/page.tsx's own bar (that route sits outside the shell). */
 export function SignOutButton() {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon-sm"
       aria-label="Sign out"
       title="Sign out"
-      className="flex size-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground shadow-sm shadow-slate-200/60 transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="text-muted-foreground hover:text-foreground"
       onClick={async () => {
         await staffLogout()
         // Hard navigation, not router.replace: clearing the query cache
@@ -26,6 +29,6 @@ export function SignOutButton() {
       }}
     >
       <LogOut className="size-4" />
-    </button>
+    </Button>
   )
 }

@@ -139,10 +139,11 @@ export default function SupplySearchPage() {
       {/* Right: scrollable results column */}
       <div className="flex flex-1 min-w-0 flex-col overflow-y-auto">
         {/* Sticky results header */}
-        <div className="sticky top-0 bg-background/90 backdrop-blur h-12 px-4 flex items-center gap-3 border-b border-border z-10">
+        <div className="sticky top-0 z-10 flex flex-wrap items-baseline gap-x-3 gap-y-2 border-b border-[#ECEAE4] bg-background px-6 py-4">
+          <h1 className="text-xl font-semibold text-foreground">Supply search</h1>
           {searchSubmitted && !isLoading && (
-            <span className="text-sm text-muted-foreground">
-              {data?.total ?? results.length} candidates
+            <span className="text-[13px] text-muted-foreground">
+              {data?.total ?? results.length} candidates · ranked by match
             </span>
           )}
           {(activeChips as { key: string; label: string; value: string }[]).map((chip) => (
@@ -182,7 +183,7 @@ export default function SupplySearchPage() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 px-4 py-4">
+          <div className="flex flex-col gap-3 px-6 py-5">
             {results.map((candidate, idx) => (
               <CandidateResultCard
                 key={candidate.candidate_id}

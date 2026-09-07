@@ -26,17 +26,24 @@ here.
 
 ## Before touching UI here
 
-Read `design-system/tokens.json`, `design-system/components.md`, and
-`design-system/routes.md` first — they're the extracted-from-code reference
-for colors, component conventions, and the full route/capability inventory.
-Also read `DESIGN_SYSTEM.md` (layout/nav/typography contract) and
-`docs/console-admin-and-rbac.md` (RBAC mechanics + two prior production
-incidents worth not repeating).
+**Read `app/CLAUDE.md` first — it is the current design contract** (Brynz
+design system: warm cream palette, token mapping, component conventions,
+information rules, Tailwind v4 gotchas, and a decisions log). Keep it updated
+in the same pass as any UI correction.
 
-**Status colors are not tokenized yet** — three literal `oklch()` values
-(green/amber/red) are copy-pasted across ~12 files. Reuse the exact values in
-`tokens.json`'s `status_colors` for any new status/category badge; don't
-invent a fourth color for the same meaning.
+`design-system/routes.md` is still the route/capability inventory, and
+`docs/console-admin-and-rbac.md` has the RBAC mechanics plus two prior
+production incidents worth not repeating.
+
+`design-system/tokens.json`, `design-system/components.md`, and
+`DESIGN_SYSTEM.md` predate the Brynz design system and describe the old
+blue/oklch palette — treat them as history for screens not yet migrated, not
+as the target. `app/CLAUDE.md` §8 tracks what is and isn't migrated.
+
+**Status colors are tokenized for migrated screens** — use the hexes in
+`app/CLAUDE.md` §2 and the `statusToneClass()` helper. The older literal
+`oklch()` green/amber/red still exists in ~5 unmigrated files; don't add new
+uses of it, and don't invent a further color for a meaning already covered.
 
 **The approve/reject/snooze pattern already exists** (BD lead review) and is
 the direct precedent for any new candidate-categorization or snooze-duration
