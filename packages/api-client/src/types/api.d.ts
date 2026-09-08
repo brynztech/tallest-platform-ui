@@ -138,6 +138,27 @@ export interface paths {
         patch: operations["update_user_api_v1_auth_users__user_id__patch"];
         trace?: never;
     };
+    "/api/v1/auth/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit Log
+         * @description Newest-first, filterable staff activity feed — logins only for now
+         *     (see login() above). Mirrors platform.monitoring_router.get_agent_events.
+         */
+        get: operations["list_audit_log_api_v1_auth_audit_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bd/imports": {
         parameters: {
             query?: never;
@@ -4404,6 +4425,33 @@ export interface components {
             /** Docs Url */
             docs_url: string | null;
         };
+        /** StaffAuditLogOut */
+        StaffAuditLogOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Actor Staff Id */
+            actor_staff_id: string | null;
+            /** Actor Username */
+            actor_username: string | null;
+            /** Action */
+            action: string;
+            /** Target Type */
+            target_type: string | null;
+            /** Target Id */
+            target_id: string | null;
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** StaffUserOut */
         StaffUserOut: {
             /**
@@ -5151,6 +5199,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_audit_log_api_v1_auth_audit_log_get: {
+        parameters: {
+            query?: {
+                actor_staff_id?: string | null;
+                start?: string | null;
+                end?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                staff_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAuditLogOut"][];
                 };
             };
             /** @description Validation Error */

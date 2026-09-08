@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import { toast } from 'sonner'
-import { Send, ShieldAlert, Zap } from 'lucide-react'
+import { FileText, Send, ShieldAlert, Zap } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useActingUser, useCan } from '@brynzit/identity'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
@@ -45,6 +46,9 @@ import {
 // to their own segment).
 const MATCHABLE_STATUSES = new Set(['open', 'matching_complete'])
 
+type ShortlistFilter = 'All' | 'Unscreened' | 'Interested'
+const SHORTLIST_FILTER_OPTIONS: ShortlistFilter[] = ['All', 'Unscreened', 'Interested']
+
 export default function MyRoleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const actingUser = useActingUser()
@@ -57,6 +61,8 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null)
   const [isCandidatePanelOpen, setIsCandidatePanelOpen] = useState(false)
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false)
+  const [jdOpen, setJdOpen] = useState(false)
+  const [shortlistFilter, setShortlistFilter] = useState<ShortlistFilter>('All')
 
   // ---- Assignment-scoped access check ----
   const { data: assignedIds = [], isLoading: assignmentsLoading } = useQuery({
@@ -257,6 +263,17 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
   const canSubmit = canSubmitApplications(submissions)
   const activeSubmissions = submissions.filter((s) => !s.submitted_at)
   const submittedSubmissions = submissions.filter((s) => s.submitted_at)
+  const screenedCount = activeSubmissions.filter((s) => s.status !== 'shortlisted').length
+  const filteredSubmissions = activeSubmissions.filter((s) => {
+    if (shortlistFilter === 'Unscreened') return s.status === 'shortlisted'
+    if (shortlistFilter === 'Interested') return s.status === 'interested'
+    return true
+  })
+  const shortlistCountLine =
+    (filteredSubmissions.length === activeSubmissions.length
+      ? `${activeSubmissions.length} candidates`
+      : `Showing ${filteredSubmissions.length} of ${activeSubmissions.length}`) +
+    ` · ${screenedCount} screened · ranked by match`
   // Why the Submit button is disabled — surfaced as a native title tooltip
   // (this app's existing disabled-button-explanation convention, see
   // pipeline-candidate-card.tsx).
@@ -304,11 +321,19 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {jd ? (
-        <div className="mb-6 space-y-3">
-          <div className="rounded-lg border border-border bg-muted/40 p-3">
-            <JdPreview jd={jd} />
-          </div>
-          <ResdexCriteria criteria={jd.resdex_search_criteria} />
+        <div className="mb-6">
+          <Button variant="outline" size="sm" onClick={() => setJdOpen((v) => !v)}>
+            <FileText className="mr-1 size-4" />
+            {jdOpen ? 'Hide JD' : 'Preview JD'}
+          </Button>
+          {jdOpen && (
+            <div className="mt-3 space-y-3">
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <JdPreview jd={jd} />
+              </div>
+              <ResdexCriteria criteria={jd.resdex_search_criteria} />
+            </div>
+          )}
         </div>
       ) : (
         <p className="mb-6 text-sm text-muted-foreground">
@@ -373,15 +398,43 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
         </DialogContent>
       </Dialog>
 
-      <h2 className="mb-2 text-base font-semibold">Shortlist</h2>
       {activeSubmissions.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Candidates appear here when matching finishes. Search starts when the
-          role is published; use Run Match to search again.
-        </p>
+        <>
+          <h2 className="mb-2 text-base font-semibold">Shortlist</h2>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Candidates appear here when matching finishes. Search starts when the
+            role is published; use Run Match to search again.
+          </p>
+        </>
       ) : (
+        <>
+          <div className="mb-3 flex flex-wrap items-baseline gap-3">
+            <h2 className="text-base font-semibold">Shortlist</h2>
+            <span className="text-[13px] text-muted-foreground">{shortlistCountLine}</span>
+            <div className="flex-1" />
+            <div className="inline-flex w-fit gap-0.5 rounded-[10px] border border-border bg-card p-1">
+              {SHORTLIST_FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setShortlistFilter(option)}
+                  className={cn(
+                    'rounded-lg px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-150',
+                    shortlistFilter === option
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted',
+                  )}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filteredSubmissions.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No candidates match this filter.</p>
+          ) : (
         <div className="flex flex-col gap-3">
-          {activeSubmissions.map((submission) => (
+          {filteredSubmissions.map((submission) => (
             <ShortlistCandidateCard
               key={submission.id}
               submission={submission}
@@ -404,6 +457,8 @@ export default function MyRoleDetailPage({ params }: { params: Promise<{ id: str
             />
           ))}
         </div>
+          )}
+        </>
       )}
 
       {submittedSubmissions.length > 0 && (

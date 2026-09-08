@@ -39,6 +39,7 @@ export interface ShortlistSubmission {
   candidate_email: string | null
   candidate_title: string | null
   candidate_skills: string[] | null
+  total_years_experience?: number | null
   // Assignment-scoped compensation (backend FEATURE_SPEC.md Feature 3) —
   // null when the backend withholds them from this caller.
   candidate_ctc?: number | null

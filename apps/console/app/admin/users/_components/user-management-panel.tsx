@@ -32,6 +32,7 @@ import {
   type StaffUser,
 } from '../../../_lib/staff-auth'
 import { useStaffAuth } from '../../../_lib/staff-auth-context'
+import { AuditLogPanel } from './audit-log-panel'
 
 const USERS_QUERY_KEY = ['staff-auth', 'users'] as const
 
@@ -145,6 +146,8 @@ export function UserManagementPanel() {
           </tbody>
         </table>
       </div>
+
+      <AuditLogPanel />
     </div>
   )
 }

@@ -36,6 +36,9 @@ export type ShortlistEntry = {
   missing_must_have: string[]
   /** Judgment verdicts + matched role + career, when the backend sent them. */
   evidence: MatchEvidence | null
+  years_experience: number | null
+  candidate_ctc: number | null
+  candidate_ectc: number | null
 }
 
 export function shortlistStatusBadgeClass(status: string): string {
@@ -84,6 +87,9 @@ export function normalizeShortlistSubmission(
           (skill): skill is string => typeof skill === 'string',
         )
       : [],
+    years_experience: submission.total_years_experience ?? null,
+    candidate_ctc: submission.candidate_ctc ?? null,
+    candidate_ectc: submission.candidate_ectc ?? null,
   }
 }
 

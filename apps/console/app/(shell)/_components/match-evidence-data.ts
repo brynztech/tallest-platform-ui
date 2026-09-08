@@ -184,6 +184,16 @@ export function judgmentStatusLabel(status: string): string | null {
   }
 }
 
+/** A verdict counts in the candidate's favor — green flags met, red flags
+ * NOT met (the concern didn't materialize). Shared by match-evidence.tsx's
+ * flag icon and candidate-shortlist-card.tsx's signals-met/not-evidenced split. */
+export function isFavorableVerdict(verdict: FlagVerdict): boolean {
+  return (
+    (verdict.kind === 'red' && verdict.verdict === 'not_met') ||
+    (verdict.kind !== 'red' && verdict.verdict === 'met')
+  )
+}
+
 export function companyDescription(info: CareerCompanyInfo | null): string | null {
   if (!info || info.status !== 'found') return null
   const d = info.data

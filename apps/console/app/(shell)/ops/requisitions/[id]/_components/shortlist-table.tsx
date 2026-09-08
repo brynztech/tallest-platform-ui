@@ -2,12 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  createColumnHelper,
-} from '@tanstack/react-table'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import type { components } from '@brynzit/api-client'
@@ -24,15 +18,9 @@ import {
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { Textarea } from '@brynzit/ui/components/ui/textarea'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@brynzit/ui/components/ui/table'
 import { CheckCircle, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CandidateShortlistCard } from '@/(shell)/_components/candidate-shortlist-card'
+import { humanizeStatus } from '@/(shell)/_lib/status-tone'
 import {
   DEFAULT_SHORTLIST_SCORE_OVERRIDES,
   SHORTLIST_SCORE_KEYS,
@@ -41,12 +29,10 @@ import {
   shortlistScoreOverridesFromBreakdown,
   shortlistScoreOverridesFromTotal,
   shortlistScoreTotal,
-  shortlistStatusBadgeClass,
   type ShortlistEntry,
   type ShortlistScoreKey,
   type ShortlistScoreOverrides,
 } from './shortlist-utils'
-import { MatchEvidenceSections } from '@/(shell)/_components/match-evidence'
 
 type CandidateSearchResult = components['schemas']['CandidateSearchResult']
 
@@ -63,7 +49,6 @@ export function ShortlistTable({
 }: ShortlistTableProps) {
   const queryClient = useQueryClient()
   const [pendingTimeouts] = useState(() => new Map<string, ReturnType<typeof setTimeout>>())
-  const [expandedRationales, setExpandedRationales] = useState<Set<string>>(() => new Set())
   const [addOpen, setAddOpen] = useState(false)
   const [editEntry, setEditEntry] = useState<ShortlistEntry | null>(null)
   const [removeEntry, setRemoveEntry] = useState<ShortlistEntry | null>(null)
@@ -75,7 +60,6 @@ export function ShortlistTable({
   const [scoreOverrides, setScoreOverrides] = useState<ShortlistScoreOverrides>(
     DEFAULT_SHORTLIST_SCORE_OVERRIDES,
   )
-  const [expandedScores, setExpandedScores] = useState<Set<string>>(() => new Set())
   // Track approve/reject locally for entries without a backend submission_id
   const [localStatusOverrides, setLocalStatusOverrides] = useState<Record<string, string>>({})
   const scoreTotal = shortlistScoreTotal(scoreOverrides)
@@ -270,23 +254,6 @@ export function ShortlistTable({
     })
   }
 
-  const columnHelper = createColumnHelper<ShortlistEntry>()
-
-  function toggleRationale(id: string) {
-    setExpandedRationales((cur) => {
-      const next = new Set(cur)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-  function toggleScore(id: string) {
-    setExpandedScores((cur) => {
-      const next = new Set(cur)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
   function resetManualForm() {
     setCandidateQuery('')
     setSelectedCandidate(null)
@@ -357,231 +324,6 @@ export function ShortlistTable({
   }
 
   const canSubmitFeedback = reason.trim().length >= 3
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const columns: any[] = [
-    columnHelper.accessor('rank', {
-      header: '#',
-      cell: (info) => (
-        <span className="text-xs text-muted-foreground">{info.getValue() ?? '—'}</span>
-      ),
-      size: 48,
-    }),
-    columnHelper.accessor('candidate_name', {
-      header: 'Candidate',
-      cell: (info) => {
-        const entry = info.row.original
-        const label = info.getValue() ?? shortId(entry.candidate_id)
-        return (
-          <div>
-            <button
-              type="button"
-              className="cursor-pointer text-left text-sm hover:text-primary"
-              onClick={() => onCandidateSelect(entry.candidate_id, entry.submission_id)}
-            >
-              {label}
-            </button>
-            {entry.current_title && (
-              <p className="text-[11px] text-muted-foreground">{entry.current_title}</p>
-            )}
-          </div>
-        )
-      },
-    }),
-    columnHelper.accessor('rationale', {
-      header: 'Rationale',
-      cell: (info) => {
-        const entry = info.row.original
-        const isExpanded = expandedRationales.has(entry.candidate_id)
-        return (
-          <div className="max-w-[560px]">
-          <button
-            type="button"
-            className="max-w-[560px] py-2 text-left"
-            aria-expanded={isExpanded}
-            onClick={() => toggleRationale(entry.candidate_id)}
-          >
-            <p
-              className={
-                isExpanded
-                  ? 'whitespace-normal text-sm leading-relaxed text-muted-foreground'
-                  : 'overflow-hidden text-sm leading-relaxed text-muted-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
-              }
-            >
-              {info.getValue() ?? 'No rationale returned.'}
-            </p>
-            <span className="mt-1 block text-[11px] text-primary">
-              {isExpanded ? 'Show less' : 'Show why'}
-            </span>
-            {isExpanded && (entry.top_matching_skills?.length ?? 0) > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-1">
-                <span className="mr-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Matched
-                </span>
-                {entry.top_matching_skills.map((skill) => (
-                  <Badge key={skill} variant="outline" className="text-[11px]">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {isExpanded && (entry.gaps?.length ?? 0) > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-1">
-                <span className="mr-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Gaps
-                </span>
-                {entry.gaps.map((gap) => (
-                  <Badge key={gap} variant="secondary" className="text-[11px]">
-                    {gap}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {isExpanded && (entry.missing_must_have?.length ?? 0) > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-1">
-                <span className="mr-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Missing must-have
-                </span>
-                {entry.missing_must_have.map((skill) => (
-                  <Badge key={skill} variant="destructive" className="text-[11px]">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </button>
-          {isExpanded && entry.evidence && (
-            // Outside the toggle button: the evidence card carries its own
-            // native <details> disclosures, which cannot nest in a <button>.
-            <div className="mt-3 border-t border-border pt-3">
-              <MatchEvidenceSections evidence={entry.evidence} />
-            </div>
-          )}
-          </div>
-        )
-      },
-    }),
-    columnHelper.accessor('fit_score', {
-      header: 'Fit Score',
-      cell: (info) => {
-        const score = info.getValue()
-        const entry = info.row.original
-        const isExpanded = expandedScores.has(entry.candidate_id)
-        return (
-          <div className="relative">
-            <button
-              type="button"
-              className="flex items-center gap-2"
-              aria-expanded={isExpanded}
-              onClick={() => toggleScore(entry.candidate_id)}
-            >
-              <span className="h-2 w-20 overflow-hidden rounded-full bg-muted">
-                <span
-                  className="block h-full rounded-full"
-                  style={{ width: `${score ?? 0}%`, backgroundColor: scoreColor(score ?? 0) }}
-                />
-              </span>
-              <span className="text-sm font-semibold" style={{ color: scoreColor(score ?? 0) }}>
-                {score != null ? `${score}%` : '—'}
-              </span>
-            </button>
-            {isExpanded && Object.keys(entry.score_breakdown ?? {}).length > 0 && (
-              <div className="absolute left-0 top-7 z-20 w-72 rounded-lg border border-border bg-popover p-3 text-xs shadow-lg">
-                <p className="mb-2 font-semibold text-popover-foreground">Score breakdown</p>
-                <div className="space-y-2">
-                  {Object.entries(entry.score_breakdown).map(([key, value]) => (
-                    <div key={key}>
-                      <div className="mb-1 flex justify-between gap-2 text-muted-foreground">
-                        <span>{formatBreakdownLabel(key)}</span>
-                        <span>{value}</span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${Math.min(100, value)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )
-      },
-      size: 80,
-    }),
-    columnHelper.display({
-      id: 'status',
-      header: 'Status',
-      cell: (info) => {
-        const entry = info.row.original
-        const effectiveStatus = localStatusOverrides[entry.candidate_id] ?? entry.status
-        const extraClass = shortlistStatusBadgeClass(effectiveStatus)
-        if (!extraClass) {
-          return (
-            <Badge variant="secondary" className="text-xs">
-              {effectiveStatus}
-            </Badge>
-          )
-        }
-        return (
-          <Badge variant="outline" className={`text-xs ${extraClass}`}>
-            {effectiveStatus}
-          </Badge>
-        )
-      },
-      size: 120,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: '',
-      cell: (info) => {
-        const entry = info.row.original
-        const effectiveStatus = localStatusOverrides[entry.candidate_id] ?? entry.status
-        const isTerminal = effectiveStatus === 'approved' || effectiveStatus === 'rejected'
-        return (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 hover:text-primary"
-              aria-label="Edit candidate score"
-              onClick={() => openEditDialog(entry)}
-            >
-              <Pencil className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 hover:text-green-600"
-              aria-label="Approve candidate"
-              disabled={isTerminal}
-              onClick={() => handleAction(entry, 'approved')}
-            >
-              <CheckCircle className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 hover:text-destructive"
-              aria-label="Remove candidate"
-              onClick={() => openRemoveDialog(entry)}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          </div>
-        )
-      },
-      size: 100,
-    }),
-  ]
-
-  const table = useReactTable({
-    data: entries,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  })
 
   const addCandidateButton = (
     <div className="mb-2 flex justify-end">
@@ -751,36 +493,59 @@ export function ShortlistTable({
   return (
     <>
       {addCandidateButton}
-      <div className="overflow-hidden rounded-lg border border-border">
-        <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((hg) => (
-            <TableRow key={hg.id}>
-              {hg.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  style={{ width: header.column.getSize() || undefined }}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="h-10 cursor-pointer hover:bg-muted/30">
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-        </Table>
+      <div className="flex flex-col gap-3">
+        {entries.map((entry) => {
+          const effectiveStatus = localStatusOverrides[entry.candidate_id] ?? entry.status
+          const isTerminal = effectiveStatus === 'approved' || effectiveStatus === 'rejected'
+          return (
+            <CandidateShortlistCard
+              key={entry.candidate_id}
+              name={entry.candidate_name ?? shortId(entry.candidate_id)}
+              title={entry.current_title}
+              yearsExperience={entry.years_experience}
+              skills={entry.top_matching_skills}
+              matchScore={entry.fit_score}
+              evidence={entry.evidence}
+              fallbackNote={entry.rationale}
+              status={effectiveStatus}
+              statusLabel={humanizeStatus(effectiveStatus)}
+              ctc={entry.candidate_ctc}
+              ectc={entry.candidate_ectc}
+              onViewProfile={() => onCandidateSelect(entry.candidate_id, entry.submission_id)}
+              actions={
+                <>
+                  <Badge variant="outline" className="text-xs">
+                    Rank #{entry.rank}
+                  </Badge>
+                  <div className="flex-1" />
+                  <Button variant="ghost" size="sm" onClick={() => openEditDialog(entry)}>
+                    <Pencil className="mr-1 size-3.5" />
+                    Edit score
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isTerminal}
+                    className="border-[#D3E2D7] text-[#317A4F] hover:bg-[#EFF4EF]"
+                    onClick={() => handleAction(entry, 'approved')}
+                  >
+                    <CheckCircle className="mr-1 size-3.5" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => openRemoveDialog(entry)}
+                  >
+                    <Trash2 className="mr-1 size-3.5" />
+                    Remove
+                  </Button>
+                </>
+              }
+            />
+          )
+        })}
       </div>
       {dialogs}
     </>
@@ -843,12 +608,6 @@ function FeedbackFields({
 function shortId(id: string) {
   if (!id) return '—'
   return `${id.slice(0, 8)}…${id.slice(-4)}`
-}
-
-function scoreColor(score: number) {
-  if (score >= 75) return 'oklch(0.45 0.15 145)'
-  if (score >= 50) return 'oklch(0.65 0.16 70)'
-  return 'oklch(0.58 0.2 25)'
 }
 
 function remainingScoreBudget(

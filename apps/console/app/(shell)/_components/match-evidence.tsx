@@ -17,6 +17,7 @@ import { CheckCircle2, CircleHelp, Flag, XCircle } from 'lucide-react'
 import {
   companyDescription,
   companyStatLine,
+  isFavorableVerdict,
   judgmentStatusLabel,
   type FlagVerdict,
   type MatchEvidence,
@@ -177,9 +178,7 @@ export function MatchEvidenceSections({
 function VerdictIcon({ verdict }: { verdict: FlagVerdict }) {
   // For red flags the favorable outcome is not_met (the concern is clear),
   // so color tracks favorability, not the literal verdict.
-  const favorable =
-    (verdict.kind === 'red' && verdict.verdict === 'not_met') ||
-    (verdict.kind !== 'red' && verdict.verdict === 'met')
+  const favorable = isFavorableVerdict(verdict)
   if (verdict.verdict === 'unknown') {
     return <CircleHelp className="mt-0.5 size-3.5 shrink-0" style={{ color: AMBER }} />
   }

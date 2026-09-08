@@ -11,6 +11,7 @@ import { apiClient, type components } from '@brynzit/api-client'
 
 export type StaffUser = components['schemas']['StaffUserOut']
 export type AssignableRecruiter = components['schemas']['RecruiterOut']
+export type StaffAuditLogEntry = components['schemas']['StaffAuditLogOut']
 
 // Mirrors platform/staff_auth.py's STAFF_ROLES — kept in sync by hand, four
 // stable values.
@@ -87,5 +88,24 @@ export async function updateStaffUser(
     body,
   })
   if (error) throw new Error(errorDetail(error, 'Could not update the user.'))
+  return data
+}
+
+/** Newest-first, admin only (users.manage). Login activity only for now. */
+export async function listStaffAuditLog(filters?: {
+  actorStaffId?: string
+  start?: string
+  end?: string
+}): Promise<StaffAuditLogEntry[]> {
+  const { data, error } = await apiClient.GET('/api/v1/auth/audit-log', {
+    params: {
+      query: {
+        actor_staff_id: filters?.actorStaffId,
+        start: filters?.start,
+        end: filters?.end,
+      },
+    },
+  })
+  if (error) throw new Error(errorDetail(error, 'Could not load the audit log.'))
   return data
 }
