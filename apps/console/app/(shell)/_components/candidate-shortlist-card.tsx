@@ -125,6 +125,12 @@ export function CandidateShortlistCard({
         )}
       </div>
 
+      {fallbackNote && (
+        <p className="border-t border-[#ECEAE4] px-4 pt-3 text-[13px] text-[#3A3B3B]">
+          {fallbackNote}
+        </p>
+      )}
+
       {hasJudgment && (
         <>
           <div className="flex flex-wrap items-center gap-3 border-t border-[#ECEAE4] bg-[#F8F7F3] px-4 py-3">
@@ -286,12 +292,6 @@ export function CandidateShortlistCard({
             </div>
           )}
         </>
-      )}
-
-      {!evidence && fallbackNote && (
-        <p className="border-t border-[#ECEAE4] px-4 py-3 text-[13px] text-muted-foreground">
-          {fallbackNote}
-        </p>
       )}
 
       {/* No judgment data at all (manual-add, pre-facts) means no expand

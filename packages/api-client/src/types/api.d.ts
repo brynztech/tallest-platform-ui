@@ -635,6 +635,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/requisitions/pipeline-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Requisitions Pipeline Stats Endpoint
+         * @description Bulk per-requisition counts (shortlist/submitted/in-process/approved/
+         *     assigned-recruiters) for the list screens. Registered ahead of
+         *     /requisitions/{req_id} — a literal path, not a param, so route order
+         *     matters here the same way /users/recruiters does in staff_auth_router.
+         */
+        get: operations["get_requisitions_pipeline_stats_endpoint_api_v1_ops_requisitions_pipeline_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/requisitions/{req_id}": {
         parameters: {
             query?: never;
@@ -4184,6 +4207,32 @@ export interface components {
             /** User Ids */
             user_ids: string[];
         };
+        /**
+         * RequisitionPipelineStats
+         * @description Per-requisition submission/assignee counts for the list screens
+         *     (Ops Requisitions, My Roles) — one bulk query instead of one call per
+         *     row. Sparse: a requisition with no submissions/assignments has no row
+         *     here, callers default to zero.
+         */
+        RequisitionPipelineStats: {
+            /**
+             * Requisition Id
+             * Format: uuid
+             */
+            requisition_id: string;
+            /** Shortlist Total */
+            shortlist_total: number;
+            /** Not Yet Screened */
+            not_yet_screened: number;
+            /** Submitted */
+            submitted: number;
+            /** In Client Process */
+            in_client_process: number;
+            /** Approved */
+            approved: number;
+            /** Recruiter Count */
+            recruiter_count: number;
+        };
         /** RequisitionResponse */
         RequisitionResponse: {
             /**
@@ -6098,6 +6147,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_requisitions_pipeline_stats_endpoint_api_v1_ops_requisitions_pipeline_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisitionPipelineStats"][];
                 };
             };
         };

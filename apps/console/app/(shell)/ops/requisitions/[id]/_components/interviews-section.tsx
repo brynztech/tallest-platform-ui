@@ -12,11 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { CalendarPlus } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   scheduled: ['accepted', 'declined'],
@@ -88,9 +88,7 @@ export function InterviewsSection({ reqId, candidates, defaultCandidateId }: Int
   return (
     <div>
       {interviews.length === 0 ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">
-          No interviews logged yet.
-        </p>
+        <p className="py-4 text-[15px] text-[#908E8B]">No interviews logged yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {interviews.map((interview) => {
@@ -100,7 +98,7 @@ export function InterviewsSection({ reqId, candidates, defaultCandidateId }: Int
             return (
               <div
                 key={interview.id}
-                className="flex h-10 items-center gap-4 rounded-lg border border-border bg-card px-4 py-3"
+                className="flex h-10 items-center gap-4 rounded-lg border border-border bg-background px-4 py-3"
               >
                 <span className="flex-1 text-sm">
                   {interview.candidate_id
@@ -140,11 +138,7 @@ export function InterviewsSection({ reqId, candidates, defaultCandidateId }: Int
       )}
 
       {/* Log Interview form — always visible */}
-      <div className="mt-4 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-border bg-muted/20 p-3">
-        <p className="w-full text-xs text-muted-foreground">
-          Lightweight tracker only: record the interview date and status here. Calendar invites,
-          meeting links, and recruiter notes are managed outside Brynzit for v1.
-        </p>
+      <div className="mt-4 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-border bg-[#F8F7F3] p-3">
         {candidates.length > 0 ? (
           <div className="flex flex-col gap-1">
             <Label className="text-xs text-muted-foreground">Candidate *</Label>
@@ -190,9 +184,8 @@ export function InterviewsSection({ reqId, candidates, defaultCandidateId }: Int
         </div>
 
         <Button
-          variant="outline"
           size="sm"
-          disabled={createMutation.isPending || !scheduledDate}
+          disabled={!effectiveCandidateId || createMutation.isPending || !scheduledDate}
           onClick={() => {
             createMutation.mutate(
               {
@@ -207,34 +200,28 @@ export function InterviewsSection({ reqId, candidates, defaultCandidateId }: Int
           }}
         >
           <CalendarPlus className="mr-1 size-4" />
-          Log Interview
+          Log interview
         </Button>
+
+        <p className="w-full text-xs text-muted-foreground">
+          A candidate and a date are required.
+        </p>
       </div>
     </div>
   )
 }
 
 function InterviewStatusBadge({ status }: { status: string }) {
-  if (status === 'accepted' || status === 'completed') {
-    return (
-      <Badge
-        variant="outline"
-        className="border-[oklch(0.45_0.15_145)]/40 bg-[oklch(0.45_0.15_145)]/20 text-xs text-[oklch(0.45_0.15_145)]"
-      >
-        {status}
-      </Badge>
-    )
-  }
-  if (status === 'declined') {
-    return (
-      <Badge variant="outline" className="border-amber-500 text-xs text-amber-600">
-        {status}
-      </Badge>
-    )
-  }
+  const tone =
+    status === 'accepted' || status === 'completed'
+      ? 'border-[#D3E2D7] bg-[#EFF4EF] text-[#317A4F]'
+      : status === 'declined'
+        ? 'border-[#F0D9D6] bg-[#FAF0EE] text-[#BA4642]'
+        : 'border-border bg-secondary text-muted-foreground'
   return (
-    <Badge variant="secondary" className="text-xs">
+    <span className={cn('inline-flex items-center gap-[5px] rounded-full border px-2 py-[3px] text-[11px] font-medium', tone)}>
+      <span className="size-[5px] rounded-full bg-current" />
       {status}
-    </Badge>
+    </span>
   )
 }

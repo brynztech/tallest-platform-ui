@@ -14,7 +14,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '@brynzit/api-client'
 import { toast } from 'sonner'
 import { Button } from '@brynzit/ui/components/ui/button'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { Textarea } from '@brynzit/ui/components/ui/textarea'
@@ -140,38 +139,42 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-border bg-card p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="flex items-center gap-2 text-base font-semibold">
-            <FileText className="size-4 text-muted-foreground" />
-            Job Description
-            {jd ? (
-              <Badge variant="secondary" className="text-xs">
-                generated
-              </Badge>
-            ) : hasUploaded ? (
-              <Badge variant="secondary" className="text-xs">
-                uploaded
-              </Badge>
-            ) : null}
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {isLoading
-              ? 'Checking…'
-              : jd
-                ? `Preview the JD, download the .docx, or regenerate after editing the requirement.`
-                : hasUploaded
-                  ? `Uploaded from ${uploadedJd?.filename ?? 'a document'} — preview the exact JD, or generate a formatted version from it.`
-                  : 'Generate the JD from the requirement paragraph, the company website, and a reference memo.'}
-          </p>
+    <div className="mb-4 rounded-xl border border-border bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E8CEAE] bg-[#F4E8DA]">
+            <FileText className="size-4 text-[#905300]" />
+          </div>
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-semibold">
+              Job description
+              {jd ? (
+                <span className="inline-flex items-center gap-[5px] rounded-full border border-[#D3E2D7] bg-[#EFF4EF] px-2 py-[3px] text-[11px] font-medium text-[#317A4F]">
+                  generated
+                </span>
+              ) : hasUploaded ? (
+                <span className="inline-flex items-center gap-[5px] rounded-full border border-[#D4DFE9] bg-[#EFF3F4] px-2 py-[3px] text-[11px] font-medium text-[#386CA0]">
+                  uploaded
+                </span>
+              ) : null}
+            </h2>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
+              {isLoading
+                ? 'Checking…'
+                : jd
+                  ? `Preview the JD, download the .docx, or regenerate after editing the requirement.`
+                  : hasUploaded
+                    ? `Uploaded from ${uploadedJd?.filename ?? 'a document'} — preview the exact JD, or generate a formatted version from it.`
+                    : 'Generate the JD from the requirement paragraph, the company website, and a reference memo.'}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {jd ? (
             <Button variant="outline" size="sm" asChild>
               <a href={jdDownloadUrl(req.id)} download>
                 <Download className="mr-1 size-4" />
-                Download
+                Download .docx
               </a>
             </Button>
           ) : null}
@@ -186,7 +189,7 @@ export function JdPanel({ req }: { req: RequisitionResponse }) {
             {jd || hasUploaded ? (
               <>
                 <FileText className="mr-1 size-4" />
-                Preview JD
+                Preview
               </>
             ) : (
               <>

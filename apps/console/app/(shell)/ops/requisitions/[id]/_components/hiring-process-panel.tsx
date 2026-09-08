@@ -6,7 +6,7 @@ import type { components } from '@brynzit/api-client'
 import { toast } from 'sonner'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Input } from '@brynzit/ui/components/ui/input'
-import { Badge } from '@brynzit/ui/components/ui/badge'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
 } from '@brynzit/ui/components/ui/select'
 import {
   buildIntakeDetailsWithHiringProcess,
+  countSubmissionsByStage,
   getHiringProcess,
   isHiringStageKind,
   stageKindLabel,
@@ -52,13 +53,24 @@ const stageKinds: HiringStageKind[] = [
   'offer',
 ]
 
-export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
+export function HiringProcessPanel({
+  req,
+  submissions = [],
+}: {
+  req: RequisitionResponse
+  /** For per-stage candidate counts — pass the requisition's shortlist submissions. */
+  submissions?: Array<Pick<components['schemas']['SubmissionResponse'], 'status' | 'current_stage_id'>>
+}) {
   const queryClient = useQueryClient()
   const can = useCan()
   const canConfigure = can('pipeline.configure')
   const hiringProcess = useMemo(() => getHiringProcess(req), [req])
   const pipeline = useMemo(() => getRequisitionPipeline(req), [req])
   const mediated = hasInternalGate(pipeline)
+  const stageCounts = useMemo(
+    () => countSubmissionsByStage(hiringProcess.stages, submissions),
+    [hiringProcess.stages, submissions],
+  )
   const [isOpen, setIsOpen] = useState(false)
   const [stages, setStages] = useState<EditableStage[]>(() =>
     hiringProcess.stages.map(({ name, kind }) => ({ name, kind })),
@@ -125,14 +137,13 @@ export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
   }
 
   return (
-    <div className="mb-4 rounded-lg border border-border bg-card p-4">
+    <div className="mb-4 rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold">Hiring Process</h2>
-            <Badge
-              variant={mediated ? 'secondary' : 'outline'}
-              className="text-[11px]"
+            <h2 className="text-base font-semibold">Hiring process</h2>
+            <span
+              className="inline-flex items-center rounded-full border border-border bg-secondary px-2 py-[3px] text-[11px] font-medium text-muted-foreground"
               title={
                 mediated
                   ? 'Submissions route through internal quality review before the client sees them.'
@@ -140,37 +151,53 @@ export function HiringProcessPanel({ req }: { req: RequisitionResponse }) {
               }
             >
               {mediated ? 'Mediated' : 'Direct'}
-            </Badge>
+            </span>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Ops owns this per-requisition process. It controls how the recruiter pipeline is
-            rendered for this role.
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Ops owns this process. It defines the columns a recruiter sees in the pipeline for
+            this role.
           </p>
         </div>
         {canConfigure && (
           <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
-            Edit Process
+            Edit process
           </Button>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {hiringProcess.stages.map((stage) => (
-          <div key={stage.id} className="rounded-lg border bg-background px-3 py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{stage.order}. {stage.name}</span>
-              <Badge variant="secondary" className="text-[11px]">
+      <div className="flex flex-col">
+        {hiringProcess.stages.map((stage) => {
+          const stageType = hiringKindToStageType(stage.kind)
+          const count = stageCounts[stage.id] ?? 0
+          return (
+            <div
+              key={stage.id}
+              className="flex items-center gap-3 border-t border-[#ECEAE4] py-3 first:border-t-0"
+            >
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[13px] font-medium text-muted-foreground">
+                {stage.order}
+              </span>
+              <span className="text-sm font-medium">{stage.name}</span>
+              <span className="rounded-full border border-border bg-secondary px-2 py-[3px] text-[11px] font-medium text-muted-foreground">
                 {stageKindLabel(stage.kind)}
-              </Badge>
-              <Badge
-                variant={hiringKindToStageType(stage.kind) === 'internal_gate' ? 'default' : 'outline'}
-                className="text-[11px]"
+              </span>
+              <span
+                className={cn(
+                  'rounded-full px-2 py-[3px] text-[11px] font-medium',
+                  stageType === 'internal_gate'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'border border-border text-muted-foreground',
+                )}
               >
-                {stageTypeLabel(hiringKindToStageType(stage.kind))}
-              </Badge>
+                {stageTypeLabel(stageType)}
+              </span>
+              <div className="flex-1" />
+              <span className="text-[13px] text-muted-foreground">
+                {count === 0 ? 'No candidates' : `${count} candidate${count === 1 ? '' : 's'}`}
+              </span>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

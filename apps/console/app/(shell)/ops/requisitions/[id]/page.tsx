@@ -1,28 +1,24 @@
 'use client'
 
 import { use, useState, useEffect, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import type { components } from '@brynzit/api-client'
-import { toast } from 'sonner'
-import { Separator } from '@brynzit/ui/components/ui/separator'
 import { Button } from '@brynzit/ui/components/ui/button'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 import Link from 'next/link'
-import { Trophy, Zap } from 'lucide-react'
+import { ChevronRight, Trophy } from 'lucide-react'
 import { AssignedRecruitersCard } from '@/(shell)/my-roles/[id]/_components/assigned-recruiters-card'
 import { RequisitionFields } from './_components/requisition-fields'
 import { RequisitionLifecycleControls } from './_components/lifecycle-controls'
 import { HiringProcessPanel } from './_components/hiring-process-panel'
 import { JdPanel } from './_components/jd-panel'
-import { MatchmakerPanel } from './_components/matchmaker-panel'
 import { ShortlistTable } from './_components/shortlist-table'
 import { CandidateProfileSheet } from '@/(shell)/_components/candidate-profile-sheet'
 import { InterviewsSection } from './_components/interviews-section'
 import { PlacementPanel } from './_components/placement-panel'
 import { PlacementsSection } from './_components/placements-section'
 import { requisitionStatusLabel } from '@/(shell)/_lib/requisition-status'
-import { canTriggerCandidateMatch, candidateMatchButtonLabel } from './_lib/match-status'
+import { intakeGreenFlags, intakeRedFlags, intakeQuickFacts } from '@/(shell)/_lib/requisition-intake'
 
 type SubmissionResponse = components['schemas']['SubmissionResponse']
 
@@ -109,23 +105,6 @@ export default function RequisitionDetailPage({
     [shortlistEntries],
   )
 
-  const queryClient = useQueryClient()
-
-  const matchMutation = useMutation({
-    mutationFn: () =>
-      apiClient.POST('/api/v1/ops/requisitions/{req_id}/match', {
-        params: { path: { req_id: id } },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ops-requisition', id] })
-      queryClient.invalidateQueries({ queryKey: ['supply-shortlist', id] })
-      toast('Match triggered — shortlist will refresh shortly.')
-    },
-    onError: () => {
-      toast.error('Failed to trigger match — try again.')
-    },
-  })
-
   if (isLoading)
     return (
       <div className="p-6">
@@ -139,52 +118,69 @@ export default function RequisitionDetailPage({
       </div>
     )
 
+  const clientName = clientsData?.find((c) => c.id === req.client_id)?.name ?? req.client_id
+  const quickFacts = intakeQuickFacts(req.intake_details)
+  const location = [quickFacts.location, quickFacts.work_type].filter(Boolean).join(' · ')
+  const greenFlagsCount = intakeGreenFlags(req.intake_details).length
+  const redFlagsCount = intakeRedFlags(req.intake_details).length
+  const shortlistTotal = shortlistEntries.length
+  const submittedCount = shortlistEntries.filter((e) => e.submitted_at != null).length
+  const awaitingScreenCount = shortlistEntries.filter((e) => e.status === 'shortlisted').length
+
   return (
     <div className="overflow-y-auto px-6 py-6">
+      {/* Breadcrumb */}
+      <div className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link href="/ops/requisitions" className="hover:text-foreground">
+          Ops requisitions
+        </Link>
+        <ChevronRight className="size-3.5" />
+        <Link href={`/ops/clients/${req.client_id}`} className="font-semibold text-foreground hover:underline">
+          {clientName}
+        </Link>
+      </div>
+
       {/* Page header */}
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{req.title}</h1>
-          <Link href={`/ops/clients/${req.client_id}`} className="text-sm text-primary">
-            {clientsData?.find((c) => c.id === req.client_id)?.name ?? req.client_id}
-          </Link>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="mb-1 flex flex-wrap items-start justify-between gap-3">
+        <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold">
+          {req.title}
           <RequisitionStatusBadge status={req.status} />
+        </h1>
+        <div className="flex shrink-0 items-center gap-2">
           <RequisitionLifecycleControls reqId={id} status={req.status} />
         </div>
+      </div>
+      <p className="text-[13px] text-muted-foreground">
+        {[clientName, location, `posted ${daysAgo(req.created_at)}d ago`, 'owner ops']
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+
+      {/* Stats row */}
+      <div className="mt-3 mb-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[#ECEAE4] pt-3 text-[13px]">
+        <span className="font-medium">{shortlistTotal} on shortlist</span>
+        <Stat dotTone="#386CA0" label={`${submittedCount} submitted to client`} />
+        <Stat dotTone="#905300" label={`${awaitingScreenCount} awaiting recruiter screen`} />
+        <Stat dotTone="#317A4F" label={`${greenFlagsCount} green flags`} />
+        <Stat dotTone="#BA4642" label={`${redFlagsCount} red flags`} />
       </div>
 
       {/* Section 1: Requisition Fields */}
       <RequisitionFields req={req} />
-      <JdPanel req={req} />
-      <AssignedRecruitersCard reqId={id} />
-      <HiringProcessPanel req={req} />
-
-      {/* Trigger Match button */}
-      <Button
-        variant="default"
-        size="sm"
-        className="mb-6 mt-4"
-        disabled={!canTriggerCandidateMatch(req.status) || matchMutation.isPending}
-        onClick={() => matchMutation.mutate()}
-      >
-        <Zap className="mr-1 size-4" />
-        {candidateMatchButtonLabel(req.status, matchMutation.isPending)}
-      </Button>
+      <div className="mb-4 grid gap-4 lg:grid-cols-2">
+        <JdPanel req={req} />
+        <AssignedRecruitersCard reqId={id} />
+      </div>
+      <HiringProcessPanel req={req} submissions={shortlistEntries} />
 
       {/* Section 2: Shortlist */}
-      <Separator className="mb-4" />
-      <MatchmakerPanel
-        reqId={id}
-        onCandidateSelect={(candidateId, submissionId) => {
-          setSelectedCandidateId(candidateId)
-          setSelectedSubmissionId(submissionId)
-          setIsCandidatePanelOpen(true)
-        }}
-      />
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Shortlist</h2>
+        <div>
+          <h2 className="text-base font-semibold">Shortlist</h2>
+          <p className="text-[13px] text-muted-foreground">
+            {shortlistTotal} candidate{shortlistTotal === 1 ? '' : 's'}
+          </p>
+        </div>
       </div>
       <ShortlistTable
         reqId={id}
@@ -208,31 +204,41 @@ export default function RequisitionDetailPage({
         requisitionId={id}
       />
 
-      {/* Section 3: Interviews */}
-      <Separator className="my-4" />
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Interviews</h2>
-      </div>
-      <InterviewsSection
-        reqId={id}
-        candidates={shortlistCandidates}
-        defaultCandidateId={approvedCandidateId}
-      />
+      {/* Sections 3 & 4: Interviews + Placements */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h2 className="text-base font-semibold">Interviews</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            A lightweight tracker. Record the date and outcome here; invites and notes live
+            outside Brynz.
+          </p>
+          <div className="mt-3">
+            <InterviewsSection
+              reqId={id}
+              candidates={shortlistCandidates}
+              defaultCandidateId={approvedCandidateId}
+            />
+          </div>
+        </div>
 
-      {/* Section 4: Placements */}
-      <Separator className="my-4" />
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Placements</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsPlacementOpen(true)}
-        >
-          <Trophy className="mr-1 size-4" />
-          Log Placement
-        </Button>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Placements</h2>
+              <p className="mt-0.5 text-[13px] text-muted-foreground">
+                Log a placement once the client confirms an accepted offer.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setIsPlacementOpen(true)}>
+              <Trophy className="mr-1 size-4" />
+              Log placement
+            </Button>
+          </div>
+          <div className="mt-3">
+            <PlacementsSection reqId={id} />
+          </div>
+        </div>
       </div>
-      <PlacementsSection reqId={id} />
 
       {/* Placement slide-over */}
       <PlacementPanel
@@ -252,28 +258,31 @@ function shortId(id: string) {
   return `${id.slice(0, 8)}…${id.slice(-4)}`
 }
 
-function RequisitionStatusBadge({ status }: { status: string }) {
-  const label = requisitionStatusLabel(status)
-  if (status === 'filled') {
-    return (
-      <Badge
-        className="border-[oklch(0.45_0.15_145)/40] bg-[oklch(0.45_0.15_145)/20] text-xs text-[oklch(0.45_0.15_145)]"
-        variant="outline"
-      >
-        {label}
-      </Badge>
-    )
-  }
-  if (status === 'closed') {
-    return (
-      <Badge variant="outline" className="border-border text-xs text-muted-foreground">
-        {label}
-      </Badge>
-    )
-  }
+function daysAgo(dateIso: string) {
+  return Math.max(0, Math.floor((Date.now() - new Date(dateIso).getTime()) / 86_400_000))
+}
+
+function Stat({ label, dotTone }: { label: string; dotTone: string }) {
   return (
-    <Badge variant="secondary" className="text-xs">
+    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+      <span className="size-1.5 rounded-full" style={{ backgroundColor: dotTone }} />
       {label}
-    </Badge>
+    </span>
+  )
+}
+
+function RequisitionStatusBadge({ status }: { status: string }) {
+  const live = status === 'open' || status === 'matching_complete'
+  return (
+    <span
+      className={
+        live
+          ? 'inline-flex items-center gap-[5px] rounded-full border border-[#D3E2D7] bg-[#EFF4EF] px-2 py-[3px] text-[11px] font-medium text-[#317A4F]'
+          : 'inline-flex items-center gap-[5px] rounded-full border border-border bg-secondary px-2 py-[3px] text-[11px] font-medium text-muted-foreground'
+      }
+    >
+      <span className="size-[5px] rounded-full bg-current" />
+      {requisitionStatusLabel(status)}
+    </span>
   )
 }

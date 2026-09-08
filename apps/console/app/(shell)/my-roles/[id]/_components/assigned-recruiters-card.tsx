@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useActingUser, useCan } from '@brynzit/identity'
 import { toast } from 'sonner'
-import { Badge } from '@brynzit/ui/components/ui/badge'
+import { Avatar, AvatarFallback } from '@brynzit/ui/components/ui/avatar'
 import { Button } from '@brynzit/ui/components/ui/button'
 import {
   Select,
@@ -18,6 +18,7 @@ import {
   assignableRecruiters,
   assignRecruiter,
   assignmentQueryKeys,
+  fetchAssignedRequisitionIds,
   fetchRequisitionAssignees,
   unassignRecruiter,
 } from '@/(shell)/_lib/assignments'
@@ -49,6 +50,18 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
   const { data: allRecruiters = [] } = useQuery({
     queryKey: ['staff-auth', 'recruiters'],
     queryFn: listAssignableRecruiters,
+  })
+
+  // "N roles" per assignee — how many other requisitions they're on, not just this one.
+  const { data: roleCounts = {} } = useQuery({
+    queryKey: ['recruiter-role-counts', assigneeIds.join(',')],
+    enabled: assigneeIds.length > 0,
+    queryFn: async () => {
+      const counts = await Promise.all(
+        assigneeIds.map(async (userId) => [userId, (await fetchAssignedRequisitionIds(userId)).length] as const),
+      )
+      return Object.fromEntries(counts)
+    },
   })
 
   function userName(userId: string) {
@@ -83,28 +96,46 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
   const candidates = assignableRecruiters(allRecruiters, assigneeIds)
 
   return (
-    <div className="mb-6">
-      <h2 className="mb-2 text-base font-semibold">Assigned Recruiters</h2>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-4 rounded-xl border border-border bg-card p-4">
+      <h2 className="text-base font-semibold">Assigned recruiters</h2>
+      <p className="mt-0.5 text-[13px] text-muted-foreground">
+        Only these recruiters see this role in their pipeline.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {assigneeIds.length === 0 && (
-          <p className="text-muted-foreground text-sm">No recruiters assigned yet.</p>
+          <p className="text-sm text-muted-foreground">No recruiters assigned yet.</p>
         )}
-        {assigneeIds.map((userId) => (
-          <Badge key={userId} variant="secondary" className="gap-1 text-xs">
-            {userName(userId)}
-            {canManage && (
-              <button
-                type="button"
-                aria-label={`Remove ${userName(userId)}`}
-                className="text-muted-foreground hover:text-foreground"
-                disabled={unassignMutation.isPending}
-                onClick={() => unassignMutation.mutate(userId)}
-              >
-                <X className="size-3" />
-              </button>
-            )}
-          </Badge>
-        ))}
+        {assigneeIds.map((userId) => {
+          const count = roleCounts[userId]
+          const name = userName(userId)
+          return (
+            <span
+              key={userId}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pr-1.5 pl-1.5 text-[13px]"
+            >
+              <Avatar className="size-6">
+                <AvatarFallback className="bg-[#E5E3DC] text-[11px] font-medium text-muted-foreground">
+                  {initials(name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium">{name}</span>
+              {count != null && (
+                <span className="text-muted-foreground">{count} role{count === 1 ? '' : 's'}</span>
+              )}
+              {canManage && (
+                <button
+                  type="button"
+                  aria-label={`Remove ${userName(userId)}`}
+                  className="ml-1 flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground"
+                  disabled={unassignMutation.isPending}
+                  onClick={() => unassignMutation.mutate(userId)}
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </span>
+          )
+        })}
         {canManage && candidates.length > 0 && (
           <div className="flex items-center gap-2">
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -133,4 +164,13 @@ export function AssignedRecruitersCard({ reqId }: { reqId: string }) {
       </div>
     </div>
   )
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
 }

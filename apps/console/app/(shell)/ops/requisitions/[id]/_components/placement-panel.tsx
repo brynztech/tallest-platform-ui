@@ -94,8 +94,8 @@ export function PlacementPanel({
         <SheetDescription className="sr-only">
           Log placement billing, retention, and confirmation details for an approved candidate.
         </SheetDescription>
-        <div className="sticky top-0 z-10 border-b border-border bg-card/95 px-6 py-4 backdrop-blur">
-          <SheetTitle className="text-xl font-semibold">Log Placement</SheetTitle>
+        <div className="sticky top-0 z-10 border-b border-border bg-card px-6 py-4">
+          <SheetTitle className="text-xl font-semibold">Log placement</SheetTitle>
         </div>
         <form onSubmit={onSubmit} className="flex flex-col gap-4 px-6 py-4">
           {/* Pre-filled read-only fields */}

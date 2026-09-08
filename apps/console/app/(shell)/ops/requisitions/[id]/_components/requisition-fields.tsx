@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@brynzit/ui/components/ui/dialog'
 import { Pencil } from 'lucide-react'
+import { intakeQuickFacts } from '@/(shell)/_lib/requisition-intake'
 
 interface RequisitionFieldsProps {
   req: components['schemas']['RequisitionResponse']
@@ -90,45 +91,54 @@ export function RequisitionFields({ req }: RequisitionFieldsProps) {
     req.seniority ||
     (req.skills && (req.skills as string[]).length > 0) ||
     req.compensation_range
+  const quickFacts = intakeQuickFacts(req.intake_details)
+  const location = [quickFacts.location, quickFacts.work_type].filter(Boolean).join(' · ')
 
   return (
-    <div className="mb-4 rounded-lg border border-border bg-card p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold">Details</h2>
-        <Button variant="ghost" size="sm" onClick={() => setIsEditOpen(true)}>
+    <div className="mb-4 rounded-xl border border-border bg-card p-4">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Details</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            What the client agreed to. Editing these re-runs matching against the new criteria.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
           <Pencil className="mr-1 size-4" />
           Edit
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="mb-1 text-xs text-muted-foreground">Seniority</p>
-          <p className="text-sm">{req.seniority ?? '—'}</p>
-        </div>
-        <div>
-          <p className="mb-1 text-xs text-muted-foreground">Compensation Range</p>
-          <p className="text-sm">{req.compensation_range ?? '—'}</p>
-        </div>
-        <div>
-          <p className="mb-1 text-xs text-muted-foreground">Target Start Date</p>
-          <p className="text-sm">{req.target_start_date ?? '—'}</p>
-        </div>
-        <div>
-          <p className="mb-1 text-xs text-muted-foreground">Skills</p>
-          {skills.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {skills.map((skill) => (
-                <Badge key={skill} variant="secondary" className="text-xs">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm">—</p>
-          )}
-        </div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Field label="Seniority" value={req.seniority} />
+        <Field label="Compensation" value={req.compensation_range} />
+        <Field label="Equity" value={quickFacts.equity} />
+        <Field label="Location" value={location} />
+        <Field label="Experience" value={quickFacts.experience} />
+        <Field label="Target start date" value={req.target_start_date} />
       </div>
+
+      {skills.length > 0 && (
+        <div className="mt-4 border-t border-[#ECEAE4] pt-4">
+          <p className="mb-2 text-[11px] font-medium tracking-[0.09em] text-[#908E8B] uppercase">
+            Matching signals
+            <span className="ml-1.5 font-normal normal-case text-muted-foreground">
+              {skills.length} skills · used to rank every candidate on this role
+            </span>
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {skills.map((skill) => (
+              <Badge
+                key={skill}
+                variant="secondary"
+                className="text-[13px] font-normal text-[#3A3B3B]"
+              >
+                {skill}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!hasJdData && (
         <p className="mt-4 text-xs italic text-muted-foreground">
@@ -209,6 +219,17 @@ export function RequisitionFields({ req }: RequisitionFieldsProps) {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-medium tracking-[0.09em] text-[#908E8B] uppercase">
+        {label}
+      </p>
+      <p className="text-sm">{value?.trim() ? value : <span className="text-muted-foreground">Not set</span>}</p>
     </div>
   )
 }

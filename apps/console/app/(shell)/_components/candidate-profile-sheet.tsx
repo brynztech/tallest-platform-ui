@@ -261,7 +261,15 @@ export function CandidateProfileSheet({
   // requisition shortlist is the only endpoint that exposes them, so those
   // sections simply do not render when this sheet is opened from search.
   const { data: shortlist } = useQuery({
-    queryKey: ['supply-shortlist', requisitionId],
+    // Distinct from the `['supply-shortlist', requisitionId]` key other
+    // screens use for the raw submissions array (page.tsx, ShortlistTable) —
+    // this query wants the full `{ submissions }` response shape, and
+    // sharing the key let whichever query resolved last silently overwrite
+    // the other's cache entry with an incompatible shape (crashed any
+    // `.filter`/`.map` on the array-shaped consumers). Still covered by the
+    // `['supply-shortlist']` / `['supply-shortlist', reqId]` invalidations
+    // elsewhere (prefix match).
+    queryKey: ['supply-shortlist', requisitionId, 'full'],
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
         '/api/v1/supply/shortlists/{requisition_id}',

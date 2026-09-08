@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@brynzit/ui/components/ui/select'
-import { CheckCircle2, FileUp, RefreshCw, Sparkles } from 'lucide-react'
+import { CheckCircle2, ChevronRight, FileUp, RefreshCw, Sparkles } from 'lucide-react'
 import { assignRecruiter, assignmentQueryKeys } from '@/(shell)/_lib/assignments'
 import { updateRequisitionStatus } from '../[id]/_lib/lifecycle'
 import {
@@ -57,6 +57,10 @@ import { listAssignableRecruiters } from '../../../../_lib/staff-auth'
 type Client = components['schemas']['ClientResponse']
 type Step = 'form' | 'preview' | 'assign' | 'done'
 type IntakeMode = 'generate' | 'upload'
+
+// Free-text column on the backend (Requisition.seniority) — this is a
+// frontend-only convenience list, not an enforced enum.
+const SENIORITY_OPTIONS = ['junior', 'mid', 'senior', 'staff', 'lead'] as const
 
 export function CreateRequisitionWizard({
   open,
@@ -87,11 +91,13 @@ export function CreateRequisitionWizard({
   const [clientId, setClientId] = useState('')
   const [title, setTitle] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
+  const [formSeniority, setFormSeniority] = useState('')
   const [requirementText, setRequirementText] = useState('')
   const [referenceMemo, setReferenceMemo] = useState('')
   const [resdexMemo, setResdexMemo] = useState('')
   const [greenFlags, setGreenFlags] = useState('')
   const [redFlags, setRedFlags] = useState('')
+  const [showOptionalContext, setShowOptionalContext] = useState(false)
   const [useGeneratedTitle, setUseGeneratedTitle] = useState(false)
   const [selectedRecruiterIds, setSelectedRecruiterIds] = useState<string[]>([])
   const [assignedNames, setAssignedNames] = useState<string[]>([])
@@ -114,11 +120,13 @@ export function CreateRequisitionWizard({
     setClientId('')
     setTitle('')
     setWebsiteUrl('')
+    setFormSeniority('')
     setRequirementText('')
     setReferenceMemo('')
     setResdexMemo('')
     setGreenFlags('')
     setRedFlags('')
+    setShowOptionalContext(false)
     setUseGeneratedTitle(false)
     setSelectedRecruiterIds([])
     setAssignedNames([])
@@ -149,7 +157,10 @@ export function CreateRequisitionWizard({
         extra_red_flags: redFlags.trim() || undefined,
       })
     },
-    onSuccess: (generated) => {
+    onSuccess: async (generated) => {
+      // After generation, not before — generation writes its own inferred
+      // seniority, which would otherwise clobber an explicit form value.
+      if (formSeniority) await patchRequisitionFields(generated.requisition_id, { seniority: formSeniority })
       setJd(generated)
       setUseGeneratedTitle(titlesDiffer(title, generated.title_block.role_title))
       setStep('preview')
@@ -176,8 +187,13 @@ export function CreateRequisitionWizard({
       return uploadJdDocument(id, jdFile)
     },
     onSuccess: async (result) => {
+      // Direct patch, not just seeding seniorityDraft: the publish-time patch
+      // that carries seniorityDraft only runs for the flat-review fallback
+      // (parsed && !jd below) — a structured upload skips it entirely, which
+      // would silently drop an explicit form-level seniority otherwise.
+      if (formSeniority) await patchRequisitionFields(result.requisition_id, { seniority: formSeniority })
       setParsed(result)
-      setSeniorityDraft(result.seniority ?? '')
+      setSeniorityDraft(formSeniority || (result.seniority ?? ''))
       setSkillsDraft((result.skills ?? []).join(', '))
       setCompensationDraft(result.compensation_range ?? '')
       setUseGeneratedTitle(titlesDiffer(title, result.role))
@@ -277,7 +293,7 @@ export function CreateRequisitionWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[900px]">
+      <DialogContent className="top-[8vh] max-h-[90vh] translate-y-0 overflow-y-auto sm:max-w-[900px]">
         <DialogHeader>
           <DialogTitle>
             {step === 'form' && 'New requisition'}
@@ -322,31 +338,36 @@ export function CreateRequisitionWizard({
                 Upload existing JD
               </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="wizard-client">Client</Label>
-              <Select value={clientId} onValueChange={setClientId} disabled={Boolean(reqId)}>
-                <SelectTrigger id="wizard-client" className="w-full">
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <p className="text-xs text-muted-foreground">
+              The JD, seniority, skills and flags are all generated in one pass.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="wizard-client">Client</Label>
+                <Select value={clientId} onValueChange={setClientId} disabled={Boolean(reqId)}>
+                  <SelectTrigger id="wizard-client" className="w-full">
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="wizard-title">Role title</Label>
+                <Input
+                  id="wizard-title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="e.g. Senior Backend Engineer"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="wizard-title">Role title</Label>
-              <Input
-                id="wizard-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="e.g. Senior Backend Engineer"
-              />
-            </div>
-            {intakeMode === 'upload' && (
+            {intakeMode === 'upload' ? (
               <div className="space-y-1.5">
                 <Label htmlFor="wizard-jd-file">JD document (PDF or DOCX, max 10 MiB)</Label>
                 <Input
@@ -361,68 +382,107 @@ export function CreateRequisitionWizard({
                   </p>
                 )}
               </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="wizard-website">Company website</Label>
+                  <Input
+                    id="wizard-website"
+                    value={websiteUrl}
+                    onChange={(event) => setWebsiteUrl(event.target.value)}
+                    placeholder="https://company.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="wizard-seniority">Seniority</Label>
+                  <Select value={formSeniority} onValueChange={setFormSeniority}>
+                    <SelectTrigger id="wizard-seniority" className="w-full">
+                      <SelectValue placeholder="Select seniority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SENIORITY_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             )}
             {intakeMode === 'generate' && (
-            <>
-            <div className="space-y-1.5">
-              <Label htmlFor="wizard-website">Company website</Label>
-              <Input
-                id="wizard-website"
-                value={websiteUrl}
-                onChange={(event) => setWebsiteUrl(event.target.value)}
-                placeholder="https://company.com"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="wizard-requirement">Requirement paragraph</Label>
-              <Textarea
-                id="wizard-requirement"
-                rows={6}
-                value={requirementText}
-                onChange={(event) => setRequirementText(event.target.value)}
-                placeholder="Role, must-haves, comp, location, stage, non-negotiables…"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="wizard-memo">Reference memo (optional)</Label>
-              <Textarea
-                id="wizard-memo"
-                rows={3}
-                value={referenceMemo}
-                onChange={(event) => setReferenceMemo(event.target.value)}
-                placeholder="A prior JD for tone and level of detail only."
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="wizard-resdex">Resdex criteria memo (optional)</Label>
-              <Textarea
-                id="wizard-resdex"
-                rows={3}
-                value={resdexMemo}
-                onChange={(event) => setResdexMemo(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="wizard-green">Extra green flags (optional)</Label>
-                <Textarea
-                  id="wizard-green"
-                  rows={3}
-                  value={greenFlags}
-                  onChange={(event) => setGreenFlags(event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="wizard-red">Extra red flags (optional)</Label>
-                <Textarea
-                  id="wizard-red"
-                  rows={3}
-                  value={redFlags}
-                  onChange={(event) => setRedFlags(event.target.value)}
-                />
-              </div>
-            </div>
-            </>
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="wizard-requirement">Requirement brief</Label>
+                  <Textarea
+                    id="wizard-requirement"
+                    rows={6}
+                    value={requirementText}
+                    onChange={(event) => setRequirementText(event.target.value)}
+                    placeholder="Role, must-haves, comp, location, stage, non-negotiables…"
+                  />
+                </div>
+                <div className="border-t border-border pt-3">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 text-left"
+                    onClick={() => setShowOptionalContext((v) => !v)}
+                  >
+                    <span>
+                      <span className="text-sm font-semibold">Optional context</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Everything here only sharpens the generated JD. Skip it and the brief alone will do.
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className={`size-4 shrink-0 transition-transform ${showOptionalContext ? 'rotate-90' : ''}`}
+                    />
+                  </button>
+                  {showOptionalContext && (
+                    <div className="mt-3 space-y-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="wizard-memo">Reference memo (optional)</Label>
+                        <Textarea
+                          id="wizard-memo"
+                          rows={3}
+                          value={referenceMemo}
+                          onChange={(event) => setReferenceMemo(event.target.value)}
+                          placeholder="A prior JD for tone and level of detail only."
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="wizard-resdex">Resdex criteria memo (optional)</Label>
+                        <Textarea
+                          id="wizard-resdex"
+                          rows={3}
+                          value={resdexMemo}
+                          onChange={(event) => setResdexMemo(event.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="wizard-green">Extra green flags (optional)</Label>
+                          <Textarea
+                            id="wizard-green"
+                            rows={3}
+                            value={greenFlags}
+                            onChange={(event) => setGreenFlags(event.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="wizard-red">Extra red flags (optional)</Label>
+                          <Textarea
+                            id="wizard-red"
+                            rows={3}
+                            value={redFlags}
+                            onChange={(event) => setRedFlags(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -620,34 +680,49 @@ export function CreateRequisitionWizard({
 
         <DialogFooter>
           {step === 'form' && intakeMode === 'generate' && (
-            <Button disabled={!canGenerate} onClick={() => generateMutation.mutate()}>
-              {generateMutation.isPending ? (
-                <>
-                  <RefreshCw className="mr-1 size-4 animate-spin" />
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-1 size-4" />
-                  Generate job description
-                </>
-              )}
-            </Button>
+            <>
+              <p className="mr-auto self-center text-xs text-muted-foreground">
+                {!canGenerate && !generateMutation.isPending
+                  ? 'Client, role title, website and a requirement brief are required.'
+                  : ''}
+              </p>
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button disabled={!canGenerate} onClick={() => generateMutation.mutate()}>
+                {generateMutation.isPending ? (
+                  <>
+                    <RefreshCw className="mr-1 size-4 animate-spin" />
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-1 size-4" />
+                    Generate job description
+                  </>
+                )}
+              </Button>
+            </>
           )}
           {step === 'form' && intakeMode === 'upload' && (
-            <Button disabled={!canUpload} onClick={() => uploadMutation.mutate()}>
-              {uploadMutation.isPending ? (
-                <>
-                  <RefreshCw className="mr-1 size-4 animate-spin" />
-                  Parsing…
-                </>
-              ) : (
-                <>
-                  <FileUp className="mr-1 size-4" />
-                  Upload &amp; parse
-                </>
-              )}
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button disabled={!canUpload} onClick={() => uploadMutation.mutate()}>
+                {uploadMutation.isPending ? (
+                  <>
+                    <RefreshCw className="mr-1 size-4 animate-spin" />
+                    Parsing…
+                  </>
+                ) : (
+                  <>
+                    <FileUp className="mr-1 size-4" />
+                    Upload &amp; parse
+                  </>
+                )}
+              </Button>
+            </>
           )}
           {step === 'preview' && (
             <>

@@ -80,6 +80,27 @@ export function normalizeEditableStages(stages: Array<Pick<HiringStage, 'name' |
   }))
 }
 
+type SubmissionResponse = components['schemas']['SubmissionResponse']
+
+/** Real per-stage counts for the Hiring Process panel — `approved` submissions
+ * bucket by `current_stage_id`, defaulting to the first stage when unset. */
+export function countSubmissionsByStage(
+  stages: HiringStage[],
+  submissions: Array<Pick<SubmissionResponse, 'status' | 'current_stage_id'>>,
+): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const stage of stages) counts[stage.id] = 0
+  for (const submission of submissions) {
+    if (submission.status !== 'approved') continue
+    const stageId =
+      submission.current_stage_id && counts[submission.current_stage_id] !== undefined
+        ? submission.current_stage_id
+        : stages[0]?.id
+    if (stageId) counts[stageId] = (counts[stageId] ?? 0) + 1
+  }
+  return counts
+}
+
 export function stageForSubmissionStatus(stages: HiringStage[], status: string) {
   if (status === 'rejected') return 'rejected'
   if (status === 'approved') return stages[1]?.id ?? stages[0]?.id ?? 'unassigned'

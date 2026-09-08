@@ -25,11 +25,7 @@ export function PlacementsSection({ reqId }: PlacementsSectionProps) {
   })
 
   if (placements.length === 0) {
-    return (
-      <p className="py-4 text-center text-sm text-muted-foreground">
-        No placements logged. Use &apos;Log Placement&apos; above when a candidate is ready.
-      </p>
-    )
+    return <p className="py-4 text-[15px] text-[#908E8B]">No placements logged.</p>
   }
 
   return (
@@ -37,7 +33,7 @@ export function PlacementsSection({ reqId }: PlacementsSectionProps) {
       {placements.map((placement: PlacementResponse) => (
         <div
           key={placement.id}
-          className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3"
+          className="flex items-center gap-4 rounded-lg border border-border bg-background px-4 py-3"
         >
           <span className="flex-1 text-sm">{placement.candidate_id ?? '—'}</span>
           <span className="text-sm">

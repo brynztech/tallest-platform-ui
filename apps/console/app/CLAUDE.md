@@ -236,14 +236,10 @@ overflow bugs only show up there.
 `globals.css` tokens are app-wide, so **every** console screen already renders
 on the Brynz palette — but only some have had their classes reworked for it.
 
-- **On the system:** `(shell)/layout.tsx`, `top-nav`, `sidebar-nav`,
-  `recruiter-dashboard`, `pipeline/*`, `staff-sign-in-form`.
-- **Not yet reworked (will look off):**
-  - ~40 files use `text-primary` / `bg-primary/10` as an *accent*. That was
-    blue; it is now near-black. Replace with warm-grey or a status hue.
-  - ~12 files use `bg-white/85` + `backdrop-blur` glass — forbidden here.
-  - 5 files use the older literal `oklch()` status colors — migrate to the
-    hexes in §2 when touched.
+Per-screen status (what's done, what's left, known partials) lives in
+**`docs/console-design-system-migration.md`** — update it in the same pass as
+the code, same rule as the Decisions log below. Don't re-estimate counts here;
+that's exactly what went stale before this file existed.
 
 Migrate opportunistically: when you touch one of these screens, bring it onto
 the system rather than matching its legacy look.
@@ -253,6 +249,127 @@ the system rather than matching its legacy look.
 ## 9. Decisions log
 
 Append here — newest first — whenever a UI correction lands.
+
+### 2026-09-09 — Shared React Query cache key, two incompatible shapes: crash
+**Two components querying the same key must return the same shape** — React
+Query caches by key regardless of which component asked, so whichever query
+resolves last silently overwrites the other's cache entry. `page.tsx` and
+`ShortlistTable` both used `['supply-shortlist', reqId]` for the raw
+`submissions` array; `CandidateProfileSheet` used the *exact same key* for the
+full `{ submissions }` response object. Opening the sheet (click a candidate
+name) fired its query, which won the race and replaced the array in the
+shared cache with the wrapper object — `shortlistEntries.filter is not a
+function`, page-crashing error boundary.
+- Fixed at the source of the collision: gave `CandidateProfileSheet`'s query
+  its own key (`['supply-shortlist', requisitionId, 'full']`) instead of
+  reshaping every array-consumer to match it — fewer call sites touched, and
+  the two things really are different data (array vs. wrapper), not a
+  convention drift to reconcile.
+  Still covered by the existing `['supply-shortlist']` /
+  `['supply-shortlist', reqId]` invalidations elsewhere (prefix match).
+- This sheet is used from `my-roles`, `supply/search`, `pipeline`, and
+  `cross-list` too — none of those screens happened to have another
+  `['supply-shortlist', reqId]`-array consumer mounted at the same time, which
+  is why this stayed latent until the Ops requisition detail rebuild made it
+  reachable.
+
+### 2026-09-08 — Ops Requisition detail: no candidate-matching controls at all
+Follow-up correction on the same screen, same session: matching a candidate to
+a role is the recruiter's job, not the AM/admin's. Ops requisition detail
+(`ops/requisitions/[id]`) is admin/AM-only — recruiters never land on this
+route, they use `my-roles`.
+
+- Removed "Re-run Candidate Match" from the header (and its mutation/imports)
+  — was letting an admin trigger matching directly.
+- Removed the **AI Matchmaker** panel entirely, deleted
+  `matchmaker-panel.tsx` (zero remaining importers) rather than leaving it
+  disabled/hidden — same "delete confirmed-dead code" discipline as
+  `candidate-detail-panel.tsx` above.
+- `my-roles/[id]` (the recruiter's own screen) keeps its own "Run Match"
+  button — untouched, out of scope, that's the recruiter's screen.
+- The Shortlist section (`ShortlistTable`, unaffected) is still how an
+  admin/AM reviews and approves/removes what the recruiter already submitted
+  — that's "viewing the recruiter's submissions," not running the match
+  themselves.
+
+### 2026-09-08 — Ops Requisition detail screen rebuilt from a Figma reference
+Reference: user-supplied screenshots of the target layout (breadcrumb → header
++ stats → Details → Job description → Assigned recruiters → Hiring process →
+AI matchmaker → Shortlist → Interviews/Placements two-column footer).
+
+- **Nothing here is new data — it was already recorded, just not displayed.**
+  `intake_details.quick_facts` (written by `jd_generator.py::_matching_intake`)
+  already carried `equity`/`location`/`work_type`/`experience`; the Details
+  card just never read it. Added `intakeQuickFacts()` next to the existing
+  `intakeGreenFlags`/`intakeRedFlags` in `_lib/requisition-intake.ts` — same
+  pattern, don't start a second one.
+- **Per-stage candidate counts on the Hiring Process panel are real**, not
+  decorative — `countSubmissionsByStage()` (`_lib/hiring-process.ts`) buckets
+  `approved` submissions by `current_stage_id`, same two fields the `/pipeline`
+  kanban's `groupSubmissionsByPipelineStage` already uses. Written as a small
+  local function instead of importing that one — it lives in a different
+  route's `_lib` and takes a different submission type; duplicating five lines
+  beat a cross-route type-compat cast.
+- **Header stats (shortlist/submitted/awaiting/flags) are computed client-side
+  from the page's own `shortlistEntries`**, not a second fetch — the detail
+  page already holds the full submission list; the bulk
+  `pipeline-stats` endpoint (see `docs/requisitions-pipeline-stats.md`) is for
+  the *list* screens that don't otherwise fetch each requisition's
+  submissions.
+- **`AssignedRecruitersCard` now shows "N roles" per recruiter**
+  (`fetchAssignedRequisitionIds(userId).length`) — reused, not built new. It's
+  shared with My Roles detail, so that screen picked up the same count for
+  free.
+- **`CandidateShortlistCard`'s rationale text now always renders** above the
+  judgment bar, not only when there's no full `evidence` — the reference shows
+  it every time. Shared with My Roles' shortlist card; that screen doesn't
+  pass `fallbackNote` today, so it's a no-op there, not a regression.
+- **Skipped, flagged for a product call rather than guessed at:**
+  - AI Matchmaker's "Add to shortlist" / "Dismiss" buttons in the reference —
+    every candidate the panel lists is already a real `Submission` (same
+    endpoint as the shortlist table below), so "add to shortlist" has no
+    target to act on today, and the component's own comment documents a
+    deliberate decision ("the AI never advances a candidate on its own").
+    Restyled the panel, kept it read-only (click → view profile). Building
+    real add/dismiss needs a decision on what "not yet shortlisted" means
+    first.
+  - Interview log form's "Stage" dropdown — `CreateInterviewRequest` has no
+    `stage` field server-side. Didn't fake it client-side (§5.3, no dead
+    controls).
+  - "Match last run 2d ago" — no last-match-run timestamp exists anywhere
+    (`matching.py` writes no such field). Left off rather than approximating
+    from `updated_at`, which changes on unrelated edits too.
+- Deleted `candidate-detail-panel.tsx` (confirmed dead code, see tracker).
+- `F1`: `AssignedRecruitersCard`'s username lookup falls back to the raw UUID
+  for at least one real recruiter — `listAssignableRecruiters` doesn't include
+  them. Pre-existing, unrelated to this pass; not fixed.
+
+### 2026-09-08 — Dialog with variable-height tabs: anchor top, don't center
+- **A `Dialog` whose content height changes (tab switch, step change) must not
+  use the default vertical centering** — `packages/ui`'s `DialogContent` is
+  `top-[50%] ... translate-y-[-50%]`, so a height change recenters the box and
+  the top edge visibly moves.
+- Fixed the New Requisition wizard the sanctioned way (§6.3): call-site
+  className override, `top-[8vh] translate-y-0`, `packages/ui` untouched.
+  Reach for this on any other multi-step/multi-tab dialog that grows or
+  shrinks (create-requisition-wizard's `form`/`preview`/`assign`/`done` steps
+  already share this `DialogContent`, so they're covered).
+- Also fixed the same pass: `hasGeneratedJd()` (`_lib/requisition-intake.ts`)
+  required `intake_details.generated_jd` to be a `string` — the backend
+  (`ops/services/jd_generator.py::_matching_intake`) has only ever stored it
+  as an object. Every requisition with a real generated JD was showing "JD
+  missing". Now a plain truthy check.
+
+### 2026-09-08 — Per-screen migration tracker replaces the §8 estimate
+- `docs/console-design-system-migration.md` is now the source of truth for
+  which screens are on the DS and which aren't. §8 used to carry its own
+  rough counts ("~40 files", "~12 files", "5 files") — a fresh grep found
+  28/4/16, already drifted, because nothing forced them to stay in sync with
+  reality. A checklist that's updated in the same pass as the code (same
+  discipline as this log) doesn't have that problem.
+- Ops Requisitions list, My Roles list, the shared shortlist candidate card,
+  and the New Requisition dialog's form step landed on the DS this pass —
+  see the tracker for exactly what's still partial vs. untouched.
 
 ### 2026-09-07 — `SheetContent` renders its own X: pass `showCloseButton={false}`
 - **A `Sheet` with a hand-rolled close button in its header gets two stacked
