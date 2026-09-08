@@ -16,6 +16,7 @@ function history(overrides: Partial<CandidateSubmissionHistory>): CandidateSubmi
     role_title: 'Backend Engineer',
     current_stage_name: null,
     status: 'in_process',
+    recruiter_note: null,
     rejection_reason: null,
     rejection_stage: null,
     rejected_at: null,

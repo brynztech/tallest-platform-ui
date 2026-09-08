@@ -25,6 +25,10 @@ export type CandidateSubmissionHistory = {
   role_title: string | null
   current_stage_name: string | null
   status: CandidateSubmissionOutcome
+  /** Whatever the recruiter recorded when they set this submission's
+   * outcome — populated regardless of what that outcome was, not just a
+   * rejection (that's `rejection_reason`, a separate field). */
+  recruiter_note: string | null
   rejection_reason: string | null
   rejection_stage: string | null
   rejected_at: string | null

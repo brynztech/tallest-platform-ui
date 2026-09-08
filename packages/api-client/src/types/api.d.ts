@@ -4494,6 +4494,8 @@ export interface components {
             current_stage_name?: string | null;
             /** Status */
             status: string;
+            /** Recruiter Note */
+            recruiter_note?: string | null;
             /** Rejection Reason */
             rejection_reason?: string | null;
             /** Rejection Stage */

@@ -164,6 +164,13 @@ function RelationshipMemory({
                       {submission.rejection_reason}
                     </p>
                   )}
+                  {/* Same underlying field as rejection_reason when this
+                      submission was rejected — don't show the note twice. */}
+                  {submission.recruiter_note && submission.recruiter_note !== submission.rejection_reason && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      “{submission.recruiter_note}”
+                    </p>
+                  )}
                 </div>
                 <StatusPill status={submission.status} />
               </div>
