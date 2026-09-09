@@ -20,7 +20,7 @@ Legend: ✅ done · 🔶 partial (has a specific known leftover) · ⬜ not star
 |---|---|---|
 | Layout, top nav, sidebar nav | `(shell)/layout.tsx`, `_components/top-nav.tsx`, `_components/sidebar-nav.tsx` | ✅ |
 | Sign-in | `staff-sign-in-form` | ✅ |
-| Overview / Dashboard | `_components/recruiter-dashboard.tsx` | ✅ |
+| Overview / Dashboard | `_components/recruiter-dashboard.tsx` | ✅ — this session: replaced the local `MetricCard` (duplicate of `PipelineStatTile`) with the shared component, dropped the per-tile description sentences |
 | Notification bell | `_components/notification-bell.tsx` | ⬜ |
 
 ## Recruiting pipeline
@@ -42,7 +42,7 @@ Legend: ✅ done · 🔶 partial (has a specific known leftover) · ⬜ not star
 
 | Area | File(s) | Status |
 |---|---|---|
-| List screen | `ops/requisitions/page.tsx` | ✅ (this session) |
+| List screen | `ops/requisitions/page.tsx` | ✅ (this session) — per-row green/red-flags + JD-generated footer strip removed as redundant (JD status already shown as a badge up top) |
 | New Requisition dialog — form step | `ops/requisitions/_components/create-requisition-wizard.tsx` | 🔶 — only the `form` step was restyled; `preview`/`assign`/`done` steps untouched (one leftover `text-primary` icon in the `done` step); this session also fixed the dialog's vertical-recenter-on-tab-switch bug (`top-[8vh] translate-y-0`) |
 | Detail screen | `ops/requisitions/[id]/page.tsx` | ✅ (this session) — header/breadcrumb/stats rebuilt, Details/JD/Assigned-recruiters/Hiring-process/Matchmaker/Interviews/Placements all restyled; per-stage candidate counts and quick-facts (equity/location/experience) now real, not placeholders |
 | Matchmaker panel | `ops/requisitions/[id]/_components/matchmaker-panel.tsx` | ✅ (this session) |
@@ -54,14 +54,14 @@ Legend: ✅ done · 🔶 partial (has a specific known leftover) · ⬜ not star
 
 | Area | File(s) | Status |
 |---|---|---|
-| List | `ops/clients/page.tsx` | ⬜ — has the banned glass effect |
-| Detail — fields, requisitions tab | `ops/clients/[id]/_components/client-fields.tsx`, `client-requisitions.tsx` | ⬜ |
+| List | `ops/clients/page.tsx` | ✅ (this session) — rebuilt to a user-supplied reference: KPI tile row (active clients, open requisitions, submitted to clients, no-open-requisition), All/Active/Inactive filter, search, per-client rollup stats |
+| Detail | `ops/clients/[id]/page.tsx`, `_components/client-fields.tsx`, `client-requisitions.tsx`, `client-notes.tsx` | ✅ (this session) — rebuilt to the same reference: header stats row, requisitions-in-client with shortlist/submitted/awaiting + owner, updated Notes copy. "Created by" + "Agreed fee" now real (backend migration `f3a91c7d2b4e`); "Ops owner"/"Replacement window" deliberately not built, see `app/CLAUDE.md` Decisions log |
 
 ## Ops — Interviews / Quality Review
 
 | Area | File(s) | Status |
 |---|---|---|
-| Interviews list | `ops/interviews/page.tsx` | ⬜ — has the banned glass effect too |
+| Interviews list | `ops/interviews/page.tsx` | ✅ (this session) — dropped `backdrop-blur` + `text-primary` link; rows previously showed a raw candidate UUID and a "View Requisition →" text link with no title, now resolve and show the candidate's name (`GET /supply/candidates/{id}`) and the requisition title (`GET /ops/requisitions`) |
 | Quality review (AI recommendation queue) | `ops/quality-review/page.tsx` | ⬜ |
 
 ## BD (business development) — untouched domain

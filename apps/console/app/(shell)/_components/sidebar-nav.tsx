@@ -73,7 +73,7 @@ export function SidebarNav() {
   return (
     <nav
       aria-label="Recruiter portal navigation"
-      className="flex h-full w-[232px] shrink-0 flex-col overflow-y-auto border-r border-[#ECEAE4] p-3"
+      className="flex h-full w-[232px] shrink-0 flex-col overflow-y-auto border-r border-[#ECEAE4] bg-background p-3"
     >
       <div className="flex flex-col gap-1">
         <Link

@@ -2719,6 +2719,12 @@ export interface components {
             primary_contact_email: string | null;
             /** Status */
             status: string;
+            /** Created By */
+            created_by: string | null;
+            /** Created By Username */
+            created_by_username: string | null;
+            /** Agreed Fee Pct */
+            agreed_fee_pct: number | null;
             /**
              * Created At
              * Format: date-time
@@ -2900,6 +2906,10 @@ export interface components {
             primary_contact_name?: string | null;
             /** Primary Contact Email */
             primary_contact_email?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /** Agreed Fee Pct */
+            agreed_fee_pct?: number | null;
         };
         /** CreateConversationRequest */
         CreateConversationRequest: {
@@ -3879,6 +3889,8 @@ export interface components {
             primary_contact_email?: string | null;
             /** Status */
             status?: ("active" | "inactive" | "churned") | null;
+            /** Agreed Fee Pct */
+            agreed_fee_pct?: number | null;
         };
         /**
          * PatchEngagementRequest

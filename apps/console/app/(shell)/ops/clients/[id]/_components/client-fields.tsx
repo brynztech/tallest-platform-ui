@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@brynzit/api-client'
 import type { components } from '@brynzit/api-client'
 import { toast } from 'sonner'
+import { useCan } from '@brynzit/identity'
 import { Button } from '@brynzit/ui/components/ui/button'
 import {
   Dialog,
@@ -19,6 +20,7 @@ import {
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { Pencil } from 'lucide-react'
+import { listAssignableRecruiters } from '@/_lib/staff-auth'
 
 const clientSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -29,6 +31,14 @@ const clientSchema = z.object({
     .nullable()
     .optional()
     .or(z.literal('')),
+  agreed_fee_pct: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      (v) => !v || (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100),
+      'Enter a percentage between 0 and 100',
+    ),
 })
 
 type ClientFormValues = z.infer<typeof clientSchema>
@@ -39,6 +49,8 @@ interface ClientFieldsProps {
 
 export function ClientFields({ client }: ClientFieldsProps) {
   const queryClient = useQueryClient()
+  const can = useCan()
+  const canManage = can('client.manage')
   const [isEditOpen, setIsEditOpen] = useState(false)
 
   const {
@@ -52,6 +64,7 @@ export function ClientFields({ client }: ClientFieldsProps) {
       name: client.name,
       primary_contact_name: client.primary_contact_name ?? '',
       primary_contact_email: client.primary_contact_email ?? '',
+      agreed_fee_pct: client.agreed_fee_pct != null ? String(client.agreed_fee_pct) : '',
     },
   })
 
@@ -62,6 +75,7 @@ export function ClientFields({ client }: ClientFieldsProps) {
         primary_contact_name: values.primary_contact_name ?? null,
         primary_contact_email:
           values.primary_contact_email === '' ? null : (values.primary_contact_email ?? null),
+        agreed_fee_pct: values.agreed_fee_pct ? Number(values.agreed_fee_pct) : null,
       }
       const { data, error } = await apiClient.PATCH('/api/v1/ops/clients/{client_id}', {
         params: { path: { client_id: client.id } },
@@ -82,61 +96,54 @@ export function ClientFields({ client }: ClientFieldsProps) {
   })
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">Details</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            reset({
-              name: client.name,
-              primary_contact_name: client.primary_contact_name ?? '',
-              primary_contact_email: client.primary_contact_email ?? '',
-            })
-            setIsEditOpen(true)
-          }}
-        >
-          <Pencil className="mr-1 size-3.5" />
-          Edit
-        </Button>
+    <div className="mb-4 rounded-xl border border-border bg-card p-4">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold">Details</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            Who to reach at this client, and the terms ops agreed with them.
+          </p>
+        </div>
+        {canManage && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              reset({
+                name: client.name,
+                primary_contact_name: client.primary_contact_name ?? '',
+                primary_contact_email: client.primary_contact_email ?? '',
+                agreed_fee_pct: client.agreed_fee_pct != null ? String(client.agreed_fee_pct) : '',
+              })
+              setIsEditOpen(true)
+            }}
+          >
+            <Pencil className="mr-1 size-4" />
+            Edit
+          </Button>
+        )}
       </div>
 
-      {/* Read-only field display */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-muted-foreground text-xs">Status</span>
-          <span className="text-sm">{client.status}</span>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-muted-foreground text-xs">Primary Contact</span>
-          <span className="text-sm">{client.primary_contact_name ?? '—'}</span>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-muted-foreground text-xs">Contact Email</span>
-          {client.primary_contact_email ? (
-            <a
-              href={`mailto:${client.primary_contact_email}`}
-              className="text-primary text-sm hover:underline"
-            >
-              {client.primary_contact_email}
-            </a>
-          ) : (
-            <span className="text-sm">—</span>
-          )}
-        </div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <Field label="Primary contact" value={client.primary_contact_name} />
+        <Field
+          label="Contact email"
+          value={client.primary_contact_email}
+          href={client.primary_contact_email ? `mailto:${client.primary_contact_email}` : undefined}
+        />
+        <Field label="Client since" value={new Date(client.created_at).toLocaleDateString()} />
+        <Field label="Created by" value={client.created_by_username} />
+        <Field
+          label="Agreed fee"
+          value={client.agreed_fee_pct != null ? `${client.agreed_fee_pct}% of CTC` : null}
+        />
       </div>
 
       {/* Edit Dialog */}
-      <Dialog
-        open={isEditOpen}
-        onOpenChange={(open) => {
-          setIsEditOpen(open)
-        }}
-      >
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Client</DialogTitle>
+            <DialogTitle>Edit client</DialogTitle>
             <DialogDescription className="sr-only">
               Update the client name and primary contact details.
             </DialogDescription>
@@ -149,24 +156,15 @@ export function ClientFields({ client }: ClientFieldsProps) {
               <Label htmlFor="edit-client-name">
                 Name <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="edit-client-name"
-                {...register('name')}
-                aria-invalid={!!errors.name}
-              />
-              {errors.name && (
-                <p className="text-destructive text-xs">{errors.name.message}</p>
-              )}
+              <Input id="edit-client-name" {...register('name')} aria-invalid={!!errors.name} />
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-contact-name">Primary Contact Name</Label>
-              <Input
-                id="edit-contact-name"
-                {...register('primary_contact_name')}
-              />
+              <Label htmlFor="edit-contact-name">Primary contact name</Label>
+              <Input id="edit-contact-name" {...register('primary_contact_name')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-contact-email">Primary Contact Email</Label>
+              <Label htmlFor="edit-contact-email">Primary contact email</Label>
               <Input
                 id="edit-contact-email"
                 type="email"
@@ -174,26 +172,67 @@ export function ClientFields({ client }: ClientFieldsProps) {
                 aria-invalid={!!errors.primary_contact_email}
               />
               {errors.primary_contact_email && (
-                <p className="text-destructive text-xs">
+                <p className="text-xs text-destructive">
                   {errors.primary_contact_email.message}
                 </p>
               )}
             </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-agreed-fee">Agreed fee (% of CTC)</Label>
+              <Input
+                id="edit-agreed-fee"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                placeholder="8.33"
+                {...register('agreed_fee_pct')}
+                aria-invalid={!!errors.agreed_fee_pct}
+              />
+              {errors.agreed_fee_pct && (
+                <p className="text-xs text-destructive">{errors.agreed_fee_pct.message}</p>
+              )}
+            </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={patchMutation.isPending}>
-                {patchMutation.isPending ? 'Saving…' : 'Update Client'}
+                {patchMutation.isPending ? 'Saving…' : 'Update client'}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function Field({
+  label,
+  value,
+  href,
+}: {
+  label: string
+  value: string | null | undefined
+  href?: string
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-medium tracking-[0.09em] text-[#908E8B] uppercase">
+        {label}
+      </p>
+      {value ? (
+        href ? (
+          <a href={href} className="text-sm hover:underline">
+            {value}
+          </a>
+        ) : (
+          <p className="text-sm">{value}</p>
+        )
+      ) : (
+        <p className="text-sm text-muted-foreground">Not set</p>
+      )}
     </div>
   )
 }

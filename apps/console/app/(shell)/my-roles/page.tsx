@@ -185,7 +185,6 @@ export default function MyRolesPage() {
             ) : (
               filtered.map(({ req: requisition, health }) => {
                 const stats = statsFor(statsById, requisition.id)
-                const screened = stats.shortlist_total - stats.not_yet_screened
                 const isMine = assignedIdSet.has(requisition.id)
                 return (
                   <div
@@ -231,16 +230,6 @@ export default function MyRolesPage() {
                           <ChevronRight className="size-3.5" />
                         </Link>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 border-t border-[#ECEAE4] bg-[#F8F7F3] px-4 py-2.5 text-[13px] text-[#3A3B3B]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-[#317A4F]" />
-                        {screened} screened
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-[#905300]" />
-                        {stats.not_yet_screened} not yet screened
-                      </span>
                     </div>
                   </div>
                 )

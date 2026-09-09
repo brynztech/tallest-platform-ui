@@ -50,43 +50,44 @@ export function ClientNotes({ clientId }: ClientNotesProps) {
   })
 
   return (
-    <div className="flex h-full flex-col">
-      <h2 className="mb-4 text-base font-semibold">Notes</h2>
+    <div className="rounded-xl border border-border bg-card p-4">
+      <h2 className="text-base font-semibold">Notes</h2>
 
-      {/* Notes log */}
-      <div className="mb-4 flex flex-1 flex-col gap-3 overflow-y-auto">
-        {sortedNotes.length === 0 ? (
-          <p className="text-muted-foreground text-sm italic">
-            No notes yet. Paste Slack or WhatsApp logs here.
-          </p>
-        ) : (
-          sortedNotes.map((note) => (
-            <div key={note.id} className="bg-muted/30 rounded-lg px-4 py-3">
-              <p className="text-muted-foreground mb-1 text-xs">
-                {new Date(note.created_at).toLocaleString()}
-              </p>
-              <p className="text-sm whitespace-pre-wrap">{note.text}</p>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Note input — sticky at bottom */}
-      <div className="border-border border-t pt-3">
+      <div className="mt-3">
         <Textarea
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="Paste notes, Slack threads, or WhatsApp logs…"
           className="min-h-[80px] resize-none"
         />
-        <Button
-          className="mt-2 ml-auto block"
-          size="sm"
-          disabled={noteText.trim().length === 0 || addNoteMutation.isPending}
-          onClick={() => addNoteMutation.mutate(noteText)}
-        >
-          {addNoteMutation.isPending ? 'Saving…' : 'Add Note'}
-        </Button>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            Notes are visible to every ops user on this client.
+          </p>
+          <Button
+            size="sm"
+            disabled={noteText.trim().length === 0 || addNoteMutation.isPending}
+            onClick={() => addNoteMutation.mutate(noteText)}
+          >
+            {addNoteMutation.isPending ? 'Saving…' : 'Add note'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Notes log */}
+      <div className="mt-4 flex flex-col gap-2 border-t border-[#ECEAE4] pt-4">
+        {sortedNotes.length === 0 ? (
+          <p className="text-[15px] text-[#908E8B]">No notes yet.</p>
+        ) : (
+          sortedNotes.map((note) => (
+            <div key={note.id} className="rounded-lg bg-[#F8F7F3] px-4 py-3">
+              <p className="mb-1 text-xs text-muted-foreground">
+                {new Date(note.created_at).toLocaleString()}
+              </p>
+              <p className="text-sm whitespace-pre-wrap">{note.text}</p>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

@@ -248,7 +248,145 @@ the system rather than matching its legacy look.
 
 ## 9. Decisions log
 
-Append here — newest first — whenever a UI correction lands.
+### 2026-09-09 — Ops Interviews list: DS pass + resolved candidate/requisition names
+Dropped the banned `backdrop-blur` sticky header and the `text-primary` link.
+Bigger issue than styling: rows rendered a raw candidate UUID and a bare
+"View Requisition →" link with no title — `InterviewResponse` carries only
+ids, no names. Resolved client-side rather than touching the backend: one
+`GET /api/v1/ops/requisitions` call builds an id→title map, and a `useQueries`
+fan-out over `GET /api/v1/supply/candidates/{id}` (already a real endpoint,
+just under-batched — fine at this list's size) resolves candidate names. Row
+layout and the `InterviewStatusBadge` tone logic now match the sibling
+implementation already living in
+`ops/requisitions/[id]/_components/interviews-section.tsx`, not reinvented.
+
+### 2026-09-09 — Client creator tracking + agreed fee (real backend feature, not a restyle)
+Resolved the D1 from the previous entry — not by building the "Ops owner"
+select or "Replacement window" from the reference, but by clarifying what was
+actually needed: only account_manager/admin can create a client
+(`client.manage`), so record *who did*, not an editable, freely-reassignable
+"owner." Replacement window: skipped, not asked for once the audit-field need
+was named.
+
+- **Backend** (`talent-platform` repo): migration `f3a91c7d2b4e` adds
+  `ops_clients.created_by` (FK → `staff_users.id`, `ON DELETE SET NULL`) and
+  `agreed_fee_pct` (`NUMERIC(5,2)`, optional). `OpsClient.creator` is a
+  `lazy="joined"` relationship + a `created_by_username` property, so
+  `ClientResponse` carries the username with **one query, no N+1** — every
+  existing `select(OpsClient)` call in `ops/services/clients.py` picked up the
+  join automatically. The two write paths (`create_client`, `patch_client`)
+  explicitly re-select with `joinedload(OpsClient.creator)` after commit
+  instead of touching the just-committed in-memory object or relying on
+  `session.refresh()` — async SQLAlchemy raises `MissingGreenlet` on a lazy
+  relationship load outside an awaited query, so the re-select isn't
+  optional. `created_by` is on `CreateClientRequest` but deliberately **not**
+  on `PatchClientRequest` — it's an audit field, not an editable assignment.
+  Tests: `tests/ops/test_clients.py::test_client_created_by_and_agreed_fee`
+  covers create/get/patch/list all resolving the username correctly.
+- **Frontend**: `client.manage` (already defined in `@brynzit/identity`,
+  mapped to account_manager + admin, but never actually wired to a `useCan()`
+  check anywhere) now gates the "New client" button and the detail page's
+  "Edit" button — this was a real, pre-existing gap: any authenticated role
+  could create/edit clients before this pass. `created_by` is stamped from
+  `useActingUser().id` on create, never user-selectable. "Agreed fee (% of
+  CTC)" is an optional number input on both the create and edit dialogs.
+- **Regenerated `@brynzit/api-client` types twice** — once after the model/
+  schema change, again after adding `created_by_username`. Whenever a backend
+  schema field changes, `bash packages/api-client/scripts/generate-live.sh`
+  (backend must be running) before touching the frontend, or the two drift
+  and TS won't catch it until someone runs `tsc`.
+- Rippled into `packages/mocks/src/handlers/ops.ts` (4 client-shaped mock
+  responses) and one test fixture in `recruiter-portal.test.tsx` — both
+  needed the 3 new required fields to keep satisfying `ClientResponse`.
+
+### 2026-09-09 — Ops Clients rebuilt again, to a user-supplied reference (supersedes the earlier fresh-base)
+The Clients screens were fresh-based onto the DS pattern earlier this session
+(see below), then handed a real Figma-style reference asking for a richer
+version — this entry documents the second pass, which replaced that one.
+
+- **Every stat is computed client-side from data that already exists** — no
+  new backend endpoint. List: per-client rollups (open reqs, shortlist,
+  submitted) are summed by grouping `fetchRequisitionsForClients()` (already
+  used by the dashboard) against the bulk `pipeline-stats` map (already used
+  by the Requisitions list) — the same two data sources, just joined a
+  different way for a third screen. Detail: same bulk stats map, plus
+  `fetchOpsInterviews('all')` filtered to the client's requisition ids and
+  `status === 'scheduled'` for "in interview" (matching the dashboard's own
+  definition of that term).
+- **Per-requisition "owner {recruiter}"** reuses
+  `fetchRequisitionAssignees()` (the same call `AssignedRecruitersCard`
+  makes) — one small query per requisition via `useQueries`, fine at the
+  handful of requisitions one client has. First assignee only; there's no
+  concept of a single "primary" recruiter beyond that today.
+- **Real bug caught in verification**: the detail page's "N open
+  requisitions" stat used `status === 'open'` while every per-row status pill
+  uses `isLiveRequisitionStatus()` (`open` OR `matching_complete`) — a
+  `matching_complete` requisition showed an "Open" pill on its row while not
+  counting toward the header total. Fixed by using the same helper in both
+  places; this class of bug (two places computing "is this open" differently)
+  is exactly why `requisition-status.ts`'s helpers exist — always route
+  through them, never re-check `.status === 'open'` inline.
+- **D1, not resolved**: three fields in the reference — Ops owner, Agreed
+  fee, Replacement window — aren't in the `Client` model
+  (`ops/models/client.py`: id, name, primary_contact_name,
+  primary_contact_email, status, created_at only). That's a migration +
+  model + schema + service change, not a restyle — left out rather than
+  faked, pending a decision on whether to build the backend support.
+
+### 2026-09-09 — "JD missing" pill: Warning hue → Neutral hue
+Same hex fill (`#F4E8DA`) as the JD panel's icon tile all along, but the
+amber-brown text/border (`#905300`/`#E8CEAE`, the Warning status hue) read as
+"brown," not "cream," once actual text sat on it. Missing a JD isn't an
+urgent/attention state, so it wasn't the right hue to begin with — switched to
+the plain Neutral treatment (`border-border bg-secondary text-muted-foreground`),
+the same one the `Mediated`/`Direct` and stage-kind pills already use, rather
+than inventing a bespoke in-between color.
+
+### 2026-09-09 — Ops Clients rebuilt; Dashboard's stat tiles de-duplicated; per-row flags footer cut
+- **Ops Clients (list + detail) on the DS.** List: dropped the banned glass
+  toolbar, fresh-based rows to the same card pattern as Ops Requisitions.
+  Detail: was a one-off fixed two-pane split (`h-[calc(100vh-3.5rem)]`, 420px
+  rail + notes); rebuilt to the same breadcrumb → header → stacked-cards shape
+  as every other detail screen (My Roles, Ops Requisitions) — no reason for
+  this screen alone to carry its own layout primitive. `text-primary` links
+  (mailto, Create Requisition, View all) replaced with the DS treatment.
+- **Dashboard's stat tiles were a second, hand-rolled component.**
+  `recruiter-dashboard.tsx` had its own local `MetricCard` — icon tile +
+  label + big number + a full sentence of description — doing the same job as
+  `PipelineStatTile`/`PipelineStatTileRow` (already used on Ops Requisitions'
+  list). Deleted `MetricCard`, switched the dashboard to the shared component.
+  Check `pipeline-stat-tile.tsx` before building a new stat-tile anywhere —
+  this was the second time it got reinvented.
+- **Per-row green/red-flags + "JD generated"/"No JD yet" footer strip on the
+  Ops Requisitions list is gone.** JD status is already a badge on the row
+  (`JD missing`); repeating it in the footer was exactly the §5.1 violation
+  ("never repeat context the page already establishes"). Flag counts weren't
+  used anywhere else either — cut outright rather than kept half-visible.
+
+### 2026-09-09 — Sidebar had the same transparent-background wash bleed
+Same bug as `<main>` below, same fix, second spot: `SidebarNav`'s root `<nav>`
+also had no background of its own, so `.brynz-page-wash`'s blue tail bled
+through the sidebar's lower half too. Added `bg-background`. Check any other
+direct child of the shell's `flex min-h-0 flex-1` row before assuming this is
+fully closed out — `<main>` and the sidebar were the two that existed; a new
+sibling added later needs the same treatment.
+
+### 2026-09-09 — `<main>` needed its own opaque background
+The shell's `.brynz-page-wash` (cream → `#E9F0FA` blue, top to bottom) lives
+on the outer `h-dvh` shell container in `(shell)/layout.tsx`, but `<main>` —
+the element that actually scrolls each route's content — had no background of
+its own. Since the wash is pinned to the viewport and `main` scrolls
+independently over it, any gap between cards that landed in the lower portion
+of the viewport showed the blue tail bleeding through, on every content
+screen, at whatever scroll position (not just below all content). Content-
+dense screens with a card gap near the bottom of the viewport (Ops Requisition
+detail was the one that surfaced it) showed it most.
+- **Fix: `bg-background` on `<main>`** — one line, shell-wide. Every route
+  now sits on flat cream; the wash is only visible where `.brynz-page-wash`
+  is applied directly (sign-in, and any true empty space below a short page's
+  content, which was the original intent).
+- Confirmed sign-in's wash is unaffected (it's its own
+  `brynz-page-wash` div outside the shell, untouched).
 
 ### 2026-09-09 — Shared React Query cache key, two incompatible shapes: crash
 **Two components querying the same key must return the same shape** — React

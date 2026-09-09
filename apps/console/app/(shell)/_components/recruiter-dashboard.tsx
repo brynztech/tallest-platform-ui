@@ -1,6 +1,5 @@
 'use client'
 
-import type React from 'react'
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -9,14 +8,7 @@ import { summarizePipeline, visibleByAssignment } from '@brynzit/recruiting'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@brynzit/ui/components/ui/card'
-import {
-  BriefcaseBusiness,
-  CalendarDays,
-  CheckCircle,
-  ShieldCheck,
-  Trophy,
-  UsersRound,
-} from 'lucide-react'
+import { PipelineStatTile, PipelineStatTileRow } from './pipeline-stat-tile'
 import {
   clientIdsKey,
   fetchOpsClients,
@@ -153,49 +145,34 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
+      <PipelineStatTileRow>
+        <PipelineStatTile
           label="Open roles"
           value={openRequisitions.length}
-          description={`${visibleReqs.length} total ${canViewAll ? '' : 'assigned '}role${visibleReqs.length === 1 ? '' : 's'}.`}
-          icon={<BriefcaseBusiness className="size-4" />}
+          suffix={`of ${visibleReqs.length} ${canViewAll ? 'total' : 'assigned'}`}
         />
-        <MetricCard
+        <PipelineStatTile
           label="Awaiting internal review"
           value={pipeline.awaitingInternalReview}
-          description="Submissions pending the quality gate."
-          icon={<ShieldCheck className="size-4" />}
+          suffix="candidates"
+          dotTone="#905300"
         />
-        <MetricCard
+        <PipelineStatTile
           label="Approved to client"
           value={pipeline.approvedToClient}
-          description={`${pipeline.total} submission${pipeline.total === 1 ? '' : 's'} in pipeline.`}
-          icon={<CheckCircle className="size-4" />}
+          suffix="candidates"
+          dotTone="#386CA0"
         />
-        <MetricCard
+        <PipelineStatTile
           label="Interviews scheduled"
           value={scheduledInterviews.length}
-          description={`${scopedInterviews.length} interview${scopedInterviews.length === 1 ? '' : 's'} tracked.`}
-          icon={<CalendarDays className="size-4" />}
+          suffix={`of ${scopedInterviews.length} tracked`}
         />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          label="Placements"
-          value={placements.length}
-          description="Confirmed hires on your roles."
-          icon={<Trophy className="size-4" />}
-        />
+        <PipelineStatTile label="Placements" value={placements.length} suffix="confirmed" />
         {canViewAll && (
-          <MetricCard
-            label="Clients"
-            value={clients.length}
-            description="Active client accounts."
-            icon={<UsersRound className="size-4" />}
-          />
+          <PipelineStatTile label="Clients" value={clients.length} suffix="active" />
         )}
-      </div>
+      </PipelineStatTileRow>
 
       <Card>
         <CardHeader>
@@ -219,32 +196,5 @@ export function RecruiterDashboard({ title = 'Dashboard' }: { title?: string }) 
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  description,
-  icon,
-}: {
-  label: string
-  value: number | string
-  description: string
-  icon: React.ReactNode
-}) {
-  return (
-    <Card>
-      <CardContent className="flex h-full flex-col gap-3 pt-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-secondary text-muted-foreground">
-            {icon}
-          </span>
-          {label}
-        </div>
-        <p className="text-2xl font-semibold text-foreground">{value}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
   )
 }

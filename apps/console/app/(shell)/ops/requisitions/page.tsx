@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { ChevronRight, Plus, Search } from 'lucide-react'
 import { requisitionStatusLabel, isLiveRequisitionStatus } from '@/(shell)/_lib/requisition-status'
 import { fetchRequisitionsPipelineStats, statsFor } from '@/(shell)/_lib/requisition-pipeline-stats'
-import { hasGeneratedJd, intakeGreenFlags, intakeRedFlags } from '@/(shell)/_lib/requisition-intake'
+import { hasGeneratedJd } from '@/(shell)/_lib/requisition-intake'
 import { PipelineStatTile, PipelineStatTileRow } from '@/(shell)/_components/pipeline-stat-tile'
 import { SegmentedControl } from '@/(shell)/_components/segmented-control'
 import { CreateRequisitionWizard } from './_components/create-requisition-wizard'
@@ -205,8 +205,6 @@ export default function RequisitionsPage() {
         ) : (
           filtered.map((req) => {
             const stats = statsFor(statsById, req.id)
-            const greenFlags = intakeGreenFlags(req.intake_details)
-            const redFlags = intakeRedFlags(req.intake_details)
             const jdGenerated = hasGeneratedJd(req.intake_details)
             return (
               <div
@@ -219,7 +217,7 @@ export default function RequisitionsPage() {
                       <span className="text-[15px] font-semibold">{req.title}</span>
                       <StatusPill live={isLiveRequisitionStatus(req.status)} label={requisitionStatusLabel(req.status)} />
                       {!jdGenerated && (
-                        <span className="inline-flex items-center gap-[5px] rounded-full border border-[#E8CEAE] bg-[#F4E8DA] px-2 py-[3px] text-[11px] font-medium text-[#905300]">
+                        <span className="inline-flex items-center gap-[5px] rounded-full border border-border bg-secondary px-2 py-[3px] text-[11px] font-medium text-muted-foreground">
                           JD missing
                         </span>
                       )}
@@ -241,24 +239,6 @@ export default function RequisitionsPage() {
                       <ChevronRight className="size-3.5" />
                     </Link>
                   </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 border-t border-[#ECEAE4] bg-[#F8F7F3] px-4 py-2.5 text-[13px] text-[#3A3B3B]">
-                  {greenFlags.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-[#317A4F]" />
-                      {greenFlags.length} green flags
-                    </span>
-                  )}
-                  {redFlags.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-[#BA4642]" />
-                      {redFlags.length} red flags
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                    <span className="size-1.5 rounded-full bg-[#386CA0]" />
-                    {jdGenerated ? 'JD generated' : 'No JD yet'}
-                  </span>
                 </div>
               </div>
             )

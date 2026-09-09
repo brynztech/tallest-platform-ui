@@ -11,7 +11,7 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
         <TopNav />
         <div className="flex min-h-0 flex-1">
           <SidebarNav />
-          <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+          <main className="min-w-0 flex-1 overflow-y-auto bg-background">{children}</main>
         </div>
         <AssistantWidget />
       </div>
