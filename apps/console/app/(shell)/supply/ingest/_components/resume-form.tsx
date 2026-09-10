@@ -98,7 +98,11 @@ export function ResumeForm({ onJobAdded, onJobUpdated }: ResumeFormProps) {
       const data = (await res.json()) as components['schemas']['ResumeUploadResponse']
 
       if (data.candidate_id) {
-        onJobUpdated(jobId, { progressText: 'Parsing resume…', candidateId: data.candidate_id })
+        // status "duplicate" = byte-identical file already ingested; the id is
+        // the existing candidate (already parsed), so the poll completes at once.
+        const progressText =
+          data.status === 'duplicate' ? 'Already in talent pool' : 'Parsing resume…'
+        onJobUpdated(jobId, { progressText, candidateId: data.candidate_id })
         startPolling(jobId, data.candidate_id)
       } else {
         onJobUpdated(jobId, {

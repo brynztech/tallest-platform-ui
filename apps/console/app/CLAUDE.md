@@ -211,6 +211,23 @@ Available card content width is ~178px. Consequences:
    a `packages/ui` default. That's the sanctioned way to fix a shared component
    without editing it.
 4. Light theme only. `app/layout.tsx` forces it; never add `dark:` variants.
+5. **A long-running `next dev --turbopack` can serve a stale `globals.css`.**
+   Seen live (2026-09-10): the console rendered the old blue theme
+   (`--color-primary: #2b63c9`, `--color-background: #f7fafe` — the palette
+   from commit `b21bd9b`) while the file on disk had been cream since
+   `15bacbe`. Turbopack did not invalidate its cached CSS module, so the
+   browser kept the superseded palette indefinitely and the tokens looked
+   broken when they were correct. **Check what is actually being served before
+   believing a token change failed:**
+   ```bash
+   curl -s http://localhost:3000/ \
+     | grep -oE '/_next/static/chunks/%5Broot-of-the-server%5D__[a-zA-Z0-9_.]+\.css' \
+     | head -1 | xargs -I{} curl -s "http://localhost:3000{}" \
+     | grep -oE -- '--color-primary: *[^;]*'
+   ```
+   The **last** value printed is the one that wins. If it is not `#0c0b09`,
+   the build is stale, not the CSS: `rm -rf apps/console/.next` and restart
+   the dev server.
 
 ---
 

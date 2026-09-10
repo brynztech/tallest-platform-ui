@@ -11,8 +11,9 @@ import { AdminPipelineTab } from './admin-pipeline-tab'
 import { AdminPromptsTab } from './admin-prompts-tab'
 import { AdminCandidatesTab } from './admin-candidates-tab'
 import { AdminJobSourcesTab } from './admin-job-sources-tab'
+import { AdminGmailTab } from './admin-gmail-tab'
 
-const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates', 'job-sources'] as const
+const VALID_TABS = ['overview', 'costs', 'events', 'quotas', 'pipeline', 'prompts', 'candidates', 'job-sources', 'gmail'] as const
 type AdminTab = (typeof VALID_TABS)[number]
 
 const DEFAULT_TAB: AdminTab = 'overview'
@@ -84,6 +85,8 @@ export function AdminContent() {
         return <AdminCandidatesTab />
       case 'job-sources':
         return <AdminJobSourcesTab />
+      case 'gmail':
+        return <AdminGmailTab />
       default:
         return <AdminOverviewTab onNavigate={handleTabChange} />
     }
@@ -104,6 +107,7 @@ export function AdminContent() {
           <TabsTrigger value="prompts">Prompts</TabsTrigger>
           <TabsTrigger value="candidates">Candidates</TabsTrigger>
           <TabsTrigger value="job-sources">Job sources</TabsTrigger>
+          <TabsTrigger value="gmail">Gmail</TabsTrigger>
         </TabsList>
       </Tabs>
       {renderActiveTab()}

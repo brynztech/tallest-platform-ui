@@ -38,6 +38,40 @@ The proxy:
   `ADMIN_API_TOKEN` isn't set — see `talent-platform`'s spec §13.1 for the
   backend half of getting this token onto an environment
 
+**Where that token has to live (2026-09-10).** `ADMIN_API_TOKEN` must be in
+**`apps/console/.env.local`**, not the monorepo root `.env`. Next.js only reads
+`.env` files from the app directory, so a token sitting in
+`talent-platform-ui/.env` never reaches the console process and every proxied
+admin call answers `503 ADMIN_API_TOKEN is not set for the console server`.
+That 503 is console-side. To tell the two halves apart, call the backend
+directly:
+
+```bash
+curl -s localhost:8000/api/v1/supply/gmail/status
+# "Missing X-Admin-Token header."      -> backend fine, console env is the problem
+# "Admin API is not configured."       -> the backend is the one missing the token
+```
+
+### 1.1 A second proxy: Gmail ingest (2026-09-10)
+
+`apps/console/app/api/gmail/[...path]/route.ts` forwards to the backend's
+`/api/v1/supply/gmail/*` under the same rules (path rebuilt from segments,
+`no-store`, 15s timeout, 504-vs-502, actionable 503 when the token is missing),
+narrowed to `GET/POST/PATCH` — the Gmail routes need nothing else.
+
+Worth noting the asymmetry it preserves: most `/supply/*` endpoints are
+deliberately **ungated** and called straight from the browser, because a
+browser bundle cannot hold a secret (`talent-platform`'s
+`tests/test_router_auth.py` is the regression guard for the outage that
+re-gating them caused). The Gmail routes are the exception — they configure
+what gets pulled out of a real mailbox — so they live on a separate,
+router-gated backend module and come through here instead.
+
+A generic "proxy anything admin-gated" handler was considered and skipped:
+two prefixes with different allowed-method sets is not yet a pattern worth
+abstracting, and the duplication is ~40 lines of boilerplate that reads
+straight.
+
 ## 2. Job Sources admin tab
 
 `apps/console/app/(shell)/admin/_components/admin-job-sources-tab.tsx`, added
@@ -59,6 +93,38 @@ Four panels:
   adapter registry so a disabled/unverified source (Recruitee) is listed but
   not selectable, with the reason shown.
 - **Run history** — status, duration, per-company error counts for past runs.
+
+## 2.1 Gmail admin tab (2026-09-10)
+
+`apps/console/app/(shell)/admin/_components/admin-gmail-tab.tsx`, added as a
+ninth tab. Drives the backend's Gmail resume ingest — an email whose subject
+contains an admin-configured string has its resume attachments parsed into the
+talent pool (`../talent-platform/docs/gmail-resume-ingest.md`).
+
+Three panels:
+
+- **Connection** — which mailbox, when it was last checked, a "Check now"
+  button (202; the poll runs in the Celery worker, so the tab re-reads status
+  a few seconds later rather than pretending to have a result), and a
+  watch/pause checkbox. When the backend has no credentials the panel says
+  exactly which two env vars to set and that the app password is generated at
+  `myaccount.google.com/apppasswords` and needs 2-Step Verification — there is
+  nothing clickable that fixes it, so the instruction has to be the UI.
+- **Which emails count** — the subject-filter editor (one substring per line,
+  matched case-insensitively). When the list is empty the panel states that
+  nothing is ingested, because the safe default is silence and silence is
+  otherwise indistinguishable from breakage.
+- **Recent emails** — every matching email the poller has looked at, including
+  `no_attachment` / `too_large` / `parse_failed` outcomes, so "my resume never
+  arrived" can be told apart from "it arrived and failed".
+
+The filter editor seeds its draft from the server once and then leaves it
+alone — the tab polls status every 30s, and a background refetch overwriting
+half-typed input is exactly the bug that pattern avoids.
+
+**No new capability.** The tab lives inside the Admin panel, which `admin.view`
+already gates, and RBAC here is route-level (§4). A `gmail.manage` capability
+would only earn its existence if a non-admin role should manage the mailbox.
 
 ## 3. Two production bugs found while building on the admin shell
 
