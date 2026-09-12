@@ -211,6 +211,14 @@ describe('Saved searches panel', () => {
     expect(src).toContain("queryKey: ['job-board-search-queries']")
     expect(src).toContain('if (watching && !anyRunActive)')
   })
+
+  it('never gives a Select.Item an empty-string value', () => {
+    // Radix throws "A <Select.Item /> must have a value prop that is not an
+    // empty string" at render time — hit live the moment "Add search" was
+    // clicked, because the "Auto" date-posted option used value: ''.
+    expect(src).not.toContain("value: '', label:")
+    expect(src).toContain('AUTO_DATE_POSTED')
+  })
 })
 
 describe('Job sources tab is reachable', () => {

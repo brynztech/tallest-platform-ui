@@ -687,8 +687,13 @@ function TrackedCompaniesPanel() {
 // TrackedCompaniesPanel (see job_board/services/search_queries.py).
 // ---------------------------------------------------------------------------
 
+// Radix's Select.Item forbids an empty-string value (reserved internally for
+// "no selection") — this sentinel stands in for "no override" in form state
+// and is translated to/from null at the form/payload boundary below.
+const AUTO_DATE_POSTED = 'auto'
+
 const DATE_POSTED_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '', label: 'Auto (widens if a run was missed)' },
+  { value: AUTO_DATE_POSTED, label: 'Auto (widens if a run was missed)' },
   { value: 'past24Hours', label: 'Past 24 hours' },
   { value: 'pastWeek', label: 'Past week' },
   { value: 'pastMonth', label: 'Past month' },
@@ -719,7 +724,7 @@ const EMPTY_SEARCH_FORM: SearchForm = {
   under_10_applicants: false,
   limit_per_source: '100',
   search_urls: '',
-  date_posted_override: '',
+  date_posted_override: AUTO_DATE_POSTED,
   is_active: true,
 }
 
@@ -734,7 +739,7 @@ function searchToForm(search: SearchQuery): SearchForm {
     under_10_applicants: search.under_10_applicants,
     limit_per_source: String(search.limit_per_source),
     search_urls: (search.search_urls ?? []).join('\n'),
-    date_posted_override: search.date_posted_override ?? '',
+    date_posted_override: search.date_posted_override ?? AUTO_DATE_POSTED,
     is_active: search.is_active,
   }
 }
@@ -758,7 +763,8 @@ function formToPayload(form: SearchForm): SearchQueryCreate {
     under_10_applicants: form.under_10_applicants,
     limit_per_source: form.limit_per_source.trim() ? Number(form.limit_per_source) : 100,
     search_urls: linesOrNull(form.search_urls),
-    date_posted_override: form.date_posted_override || null,
+    date_posted_override:
+      form.date_posted_override === AUTO_DATE_POSTED ? null : form.date_posted_override,
     is_active: form.is_active,
   }
 }
