@@ -66,6 +66,16 @@ export type PublicJobItem = {
   /** Identical postings collapsed into this entry (a company opening N seats
    *  on one role). >1 renders as "N openings". */
   openings: number
+  /** Company avatar; null for sources that don't provide one. */
+  company_logo_url: string | null
+  /** LinkedIn-sourced applicant count. Null means unknown — render nothing at
+   *  all. A real 0 is a known count worth showing ("be the first to apply"),
+   *  so gate on `!== null`, never on truthiness. Always null for ATS sources
+   *  (greenhouse, ashby, etc), which don't publish it. */
+  applicants_count: number | null
+  /** Other job boards carrying this same real job, collapsed out of the
+   *  list so the candidate can pick which board to apply through. Usually empty. */
+  alternate_postings: { source: string; url: string }[]
 }
 
 export type PublicJobsResponse = {

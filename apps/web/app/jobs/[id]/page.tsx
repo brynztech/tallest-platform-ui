@@ -3,6 +3,7 @@ import { use, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Badge } from '@brynzit/ui/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@brynzit/ui/components/ui/avatar'
 import { Separator } from '@brynzit/ui/components/ui/separator'
 import { MapPin } from 'lucide-react'
 import Link from 'next/link'
@@ -52,6 +53,23 @@ const PERIOD_UNIT: Record<'year' | 'month' | 'hour', string> = {
   year: 'YEAR',
   month: 'MONTH',
   hour: 'HOUR',
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  greenhouse: 'Greenhouse',
+  ashby: 'Ashby',
+  recruitee: 'Recruitee',
+  apify_linkedin: 'LinkedIn',
+  internal: 'Brynzit',
+  manual: 'Brynzit',
+  whatsapp: 'WhatsApp',
+}
+
+function sourceLabel(source: string): string {
+  return (
+    SOURCE_LABELS[source] ??
+    source.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  )
 }
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -181,7 +199,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <h1 className="text-4xl font-light leading-tight tracking-[-0.045em] text-foreground">{job.title}</h1>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          {job.company_name && <span>{job.company_name}</span>}
+          {job.company_name && (
+            <span className="flex items-center gap-1.5">
+              <Avatar className="h-5 w-5">
+                {job.company_logo_url && (
+                  <AvatarImage src={job.company_logo_url} alt={job.company_name} />
+                )}
+                <AvatarFallback className="text-[10px]">
+                  {job.company_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {job.company_name}
+            </span>
+          )}
           {job.location && (
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
@@ -205,6 +235,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <Badge variant="secondary">{REMOTE_LABELS[job.remote_mode]}</Badge>
           )}
           {job.openings > 1 && <Badge variant="outline">{job.openings} openings</Badge>}
+          {job.applicants_count !== null && (
+            <Badge variant="outline">
+              {job.applicants_count} applicant{job.applicants_count === 1 ? '' : 's'}
+            </Badge>
+          )}
           {/* Match badge — logged-in only (JOB-05) */}
           {isLoggedIn && job.match_strength === 'strong' && (
             <Badge variant="default">Strong match</Badge>
@@ -276,6 +311,34 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           isLoggedIn={isLoggedIn}
           completenessScore={profile?.completeness_score ?? null}
         />
+      )}
+
+      {/* Other boards carrying this same real job — secondary to the primary
+          apply action above, just letting the candidate pick their preferred board. */}
+      {job.alternate_postings.length > 0 && (
+        <p className="pt-3 text-xs text-muted-foreground">
+          Also posted on:{' '}
+          {job.alternate_postings.map((alt, i) => {
+            const href = safeHref(alt.url)
+            return (
+              <span key={alt.url}>
+                {i > 0 && ' · '}
+                {href ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    {sourceLabel(alt.source)}
+                  </a>
+                ) : (
+                  sourceLabel(alt.source)
+                )}
+              </span>
+            )
+          })}
+        </p>
       )}
       </article>
     </main>

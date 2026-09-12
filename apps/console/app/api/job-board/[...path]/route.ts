@@ -76,7 +76,11 @@ async function forward(request: NextRequest, path: string[]): Promise<NextRespon
     })
 
     const text = await response.text()
-    return new NextResponse(text, {
+    // The Fetch spec forbids a body on a null-body status (204/205/304) — the
+    // Response constructor throws if given one, even an empty string, which
+    // previously surfaced as a bogus 502 on every DELETE (204 No Content).
+    const NULL_BODY_STATUSES = new Set([204, 205, 304])
+    return new NextResponse(NULL_BODY_STATUSES.has(response.status) ? null : text, {
       status: response.status,
       headers: {
         'Content-Type': response.headers.get('content-type') ?? 'application/json',
@@ -90,9 +94,7 @@ async function forward(request: NextRequest, path: string[]): Promise<NextRespon
     return NextResponse.json(
       {
         detail: timedOut
-          ? `The backend at ${BACKEND_URL} did not respond within ${
-              UPSTREAM_TIMEOUT_MS / 1000
-            }s.`
+          ? `The backend at ${BACKEND_URL} did not respond within ${UPSTREAM_TIMEOUT_MS / 1000}s.`
           : `Could not reach the backend at ${BACKEND_URL}: ${
               error instanceof Error ? error.message : 'unknown error'
             }`,

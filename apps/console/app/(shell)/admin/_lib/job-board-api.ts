@@ -86,6 +86,42 @@ export type VisibilityImpact = {
   warning: string | null
 }
 
+/** A saved Apify LinkedIn keyword search — the counterpart of TrackedCompany
+ *  for a source with no per-company board to register. */
+export type SearchQuery = {
+  id: string
+  name: string
+  keywords: string | null
+  location: string | null
+  geo_id: string | null
+  distance: number | null
+  company_ids: string[] | null
+  under_10_applicants: boolean
+  limit_per_source: number
+  search_urls: string[] | null
+  date_posted_override: string | null
+  is_active: boolean
+  last_run_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SearchQueryCreate = {
+  name: string
+  keywords?: string | null
+  location?: string | null
+  geo_id?: string | null
+  distance?: number | null
+  company_ids?: string[] | null
+  under_10_applicants?: boolean
+  limit_per_source?: number
+  search_urls?: string[] | null
+  date_posted_override?: string | null
+  is_active?: boolean
+}
+
+export type SearchQueryUpdate = Partial<SearchQueryCreate>
+
 const BASE = '/api/job-board'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -151,6 +187,24 @@ export const jobBoardApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+
+  listSearchQueries: () => request<SearchQuery[]>('/search-queries'),
+
+  createSearchQuery: (body: SearchQueryCreate) =>
+    request<SearchQuery>('/search-queries', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateSearchQuery: (id: string, body: SearchQueryUpdate) =>
+    request<SearchQuery>(`/search-queries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+
+  deleteSearchQuery: (id: string) => request<void>(`/search-queries/${id}`, { method: 'DELETE' }),
+
+  /** 202 + a pollable run record, same contract as startRun — 409 if a run
+   *  (of either kind) is already active. */
+  runSearchQuery: (id: string) =>
+    request<IngestionRun>(`/search-queries/${id}/run`, { method: 'POST' }),
 }
 
 export const RUN_IN_PROGRESS: IngestionRunStatus[] = ['queued', 'running']

@@ -59,6 +59,14 @@ describe('Admin token never reaches the browser', () => {
     expect(proxy).toContain('503')
     expect(proxy).toContain('502')
   })
+
+  it('never passes a body on a null-body status (204/205/304)', () => {
+    // The Response constructor throws on a 204 with a non-null body — even ''
+    // counts as non-null — which previously turned a real 204 (e.g. deleting
+    // a saved search) into a bogus 502 for every caller.
+    expect(proxy).toContain('NULL_BODY_STATUSES')
+    expect(proxy).toContain('204')
+  })
 })
 
 describe('Run job search button', () => {
@@ -160,6 +168,51 @@ describe('Tracked companies panel', () => {
   })
 })
 
+describe('Saved searches panel', () => {
+  const src = readFile('(shell)/admin/_components/admin-job-sources-tab.tsx')
+
+  it('explains this is a global keyword search, unlike the per-company boards', () => {
+    expect(src).toContain('Saved searches')
+    expect(src).toContain('one search can match postings from any employer')
+  })
+
+  it('offers a natural-language keywords field', () => {
+    expect(src).toContain('the natural-language query')
+  })
+
+  it('rejects a location outside the allowed countries, same as the backend', () => {
+    expect(src).toContain('Must resolve to a country the candidate portal shows')
+  })
+
+  it('warns that the result cap is also the Apify platform spend cap', () => {
+    expect(src).toContain('platform spend cap')
+    expect(src).toContain('$0.002 per result')
+  })
+
+  it('shows a pasted-URL search distinctly from a keyword search', () => {
+    expect(src).toContain('querySummary')
+    expect(src).toContain('pasted URL')
+  })
+
+  it('reuses one form for create and edit rather than building two', () => {
+    expect(src).toContain('editingId')
+    expect(src).toContain('searchToForm')
+  })
+
+  it('confirms before deleting a saved search', () => {
+    expect(src).toContain('window.confirm')
+  })
+
+  it('disables Run now while any run (of either kind) is already active', () => {
+    expect(src).toContain('const runDisabled = watching || anyRunActive || runNow.isPending')
+  })
+
+  it('refreshes last_run_at once the triggered run finishes', () => {
+    expect(src).toContain("queryKey: ['job-board-search-queries']")
+    expect(src).toContain('if (watching && !anyRunActive)')
+  })
+})
+
 describe('Job sources tab is reachable', () => {
   const src = readFile('(shell)/admin/_components/admin-content.tsx')
 
@@ -190,6 +243,11 @@ describe('Job board API client', () => {
       'getVisibilityRules',
       'saveVisibilityRules',
       'previewVisibilityRules',
+      'listSearchQueries',
+      'createSearchQuery',
+      'updateSearchQuery',
+      'deleteSearchQuery',
+      'runSearchQuery',
     ]) {
       expect(src).toContain(method)
     }

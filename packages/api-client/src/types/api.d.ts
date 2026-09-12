@@ -1756,6 +1756,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/supply/gmail/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Status
+         * @description Current ingest configuration and the most recent ingests.
+         */
+        get: operations["get_status_api_v1_supply_gmail_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply/gmail/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Config
+         * @description Edit the subject filters or pause the poller.
+         *
+         *     Filters are matched as case-insensitive substrings of the subject line.
+         *     Clearing them stops ingestion entirely — it never means "match everything".
+         */
+        patch: operations["update_config_api_v1_supply_gmail_config_patch"];
+        trace?: never;
+    };
+    "/api/v1/supply/gmail/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Poll Now
+         * @description Queue an immediate poll rather than waiting for the next beat tick.
+         *
+         *     202, not 200: the work runs in the Celery worker (the same one the schedule
+         *     drives), so this returns before the mailbox has been read. Poll
+         *     GET /status — last_polled_at and last_error are how the result surfaces.
+         */
+        post: operations["poll_now_api_v1_supply_gmail_poll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assistant/conversations": {
         parameters: {
             query?: never;
@@ -2375,6 +2442,22 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * AlternatePosting
+         * @description One collapsed duplicate's apply route: which board, and its URL.
+         *
+         *     A bare URL cannot tell a candidate which board it points at — the whole
+         *     reason to surface an alternate in the first place — so source rides along.
+         */
+        AlternatePosting: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "greenhouse" | "ashby" | "recruitee" | "apify_linkedin" | "whatsapp" | "manual" | "internal";
+            /** Url */
+            url: string;
+        };
         /** AssignmentsResponse */
         AssignmentsResponse: {
             /** Requisition Ids */
@@ -2849,11 +2932,8 @@ export interface components {
         };
         /** CrawlSummary */
         CrawlSummary: {
-            /**
-             * Tracked Company Id
-             * Format: uuid
-             */
-            tracked_company_id: string;
+            /** Tracked Company Id */
+            tracked_company_id: string | null;
             /** Source */
             source: string;
             /** Fetched */
@@ -3199,6 +3279,64 @@ export interface components {
             recruiter_email?: string | null;
             /** Recruiter Website */
             recruiter_website?: string | null;
+        };
+        /** GmailIngestConfigUpdate */
+        GmailIngestConfigUpdate: {
+            /** Subject Filters */
+            subject_filters?: string[] | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
+         * GmailIngestStatusResponse
+         * @description Everything the console tab renders.
+         *
+         *     `configured` reports the env-side credential, `is_active` the admin toggle,
+         *     and `subject_filters` the third gate — all three must hold before anything
+         *     is ingested, so the tab shows them separately rather than as one flag.
+         */
+        GmailIngestStatusResponse: {
+            /** Configured */
+            configured: boolean;
+            /** Email Address */
+            email_address: string | null;
+            /** Subject Filters */
+            subject_filters: string[];
+            /** Is Active */
+            is_active: boolean;
+            /** Last Polled At */
+            last_polled_at: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /** Recent */
+            recent: components["schemas"]["GmailIngestedMessageItem"][];
+        };
+        /** GmailIngestedMessageItem */
+        GmailIngestedMessageItem: {
+            /** Message Id */
+            message_id: string;
+            /** Filename */
+            filename: string;
+            /** Subject */
+            subject: string | null;
+            /** From Address */
+            from_address: string | null;
+            /** Status */
+            status: string;
+            /** Candidate Id */
+            candidate_id: string | null;
+            /**
+             * Ingested At
+             * Format: date-time
+             */
+            ingested_at: string;
+        };
+        /** GmailPollResponse */
+        GmailPollResponse: {
+            /** Status */
+            status: string;
+            /** Detail */
+            detail: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -4092,6 +4230,12 @@ export interface components {
              * @default 1
              */
             openings: number;
+            /** Company Logo Url */
+            company_logo_url?: string | null;
+            /** Applicants Count */
+            applicants_count?: number | null;
+            /** Alternate Postings */
+            alternate_postings?: components["schemas"]["AlternatePosting"][];
         };
         /** PublicJobsResponse */
         PublicJobsResponse: {
@@ -7989,6 +8133,103 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_status_api_v1_supply_gmail_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailIngestStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_config_api_v1_supply_gmail_config_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GmailIngestConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailIngestStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    poll_now_api_v1_supply_gmail_poll_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Admin-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailPollResponse"];
                 };
             };
             /** @description Validation Error */

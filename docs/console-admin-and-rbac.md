@@ -1,6 +1,6 @@
 # Console Admin (Job Sources) and RBAC
 
-Status: implemented and deployed to `frontend-dev` · Last updated: 2026-07-30
+Status: implemented and deployed to `frontend-dev` · Last updated: 2026-09-11
 
 Covers three pieces of work in the internal console (`apps/console`) that have
 no other documentation yet: the Job Sources admin tab and its server-side
@@ -77,7 +77,9 @@ straight.
 `apps/console/app/(shell)/admin/_components/admin-job-sources-tab.tsx`, added
 as an eighth tab alongside Overview/Costs/Events/Quotas/Pipeline/Prompts/Candidates.
 
-Four panels:
+Five panels, each collapsible (native `<details>`/`<summary>` — this UI kit has
+no Collapsible primitive, and the pattern was already established elsewhere in
+this file for the run-errors block):
 
 - **Run search** — "Run job search now" starts a crawl (`POST
   /ingestion-runs`, 202 + a pollable run id), polls progress every 2s, and
@@ -92,6 +94,23 @@ Four panels:
 - **Tracked companies** — list + add-company form, sourced from the backend's
   adapter registry so a disabled/unverified source (Recruitee) is listed but
   not selectable, with the reason shown.
+- **Saved searches** (2026-09-11) — CRUD for the Apify LinkedIn keyword
+  search (`SearchQuery` — see `talent-platform`'s
+  `docs/job-board-ingestion.md` §"Apify LinkedIn saved searches"), which the
+  backend already exposed as an API with no frontend. One form serves both
+  create and edit (`editingId`
+  switches its mode rather than duplicating the fields); rarely-needed fields
+  (LinkedIn geo ID, distance, numeric company IDs, pasted search URLs) sit
+  behind a nested "Advanced" disclosure. "Run now" is disabled whenever any run
+  — this search's or another's, including the crawl above — is already active,
+  since the backend allows only one at a time; on success it watches
+  `job-board-runs` (the same polling the "Run search" panel above already
+  does) until it finishes, then refreshes the table so `last_run_at` updates
+  without a reload. The result-cap field calls out, in the same breath as the
+  field itself, that it is both the actor's own limit **and** Apify's
+  platform-level spend cap (`maxItems` — see the backend's
+  `job_board/adapters/apify_linkedin.py::fetch_raw`), at roughly $0.002/result,
+  because that number is real money and the whole reason it needs its own UI.
 - **Run history** — status, duration, per-company error counts for past runs.
 
 ## 2.1 Gmail admin tab (2026-09-10)

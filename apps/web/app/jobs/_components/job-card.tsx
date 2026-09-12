@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { Avatar, AvatarFallback, AvatarImage } from '@brynzit/ui/components/ui/avatar'
 import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Card } from '@brynzit/ui/components/ui/card'
 import { cn } from '@brynzit/ui/lib/utils'
@@ -62,7 +63,17 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
               )}
             </div>
             {job.company_name && (
-              <p className="text-sm text-muted-foreground">{job.company_name}</p>
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Avatar className="h-5 w-5">
+                  {job.company_logo_url && (
+                    <AvatarImage src={job.company_logo_url} alt={job.company_name} />
+                  )}
+                  <AvatarFallback className="text-[10px]">
+                    {job.company_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {job.company_name}
+              </p>
             )}
             {job.location && (
               <p className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -71,6 +82,11 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
               </p>
             )}
             {pay && <p className="text-sm font-medium text-foreground">{pay}</p>}
+            {job.applicants_count !== null && (
+              <p className="text-xs text-muted-foreground">
+                {job.applicants_count} applicant{job.applicants_count === 1 ? '' : 's'}
+              </p>
+            )}
 
             {/* Explaining the match is what makes the badge trustworthy — a bare
                 "Strong match" reads as marketing. */}
