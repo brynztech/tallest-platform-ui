@@ -76,6 +76,22 @@ jobs:
           sudo mkdir -p /opt/brynzit
           sudo chown -R "$USER:$USER" /opt/brynzit
 
+          # This box is a t3.small (2GB RAM, no swap by default). Building
+          # apps/web then apps/console back to back with Turbopack got the
+          # console build OOM-killed (exit 137) during its TypeScript-check
+          # phase, right after apps/web's build had already used up the
+          # box's headroom — confirmed via the run's own log, not guessed.
+          # A 2GB swapfile is the standard fix for a small VM's build step
+          # without resizing the instance. Idempotent: skipped if swap
+          # already exists (every deploy after the first).
+          if ! sudo swapon --show | grep -q .; then
+            sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+            echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+          fi
+
           if [ ! -d "$APP_DIR/.git" ]; then
             git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $AUTH_HEADER" clone "$REPO_URL" "$APP_DIR"
           fi
