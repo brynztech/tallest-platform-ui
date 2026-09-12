@@ -168,8 +168,8 @@ describe('Tracked companies panel', () => {
   })
 })
 
-describe('Saved searches panel', () => {
-  const src = readFile('(shell)/admin/_components/admin-job-sources-tab.tsx')
+describe('Saved searches panel (LinkedIn search tab)', () => {
+  const src = readFile('(shell)/admin/_components/admin-linkedin-search-tab.tsx')
 
   it('explains this is a global keyword search, unlike the per-company boards', () => {
     expect(src).toContain('Saved searches')
@@ -221,6 +221,41 @@ describe('Saved searches panel', () => {
   })
 })
 
+describe('The two engines are kept apart', () => {
+  const jobSources = readFile('(shell)/admin/_components/admin-job-sources-tab.tsx')
+  const linkedin = readFile('(shell)/admin/_components/admin-linkedin-search-tab.tsx')
+  const history = readFile('(shell)/admin/_components/job-board-run-history.tsx')
+
+  it('keeps saved searches out of the Job sources tab', () => {
+    // They were indistinguishable when both lived on one screen, which is the
+    // whole reason the LinkedIn search got its own tab.
+    expect(jobSources).not.toContain('SearchQueriesPanel')
+    expect(linkedin).toContain('function SearchQueriesPanel')
+  })
+
+  it('scopes each tab\'s run history to its own engine', () => {
+    expect(jobSources).toContain("const ATS_ENGINE = 'ats'")
+    expect(linkedin).toContain("const APIFY_ENGINE = 'apify_linkedin'")
+    expect(jobSources).toContain('engine={ATS_ENGINE}')
+    expect(linkedin).toContain('engine={APIFY_ENGINE}')
+  })
+
+  it('keys the run cache by engine so the tabs cannot serve each other data', () => {
+    expect(history).toContain('runsQueryKey')
+    expect(jobSources).not.toContain("queryKey: ['job-board-runs']")
+    expect(linkedin).not.toContain("queryKey: ['job-board-runs']")
+  })
+
+  it('names the failing unit, so an Apify error is not an anonymous "run"', () => {
+    expect(history).toContain('errorLabel')
+    expect(history).toContain('item.name')
+  })
+
+  it('shows a failed run\'s reason in the history table itself', () => {
+    expect(history).toContain('run.errors.slice(0, 3)')
+  })
+})
+
 describe('Job sources tab is reachable', () => {
   const src = readFile('(shell)/admin/_components/admin-content.tsx')
 
@@ -233,6 +268,12 @@ describe('Job sources tab is reachable', () => {
   it('is rendered and has a trigger', () => {
     expect(src).toContain('<AdminJobSourcesTab />')
     expect(src).toContain('<TabsTrigger value="job-sources">')
+  })
+
+  it('registers the LinkedIn search tab the same way', () => {
+    expect(src).toContain("'linkedin-search'")
+    expect(src).toContain('<AdminLinkedInSearchTab />')
+    expect(src).toContain('<TabsTrigger value="linkedin-search">')
   })
 })
 
@@ -259,6 +300,11 @@ describe('Job board API client', () => {
     ]) {
       expect(src).toContain(method)
     }
+  })
+
+  it('can scope run history to one engine', () => {
+    expect(src).toContain('engine?: RunEngine')
+    expect(src).toContain('&engine=')
   })
 
   it('propagates the backend detail message rather than a generic failure', () => {

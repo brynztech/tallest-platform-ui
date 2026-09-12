@@ -1,6 +1,6 @@
 # Console Admin (Job Sources) and RBAC
 
-Status: implemented and deployed to `frontend-dev` · Last updated: 2026-09-11
+Status: implemented and deployed to `frontend-dev` · Last updated: 2026-09-12
 
 Covers three pieces of work in the internal console (`apps/console`) that have
 no other documentation yet: the Job Sources admin tab and its server-side
@@ -77,7 +77,7 @@ straight.
 `apps/console/app/(shell)/admin/_components/admin-job-sources-tab.tsx`, added
 as an eighth tab alongside Overview/Costs/Events/Quotas/Pipeline/Prompts/Candidates.
 
-Five panels, each collapsible (native `<details>`/`<summary>` — this UI kit has
+Four panels, each collapsible (native `<details>`/`<summary>` — this UI kit has
 no Collapsible primitive, and the pattern was already established elsewhere in
 this file for the run-errors block):
 
@@ -94,24 +94,8 @@ this file for the run-errors block):
 - **Tracked companies** — list + add-company form, sourced from the backend's
   adapter registry so a disabled/unverified source (Recruitee) is listed but
   not selectable, with the reason shown.
-- **Saved searches** (2026-09-11) — CRUD for the Apify LinkedIn keyword
-  search (`SearchQuery` — see `talent-platform`'s
-  `docs/job-board-ingestion.md` §"Apify LinkedIn saved searches"), which the
-  backend already exposed as an API with no frontend. One form serves both
-  create and edit (`editingId`
-  switches its mode rather than duplicating the fields); rarely-needed fields
-  (LinkedIn geo ID, distance, numeric company IDs, pasted search URLs) sit
-  behind a nested "Advanced" disclosure. "Run now" is disabled whenever any run
-  — this search's or another's, including the crawl above — is already active,
-  since the backend allows only one at a time; on success it watches
-  `job-board-runs` (the same polling the "Run search" panel above already
-  does) until it finishes, then refreshes the table so `last_run_at` updates
-  without a reload. The result-cap field calls out, in the same breath as the
-  field itself, that it is both the actor's own limit **and** Apify's
-  platform-level spend cap (`maxItems` — see the backend's
-  `job_board/adapters/apify_linkedin.py::fetch_raw`), at roughly $0.002/result,
-  because that number is real money and the whole reason it needs its own UI.
-- **Run history** — status, duration, per-company error counts for past runs.
+- **Run history** — status, duration, and the failure reasons for past board
+  crawls. Scoped to `engine=ats`, so an Apify run never appears here (§2.2).
 
 ## 2.1 Gmail admin tab (2026-09-10)
 
@@ -144,6 +128,44 @@ half-typed input is exactly the bug that pattern avoids.
 **No new capability.** The tab lives inside the Admin panel, which `admin.view`
 already gates, and RBAC here is route-level (§4). A `gmail.manage` capability
 would only earn its existence if a non-admin role should manage the mailbox.
+
+## 2.2 LinkedIn search tab (2026-09-12)
+
+`apps/console/app/(shell)/admin/_components/admin-linkedin-search-tab.tsx`, a
+tenth tab holding everything Apify: the saved searches, their filters, the
+per-search manual trigger, and its own run history.
+
+It is a separate tab rather than another panel on Job sources because the two
+were genuinely indistinguishable on one screen — an operator could not tell
+which engine a screen or a run belonged to, and they are not interchangeable:
+Job sources crawls per-company ATS boards for free, this one runs a global
+keyword search through Apify **billed per result**. Neither trigger starts the
+other, and their nightly schedules are separate (02:15 vs 03:30 UTC).
+
+- **Saved searches** — CRUD for the Apify LinkedIn keyword search
+  (`SearchQuery` — see `talent-platform`'s `docs/job-board-ingestion.md`
+  §"Apify LinkedIn saved searches"), which the backend exposed as an API with
+  no frontend until 2026-09-11. One form serves both create and edit
+  (`editingId` switches its mode rather than duplicating the fields);
+  rarely-needed fields (LinkedIn geo ID, distance, numeric company IDs, pasted
+  search URLs) sit behind a nested "Advanced" disclosure. "Run now" is disabled
+  whenever any run — this search's or an ATS crawl — is already active, since
+  the backend allows only one at a time; on success it watches this engine's
+  runs until the one it started finishes, then refreshes the table so
+  `last_run_at` updates without a reload. The result-cap field calls out, in
+  the same breath as the field itself, that it is both the actor's own limit
+  **and** Apify's platform-level spend cap (`maxItems` — see the backend's
+  `job_board/adapters/apify_linkedin.py::fetch_raw`), at roughly $0.002/result,
+  because that number is real money and the whole reason it needs its own UI.
+- **Recent LinkedIn search runs** — the same history component as Job sources
+  (`job-board-run-history.tsx`), scoped to `engine=apify_linkedin`.
+
+Both tabs' history comes from one shared component parameterised by engine.
+The engine is part of the react-query cache key as well as the request, or the
+two tabs would serve each other's runs from cache. Failure reasons render
+inline in the table rather than behind a disclosure, and name the failing unit
+— the company for a crawl, the search for an Apify run — because falling back
+to a bare "run" made every Apify failure anonymous.
 
 ## 3. Two production bugs found while building on the admin shell
 

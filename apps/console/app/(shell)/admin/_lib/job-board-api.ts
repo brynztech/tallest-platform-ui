@@ -11,16 +11,25 @@ export type IngestionRunStatus = 'queued' | 'running' | 'succeeded' | 'partial' 
 export type IngestionRunError = {
   company_id?: string
   display_name?: string
+  /** Saved-search failures identify themselves by search name, not company. */
+  name?: string
+  search_id?: string
   source?: string
   error: string
   stage?: string
 }
+
+/** Which pipeline produced a run. They share one table and one active-run slot
+ *  but have separate schedules and costs — ATS boards are free, Apify bills per
+ *  result — so the console lists them in separate tabs. */
+export type RunEngine = 'ats' | 'apify_linkedin'
 
 export type IngestionRun = {
   id: string
   status: IngestionRunStatus
   trigger: string
   triggered_by: string | null
+  engine: RunEngine
   started_at: string | null
   finished_at: string | null
   companies_total: number
@@ -170,7 +179,9 @@ export const jobBoardApi = {
 
   getRun: (id: string) => request<IngestionRun>(`/ingestion-runs/${id}`),
 
-  listRuns: (limit = 10) => request<IngestionRunList>(`/ingestion-runs?limit=${limit}`),
+  /** `engine` scopes history to one pipeline; omitted, both come back mixed. */
+  listRuns: (limit = 10, engine?: RunEngine) =>
+    request<IngestionRunList>(`/ingestion-runs?limit=${limit}${engine ? `&engine=${engine}` : ''}`),
 
   getVisibilityRules: () => request<VisibilityRules>('/visibility-rules'),
 
