@@ -65,7 +65,7 @@ jobs:
           sudo apt-get update
           # --no-upgrade: re-downloading an already-installed curl 404'd on the
           # Ubuntu mirror once and failed a backend deploy; same line here.
-          sudo apt-get install -y --no-upgrade ca-certificates curl git nginx
+          sudo apt-get install -y --no-upgrade ca-certificates curl git nginx certbot
 
           if ! command -v node >/dev/null 2>&1; then
             curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -218,4 +218,16 @@ jobs:
             sleep 1
           done
           echo "MARKER: nginx proxy passed"
+
+          # Let's Encrypt certificate for the named hosts, proven over port 80 through
+          # the challenge location in web.conf. One that is not close to expiry is left
+          # alone, and the certbot systemd timer renews it. The dry run fails this deploy
+          # if renewal would not work, instead of failing in 60 days.
+          sudo mkdir -p /var/www/certbot
+          sudo certbot certonly --webroot -w /var/www/certbot --cert-name trybrynz-web \
+            -d talent.trybrynz.com -d hire.trybrynz.com \
+            --non-interactive --agree-tos --register-unsafely-without-email \
+            --keep-until-expiring --deploy-hook 'systemctl reload nginx'
+          sudo certbot renew --dry-run
+          echo "MARKER: certificate ready"
           REMOTE
