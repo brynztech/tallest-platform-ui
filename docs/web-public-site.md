@@ -4,8 +4,9 @@ Scope: every page of `apps/web`: home, `/jobs`, `/jobs/[id]`, login, signup, the
 onboarding steps, the dashboard and profile edit. The console (`apps/console`) has its own
 system. `packages/ui` is shared and never edited for web work.
 
-Visible product name is **Brynz**. Package names (`@brynzit/*`), the `brynzit.com` canonical
-URL, localStorage keys and JSON-LD strings stay as they are, they are identifiers not copy.
+Visible product name is **Brynz**. Package names (`@brynzit/*`), localStorage keys and
+JSON-LD strings stay as they are, they are identifiers not copy. The job page canonical link
+points at `https://talent.trybrynz.com/jobs/<id>` (it was `brynzit.com` until 2026-09-26).
 
 ## Source of truth
 

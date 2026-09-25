@@ -221,13 +221,33 @@ jobs:
 
           # Let's Encrypt certificate for the named hosts, proven over port 80 through
           # the challenge location in web.conf. One that is not close to expiry is left
-          # alone, and the certbot systemd timer renews it. The dry run fails this deploy
-          # if renewal would not work, instead of failing in 60 days.
+          # alone (no network call), and the certbot systemd timer renews it. No
+          # `certbot renew --dry-run` here: it talks to Let's Encrypt staging, took 1 to 5+
+          # minutes, and once hung long enough to drop the ssh session.
           sudo mkdir -p /var/www/certbot
           sudo certbot certonly --webroot -w /var/www/certbot --cert-name trybrynz-web \
             -d talent.trybrynz.com -d hire.trybrynz.com \
             --non-interactive --agree-tos --register-unsafely-without-email \
             --keep-until-expiring --deploy-hook 'systemctl reload nginx'
-          sudo certbot renew --dry-run
           echo "MARKER: certificate ready"
+
+          # HTTPS server blocks for the named hosts. Installed only now, once the
+          # certificate exists, so a fresh host can still pass nginx -t above.
+          sudo mkdir -p /etc/nginx/brynzit-tls
+          sudo install -m 644 "$APP_DIR/infra/nginx/web-tls.conf" /etc/nginx/brynzit-tls/web.conf
+          sudo nginx -t
+          sudo systemctl reload nginx
+          for attempt in $(seq 1 15); do
+            SITE="$(curl -fsS --resolve talent.trybrynz.com:443:127.0.0.1 https://talent.trybrynz.com/ || true)"
+            CONSOLE="$(curl -fsS --resolve hire.trybrynz.com:443:127.0.0.1 https://hire.trybrynz.com/ || true)"
+            if [[ "$SITE" == *"/_next/"* && "$CONSOLE" == *"/_next/"* ]]; then
+              break
+            fi
+            if [ "$attempt" -eq 15 ]; then
+              echo "::error::nginx is not serving https for talent. and hire.trybrynz.com"
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "MARKER: https proxy passed"
           REMOTE

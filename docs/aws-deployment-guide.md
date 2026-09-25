@@ -17,11 +17,11 @@ Planned EC2 hosts:
 | prod | frontend | `talent-platform-ui` | `frontend-prod` | scaffolded only |
 | prod | backend | `talent-platform` | `backend-prod` | scaffolded only |
 
-Dev domains (2026-09-26, A records at Hostinger for `trybrynz.com`, plain http until TLS is added):
+Dev domains (2026-09-26, A records at Hostinger for `trybrynz.com`, HTTPS from Let's Encrypt; plain http on these names redirects to https):
 
-- Public candidate site: `http://talent.trybrynz.com` (frontend EIP)
-- Internal console: `http://hire.trybrynz.com` (frontend EIP)
-- Backend API/docs: `http://api.trybrynz.com/docs` (backend EIP)
+- Public candidate site: `https://talent.trybrynz.com` (frontend EIP)
+- Internal console: `https://hire.trybrynz.com` (frontend EIP)
+- Backend API/docs: `https://api.trybrynz.com/docs` (backend EIP)
 
 Access by Elastic IP still works:
 
@@ -139,7 +139,7 @@ Frontend repo secrets (`talent-platform-ui`):
 FRONTEND_DEV_HOST=<frontend dev EIP>
 FRONTEND_DEV_SSH_USER=ubuntu
 FRONTEND_DEV_SSH_KEY=<private key matching the EC2 key pair>
-DEV_NEXT_PUBLIC_API_URL=http://<backend dev EIP>:8000
+DEV_NEXT_PUBLIC_API_URL=https://api.trybrynz.com
 
 FRONTEND_PROD_HOST=<frontend prod EIP>
 FRONTEND_PROD_SSH_USER=ubuntu
@@ -206,7 +206,7 @@ The frontend workflow:
 8. Starts them with systemd:
    - `brynzit-web` on port `3000`
    - `brynzit-console` on port `3001`
-9. Installs nginx and serves `brynzit-web` on port `80`, plus `brynzit-console` for `hire.trybrynz.com` (`infra/nginx/web.conf`).
+9. Installs nginx and certbot. nginx serves `brynzit-web` on the plain IP (`infra/nginx/web.conf`), and `talent.trybrynz.com` and `hire.trybrynz.com` (`brynzit-console`) over HTTPS (`infra/nginx/web-tls.conf`).
 
 Useful EC2 commands:
 
@@ -250,13 +250,18 @@ Dev only so far (2026-09-25). Goal: the plain IP instead of IP plus port, then a
 domain per service (backend, candidate site, console). One backend serves both
 sites.
 
-- **Frontend host:** nginx on port `80` serves the candidate site for `talent.` and the plain
-  IP, and the console for `hire.` (`infra/nginx/web.conf`, passes `Host`/`X-Forwarded-*` for
-  Next.js and Clerk). The console block has the backend's 12 MB body and 300 s read caps,
-  because every console API call goes through it. The console still answers on `:3001` too.
-- **Backend host:** nginx on port `80` serves the API (`talent-platform/infra/nginx/api.conf`).
-- Both deploys run `nginx -t` before reloading and check the proxied URL
-  (`MARKER: nginx proxy passed`).
+- **Frontend host:** nginx on port `80` serves the candidate site on the plain IP
+  (`infra/nginx/web.conf`, passes `Host`/`X-Forwarded-*` for Next.js and Clerk). `talent.` (site)
+  and `hire.` (console) are served over HTTPS by `infra/nginx/web-tls.conf`. The console block
+  has the backend's 12 MB body and 300 s read caps, because every console API call goes
+  through it. The console still answers on `:3001` too.
+- **Backend host:** nginx on port `80` serves the API on the plain IP
+  (`talent-platform/infra/nginx/api.conf`), and `api.` over HTTPS via `api-tls.conf`.
+- The HTTPS blocks are separate files, installed into `/etc/nginx/brynzit-tls/` (which the
+  main file includes) only after the deploy has the certificate. A config that names a missing
+  certificate fails `nginx -t`, so keeping them in the main file would deadlock a fresh host.
+- Both deploys run `nginx -t` before reloading and check the proxied URLs
+  (`MARKER: nginx proxy passed`, `MARKER: https proxy passed`).
 
 Done on 2026-09-25:
 
@@ -273,14 +278,25 @@ Done on 2026-09-26:
    to the backend EIP.
 4. `web.conf` routes `hire.` to the console, and the backend's `CORS_ALLOWED_ORIGINS` default
    lists `talent.` and `hire.` over http and https.
+5. HTTPS. Both deploys install certbot and get a Let's Encrypt certificate (`trybrynz-web` for
+   `talent.` and `hire.`, `trybrynz-api` for `api.`), proven over port 80 with a webroot
+   challenge, registered without an email. The certbot systemd timer does the renewals. The
+   deploys do not run `certbot renew --dry-run` (it talks to Let's Encrypt staging, took 1 to
+   5+ minutes and once hung long enough to drop the ssh session). It passed on both hosts at
+   first issuance. Port `443` was opened on the backend security group in Terraform (1
+   added, 0 changed, 0 destroyed, no drift on re-plan). The frontend group already had it.
+6. `DEV_NEXT_PUBLIC_API_URL` set to `https://api.trybrynz.com` (environment secret in
+   `development`) and the frontend redeployed. The job page canonical link is now
+   `https://talent.trybrynz.com/jobs/<id>`.
 
 Remaining:
 
-5. Once nothing uses them, close `3000` and `8000` to the internet.
-6. TLS: certificates on both hosts, port `443` in both security groups, and the https
-   `server` blocks in the repos' nginx files (every deploy rewrites them, so hand edits are
-   lost). Then `DEV_NEXT_PUBLIC_API_URL` to `https://api.trybrynz.com`, the job page canonical
-   link to `talent.trybrynz.com`, and a Clerk production instance for `trybrynz.com`.
+7. Once nothing uses them, close `3000` and `8000` to the internet.
+8. Add an email for Let's Encrypt expiry notices on each host:
+   `sudo certbot update_account --email <address>`.
+9. A Clerk production instance for `trybrynz.com` (Clerk shows its own DNS records, which are
+   CNAMEs) with the new keys and the backend's `CLERK_ISSUER`. Then check the backend's
+   `STAFF_COOKIE_SECURE` (it should be `true` once the console is only used over https).
 
 ## Stop And Start Dev EC2
 

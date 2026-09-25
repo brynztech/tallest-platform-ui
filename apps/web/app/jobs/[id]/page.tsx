@@ -171,7 +171,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     if (!id) return
     const link = document.createElement('link')
     link.rel = 'canonical'
-    link.href = `https://brynzit.com/jobs/${id}`
+    link.href = `https://talent.trybrynz.com/jobs/${id}`
     link.setAttribute('data-canonical-job-id', id)
     document.head.appendChild(link)
     return () => {
