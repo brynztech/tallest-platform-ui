@@ -31,10 +31,6 @@ describe('Job card — canonical fields', () => {
     expect(src).not.toMatch(/const fmt = \(n: number\)/)
   })
 
-  it('prefers display labels over raw skill slugs', () => {
-    expect(src).toContain('skills_display')
-  })
-
   it('shows match reasons alongside the match badge', () => {
     expect(src).toContain('match_reasons')
     expect(src).toContain("match_strength === 'strong'")
@@ -167,10 +163,19 @@ describe('Job detail page — canonical contract', () => {
     expect(src).toContain('job.compensation_currency && job.compensation_period')
   })
 
+  it('prefers display labels over raw skill slugs (skills live on the detail page, the card carries no tags)', () => {
+    expect(src).toContain('skills_display')
+    expect(readFile('jobs/_components/job-card.tsx')).not.toContain('skills_display')
+  })
+
+  it('offers a Save button next to the apply action', () => {
+    expect(src).toContain('SaveJobButton')
+  })
+
   it('sends scraped applicants to the employer and says tracking is not possible', () => {
     expect(src).toContain("job.job_kind === 'scraped'")
     expect(src).toContain('source_url')
-    expect(src).toContain('cannot track this application')
+    expect(src).toContain("can&apos;t track this application")
   })
 
   it('routes our own requisitions through the internal apply flow', () => {

@@ -7,11 +7,13 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Textarea } from '@brynzit/ui/components/ui/textarea'
 import { Progress } from '@brynzit/ui/components/ui/progress'
 import { Label } from '@brynzit/ui/components/ui/label'
-import { Separator } from '@brynzit/ui/components/ui/separator'
 import { candidateJsonHeaders } from '../../../_lib/candidate-api'
+import { NOTICE, PRIMARY_BTN as PRIMARY, SECONDARY_BTN as SECONDARY, TEXTAREA } from '../../../_lib/ui-classes'
+import { SaveJobButton } from '../../_components/save-job-button'
 import type { CandidateApplication } from '../../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
 
 interface ApplySectionProps {
   jobId: string
@@ -45,37 +47,36 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
 
   if (!isLoggedIn) {
     return (
-      <div className="pt-4">
-        <Separator className="mb-4" />
-        <Button asChild className="w-full rounded-full shadow-md shadow-primary/15" size="lg">
-          <Link href={`/signup?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`}>
-            Sign up to apply
-          </Link>
-        </Button>
-        <p className="mt-2 text-center text-sm text-muted-foreground">
-          Sign in to apply for this role.
-        </p>
+      <div>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild className={PRIMARY}>
+            <Link href={`/signup?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`}>Sign up to apply</Link>
+          </Button>
+          <SaveJobButton jobId={jobId} />
+        </div>
+        <p className={`mt-4 ${NOTICE}`}>Sign in to apply for this role.</p>
       </div>
     )
   }
 
   if (applied) {
     return (
-      <div className="pt-4">
-        <Separator className="mb-4" />
-        <Button disabled className="w-full rounded-full" size="lg" variant="outline">
+      <div className="flex flex-wrap gap-3">
+        <Button disabled variant="outline" className={SECONDARY}>
           Applied
         </Button>
+        <SaveJobButton jobId={jobId} />
       </div>
     )
   }
 
   if (score >= 70) {
     return (
-      <div className="pt-4 space-y-3">
-        <Separator className="mb-4" />
+      <div className="space-y-4">
         <div>
-          <Label htmlFor="apply-note">Add a note (optional)</Label>
+          <Label htmlFor="apply-note" className="text-[14px] leading-5 font-medium text-foreground">
+            Add a note (optional)
+          </Label>
           <Textarea
             id="apply-note"
             rows={3}
@@ -83,32 +84,37 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="Optional note to the recruiter…"
+            className={`mt-2 ${TEXTAREA}`}
           />
-          <p className="mt-1 text-right text-sm text-muted-foreground">{note.length} / 200</p>
+          <p className="mt-1 text-right text-[14px] leading-5 text-muted-foreground">{note.length} / 200</p>
         </div>
-        <Button
-          onClick={() => applyMutation.mutate()}
-          className="w-full rounded-full shadow-md shadow-primary/15"
-          size="lg"
-          disabled={applyMutation.isPending || note.length > 200}
-        >
-          {applyMutation.isPending ? 'Submitting…' : 'Apply now'}
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() => applyMutation.mutate()}
+            className={PRIMARY}
+            disabled={applyMutation.isPending || note.length > 200}
+          >
+            {applyMutation.isPending ? 'Submitting…' : 'Apply now'}
+          </Button>
+          <SaveJobButton jobId={jobId} />
+        </div>
       </div>
     )
   }
 
   // Incomplete profile state — completeness_score < 70
   return (
-    <div className="pt-4 space-y-3">
-      <Separator className="mb-4" />
-      <p className="text-sm text-muted-foreground">
+    <div className="space-y-4">
+      <p className="text-[14px] leading-5 text-muted-foreground">
         Your profile is {score}% complete. Reach 70% to apply in one click.
       </p>
       <Progress value={score} className="h-2 [&>div]:bg-primary" />
-      <Button asChild variant="outline" className="w-full rounded-full" size="lg">
-        <Link href="/profile/edit">Complete your profile</Link>
-      </Button>
+      <div className="flex flex-wrap gap-3">
+        <Button asChild variant="outline" className={SECONDARY}>
+          <Link href="/profile/edit">Complete your profile</Link>
+        </Button>
+        <SaveJobButton jobId={jobId} />
+      </div>
     </div>
   )
 }

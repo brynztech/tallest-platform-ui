@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { Input } from '@brynzit/ui/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@brynzit/ui/components/ui/select'
-import { Badge } from '@brynzit/ui/components/ui/badge'
 import { Button } from '@brynzit/ui/components/ui/button'
+import { SearchField } from '../../_components/search-field'
+import { CategoryLinks } from '../../_components/category-links'
+import { RemovableChip } from '../../_components/removable-chip'
 
 export interface JobFilters {
   role_type: string
@@ -39,10 +40,15 @@ export const EMPTY_FILTERS: JobFilters = {
 }
 
 interface FilterBarProps {
+  /** Every keystroke. The page debounces it before querying. */
   onSearchChange: (text: string) => void
+  /** Enter, the arrow button or a category link. The page queries immediately. */
+  onSearchSubmit: (text: string) => void
   onFiltersChange: (filters: JobFilters) => void
   /** Shows the "Match my profile" toggle only when there is a profile to match. */
   isPersonalized?: boolean
+  /** Seeds the search input, e.g. from a `?q=` handed off by the hero search. */
+  initialSearch?: string
 }
 
 const ROLE_TYPES = ['full_time', 'part_time', 'contract', 'internship', 'temporary']
@@ -68,16 +74,21 @@ const POSTED_WINDOWS: Array<{ value: string; label: string }> = [
   { value: '7', label: 'Last 7 days' },
   { value: '30', label: 'Last 30 days' },
 ]
+const CATEGORIES = ['AI Engineer', 'Backend', 'Product Engineer', 'Frontend', 'Devops & AI', 'Design', 'Recruiting']
 
 function labelFor(options: Array<{ value: string; label: string }>, value: string): string {
   return options.find(option => option.value === value)?.label ?? value
 }
 
-const PILL = 'h-11 rounded-full border-border/80 bg-background/80 px-5 shadow-none'
+// The trigger already ships h-9 (36px), text-sm and gap-2, which is the pill size.
+// Anything taller needs `data-[size=default]:h-*`: a plain `h-*` loses to it on specificity.
+const PILL = 'rounded-full border-border-control bg-card px-4 shadow-none'
+const TOGGLE = 'h-9 rounded-full px-4 text-[14px] leading-5 font-normal shadow-none'
+const TOGGLE_OFF = 'border-border-control bg-card hover:bg-background'
 
-export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: FilterBarProps) {
+export function FilterBar({ onSearchChange, onSearchSubmit, onFiltersChange, isPersonalized, initialSearch }: FilterBarProps) {
   const [filters, setFilters] = useState<JobFilters>(EMPTY_FILTERS)
-  const [searchText, setSearchText] = useState('')
+  const [searchText, setSearchText] = useState(initialSearch ?? '')
 
   function handleFilterChange(key: keyof JobFilters, value: string | boolean) {
     const next = { ...filters, [key]: value }
@@ -85,11 +96,21 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
     onFiltersChange(next)  // immediate — no debounce per D-08
   }
 
+  function handleSearchChange(text: string) {
+    setSearchText(text)
+    onSearchChange(text)
+  }
+
+  function selectCategory(label: string) {
+    setSearchText(label)
+    onSearchSubmit(label)
+  }
+
   function clearAll() {
     setFilters(EMPTY_FILTERS)
     onFiltersChange(EMPTY_FILTERS)
     setSearchText('')
-    onSearchChange('')
+    onSearchSubmit('')
   }
 
   const activeChips: Array<{ key: keyof JobFilters; label: string; reset: string | boolean }> = []
@@ -98,8 +119,6 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
   if (filters.country) activeChips.push({ key: 'country', label: labelFor(COUNTRIES, filters.country), reset: '' })
   if (filters.remote_mode) activeChips.push({ key: 'remote_mode', label: labelFor(REMOTE_MODES, filters.remote_mode), reset: '' })
   if (filters.posted_within_days) activeChips.push({ key: 'posted_within_days', label: labelFor(POSTED_WINDOWS, filters.posted_within_days), reset: '' })
-  if (filters.location) activeChips.push({ key: 'location', label: filters.location, reset: '' })
-  if (filters.skills) activeChips.push({ key: 'skills', label: filters.skills, reset: '' })
   if (filters.remote) activeChips.push({ key: 'remote', label: 'Remote', reset: false })
   if (filters.has_compensation) activeChips.push({ key: 'has_compensation', label: 'Pay listed', reset: false })
   if (filters.match_only) activeChips.push({ key: 'match_only', label: 'Matches my profile', reset: false })
@@ -107,25 +126,21 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
   const hasActiveFilters = activeChips.length > 0
 
   return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-card/75 p-3 shadow-sm shadow-foreground/[0.03] backdrop-blur">
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          className={`${PILL} w-full md:w-[280px]`}
-          placeholder="Search roles, companies…"
-          value={searchText}
-          onChange={e => { setSearchText(e.target.value); onSearchChange(e.target.value) }}
-        />
-        <Input
-          className={`${PILL} w-full sm:w-[160px]`}
-          placeholder="Skills"
-          value={filters.skills}
-          onChange={e => handleFilterChange('skills', e.target.value)}
-        />
+    <div className="flex flex-col items-center">
+      <SearchField
+        id="jobs-search"
+        placeholder="Search roles or companies"
+        value={searchText}
+        onChange={handleSearchChange}
+        onSubmit={() => onSearchSubmit(searchText)}
+      />
+
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <Select
           value={filters.country || 'all'}
           onValueChange={v => handleFilterChange('country', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className={`${PILL} w-full sm:w-[150px]`} aria-label="Country">
+          <SelectTrigger className={PILL} aria-label="Country">
             <SelectValue placeholder="Country" />
           </SelectTrigger>
           <SelectContent>
@@ -139,7 +154,7 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
           value={filters.remote_mode || 'all'}
           onValueChange={v => handleFilterChange('remote_mode', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className={`${PILL} w-full sm:w-[140px]`} aria-label="Work setup">
+          <SelectTrigger className={PILL} aria-label="Work setup">
             <SelectValue placeholder="Work setup" />
           </SelectTrigger>
           <SelectContent>
@@ -153,7 +168,7 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
           value={filters.role_type || 'all'}
           onValueChange={v => handleFilterChange('role_type', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className={`${PILL} w-full sm:w-[140px]`} aria-label="Role type">
+          <SelectTrigger className={PILL} aria-label="Role type">
             <SelectValue placeholder="Role type" />
           </SelectTrigger>
           <SelectContent>
@@ -167,7 +182,7 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
           value={filters.seniority || 'all'}
           onValueChange={v => handleFilterChange('seniority', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className={`${PILL} w-full sm:w-[130px]`} aria-label="Seniority">
+          <SelectTrigger className={PILL} aria-label="Seniority">
             <SelectValue placeholder="Seniority" />
           </SelectTrigger>
           <SelectContent>
@@ -181,7 +196,7 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
           value={filters.posted_within_days || 'all'}
           onValueChange={v => handleFilterChange('posted_within_days', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className={`${PILL} w-full sm:w-[150px]`} aria-label="Date posted">
+          <SelectTrigger className={PILL} aria-label="Date posted">
             <SelectValue placeholder="Date posted" />
           </SelectTrigger>
           <SelectContent>
@@ -194,7 +209,7 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
         <Button
           variant={filters.has_compensation ? 'default' : 'outline'}
           size="sm"
-          className="h-11 rounded-full px-5"
+          className={`${TOGGLE} ${filters.has_compensation ? '' : TOGGLE_OFF}`}
           aria-pressed={filters.has_compensation}
           onClick={() => handleFilterChange('has_compensation', !filters.has_compensation)}
         >
@@ -204,38 +219,38 @@ export function FilterBar({ onSearchChange, onFiltersChange, isPersonalized }: F
           <Button
             variant={filters.match_only ? 'default' : 'outline'}
             size="sm"
-            className="h-11 rounded-full px-5"
+            className={`${TOGGLE} ${filters.match_only ? '' : TOGGLE_OFF}`}
             aria-pressed={filters.match_only}
             onClick={() => handleFilterChange('match_only', !filters.match_only)}
           >
             Match my profile
           </Button>
         )}
-        {hasActiveFilters && (
+      </div>
+
+      {hasActiveFilters && (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          {activeChips.map(chip => (
+            <RemovableChip
+              key={chip.key}
+              label={chip.label}
+              removeLabel={`Remove ${chip.label} filter`}
+              onRemove={() => handleFilterChange(chip.key, chip.reset)}
+            />
+          ))}
           <button
+            type="button"
             onClick={clearAll}
-            className="ml-auto rounded-full px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            className="rounded-full px-3 py-1 text-[14px] leading-5 text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-link"
           >
             Clear all
           </button>
-        )}
-      </div>
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 px-1 pt-3">
-          {activeChips.map(chip => (
-            <Badge key={chip.key} variant="secondary" className="h-9 gap-1 rounded-full px-3">
-              {chip.label}
-              <button
-                onClick={() => handleFilterChange(chip.key, chip.reset)}
-                aria-label={`Remove ${chip.label} filter`}
-                className="ml-1 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-              >
-                ×
-              </button>
-            </Badge>
-          ))}
         </div>
       )}
+
+      <div className="mt-4">
+        <CategoryLinks items={CATEGORIES} onSelect={selectCategory} />
+      </div>
     </div>
   )
 }

@@ -16,6 +16,7 @@ import {
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfileUpdate } from '../../_lib/candidate-types'
+import { FIELD, PANEL, PRIMARY_BTN, SELECT } from '../../_lib/ui-classes'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -88,92 +89,95 @@ export default function OnboardingPreferencesPage() {
   if (!isLoggedIn) return null
 
   return (
-    <main className="mx-auto max-w-[620px] px-6 py-12">
-      <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
-      <div className="mb-8 space-y-2">
-        <p className="text-sm text-muted-foreground">Step 3 of 3</p>
-        <Progress value={100} className="h-2" />
-      </div>
-
-      <div className="space-y-2">
-        <h1 className="text-3xl font-light tracking-[-0.035em] text-foreground">Set your preferences</h1>
-        <p className="text-sm text-muted-foreground">
-          Tell us what kind of roles you want so Brynzit can rank matches better.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
-            id="location"
-            placeholder="San Francisco, CA"
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-          />
+    <main className="mx-auto max-w-[560px] px-4 py-10">
+      <div className={PANEL}>
+        <div className="mb-6 space-y-2">
+          <p className="text-[14px] leading-5 text-muted-foreground">Step 3 of 3</p>
+          <Progress value={100} className="h-1.5" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Set your preferences</h1>
+          <p className="text-[14px] leading-5 text-muted-foreground">
+            Tell us what kind of roles you want so Brynz can rank matches better.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div className="space-y-2">
-            <Label>Remote preference</Label>
-            <Select value={remotePreference} onValueChange={(value) => setRemotePreference(value as typeof remotePreference)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="flexible">Flexible</SelectItem>
-                <SelectItem value="remote_only">Remote only</SelectItem>
-                <SelectItem value="hybrid">Hybrid</SelectItem>
-                <SelectItem value="onsite">Onsite</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              className={FIELD}
+              placeholder="San Francisco, CA"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Remote preference</Label>
+              <Select value={remotePreference} onValueChange={(value) => setRemotePreference(value as typeof remotePreference)}>
+                <SelectTrigger className={SELECT}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flexible">Flexible</SelectItem>
+                  <SelectItem value="remote_only">Remote only</SelectItem>
+                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                  <SelectItem value="onsite">Onsite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Seniority</Label>
+              <Select value={seniority} onValueChange={(value) => setSeniority(value as typeof seniority)}>
+                <SelectTrigger className={SELECT}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="junior">Junior</SelectItem>
+                  <SelectItem value="mid">Mid</SelectItem>
+                  <SelectItem value="senior">Senior</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="principal">Principal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Seniority</Label>
-            <Select value={seniority} onValueChange={(value) => setSeniority(value as typeof seniority)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="junior">Junior</SelectItem>
-                <SelectItem value="mid">Mid</SelectItem>
-                <SelectItem value="senior">Senior</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
-                <SelectItem value="principal">Principal</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="linkedin">LinkedIn</Label>
+            <Input
+              id="linkedin"
+              type="url"
+              className={FIELD}
+              placeholder="https://linkedin.com/in/you"
+              value={linkedinUrl}
+              onChange={(event) => setLinkedinUrl(event.target.value)}
+            />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="linkedin">LinkedIn</Label>
-          <Input
-            id="linkedin"
-            type="url"
-            placeholder="https://linkedin.com/in/you"
-            value={linkedinUrl}
-            onChange={(event) => setLinkedinUrl(event.target.value)}
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="github">GitHub</Label>
+            <Input
+              id="github"
+              type="url"
+              className={FIELD}
+              placeholder="https://github.com/you"
+              value={githubUrl}
+              onChange={(event) => setGithubUrl(event.target.value)}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="github">GitHub</Label>
-          <Input
-            id="github"
-            type="url"
-            placeholder="https://github.com/you"
-            value={githubUrl}
-            onChange={(event) => setGithubUrl(event.target.value)}
-          />
-        </div>
+          {error && <p className="text-[14px] leading-5 text-destructive">{error}</p>}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <Button type="submit" className="w-full rounded-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Complete profile'}
-        </Button>
-      </form>
+          <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Complete profile'}
+          </Button>
+        </form>
       </div>
     </main>
   )

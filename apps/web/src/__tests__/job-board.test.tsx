@@ -11,6 +11,17 @@ function readFile(relPath: string): string {
 describe('Job board page (JOB-01)', () => {
   const src = readFile('jobs/page.tsx')
 
+  it('mounts the toolbar exactly once so typing does not remount it', () => {
+    // It used to render in three branches (loading/error/results) at different tree
+    // positions, so a new query remounted it and dropped the input's focus and text.
+    expect(src.match(/<FilterBar/g)?.length).toBe(1)
+  })
+
+  it('seeds the search from ?q= handed off by the hero', () => {
+    expect(src).toContain("searchParams.get('q')")
+    expect(src).toContain('initialSearch')
+  })
+
   it('uses useInfiniteQuery for cursor pagination', () => {
     expect(src).toContain('useInfiniteQuery')
   })
@@ -88,6 +99,10 @@ describe('Anonymous gating (JOB-06)', () => {
     expect(jobCardSrc).toContain('isLocked')
   })
 
+  it('locked cards are inert so keyboard and screen readers cannot reach them', () => {
+    expect(jobCardSrc).toContain('inert={isLocked}')
+  })
+
   it('LockedJobsOverlay contains resume scan link to /signup', () => {
     const overlaySrc = readFile('jobs/_components/locked-jobs-overlay.tsx')
     expect(overlaySrc).toContain('Upload resume to reveal matches')
@@ -116,9 +131,15 @@ describe('Anonymous gating (JOB-06)', () => {
 describe('FilterBar (D-07, D-08)', () => {
   const src = readFile('jobs/_components/filter-bar.tsx')
 
-  it('renders search input', () => {
-    expect(src).toContain('Input')
+  it('renders the search field with a placeholder', () => {
+    expect(src).toContain('SearchField')
     expect(src).toContain('placeholder')
+    expect(readFile('_components/search-field.tsx')).toContain('<input')
+  })
+
+  it('fills the search in place when a category link is picked', () => {
+    expect(src).toContain('CategoryLinks')
+    expect(src).toContain('onSelect={selectCategory}')
   })
 
   it('has Role type and Seniority Select dropdowns', () => {
@@ -161,5 +182,23 @@ describe('LockedJobsOverlay component', () => {
 
   it('has absolute positioning for overlay effect', () => {
     expect(src).toContain('absolute')
+  })
+})
+
+describe('Saved jobs (browser-only until an API exists)', () => {
+  const store = readFile('_lib/saved-jobs.ts')
+
+  it('guards the stored JSON.parse against corrupt localStorage', () => {
+    const parse = store.indexOf('JSON.parse(')
+    expect(parse).toBeGreaterThan(-1)
+    const tryIndex = store.lastIndexOf('try {', parse)
+    expect(tryIndex).toBeGreaterThan(-1)
+    expect(store.indexOf('catch', tryIndex)).toBeGreaterThan(parse)
+  })
+
+  it('the card heart and the detail Save button share one hook and one key', () => {
+    expect(store).toContain("'brynz_saved_jobs'")
+    expect(readFile('jobs/_components/job-card.tsx')).toContain('useSavedJob')
+    expect(readFile('jobs/_components/save-job-button.tsx')).toContain('useSavedJob')
   })
 })

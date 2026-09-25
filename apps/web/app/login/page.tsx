@@ -8,6 +8,7 @@ import { Button } from '@brynzit/ui/components/ui/button'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
+import { FIELD, NOTICE, PANEL, PRIMARY_BTN, SECONDARY_BTN } from '../_lib/ui-classes'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -52,75 +53,77 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-6">
-      <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-light tracking-tight text-foreground">Sign in</h1>
-        <p className="text-sm text-muted-foreground">Continue to your Brynzit candidate account.</p>
-      </div>
-
-      {clerkPublishableKey ? (
-        <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/[0.03] p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Use your Clerk account</p>
-          <p className="mt-1">
-            Sign in to see your applications, finish your profile, and continue your resume match scan.
-          </p>
-          <SignInButton mode="modal">
-            <Button type="button" variant="outline" size="sm" className="mt-3 rounded-full">
-              Sign in with Clerk
-            </Button>
-          </SignInButton>
-          <ClerkLoginContinue />
-        </div>
-      ) : (
-      <>
-      <div className="mt-6 rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">Demo user</p>
-        <p className="mt-1">
-          Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
-          <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-4 py-10">
+      <div className={PANEL}>
+        <div className="space-y-2 text-center">
+          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Sign in</h1>
+          <p className="text-[14px] leading-5 text-muted-foreground">Continue to your Brynz candidate account.</p>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {clerkPublishableKey ? (
+          <div className={`mt-6 ${NOTICE}`}>
+            <p className="font-medium text-foreground">Use your Clerk account</p>
+            <p className="mt-1">
+              Sign in to see your applications, finish your profile, and continue your resume match scan.
+            </p>
+            <SignInButton mode="modal">
+              <Button type="button" variant="outline" className={`mt-3 ${SECONDARY_BTN}`}>
+                Sign in with Clerk
+              </Button>
+            </SignInButton>
+            <ClerkLoginContinue />
+          </div>
+        ) : (
+          <>
+            <div className={`mt-6 ${NOTICE}`}>
+              <p className="font-medium text-foreground">Demo user</p>
+              <p className="mt-1">
+                Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
+                <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>.
+              </p>
+            </div>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
-        </Button>
-      </form>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  className={FIELD}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  className={FIELD}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </div>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        New here?{' '}
-        <Link href="/signup" className="text-foreground underline underline-offset-4">
-          Join free
-        </Link>
-      </p>
-      </>
-      )}
+              {error && <p className="text-[14px] leading-5 text-destructive">{error}</p>}
+
+              <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={isSubmitting}>
+                {isSubmitting ? 'Signing in...' : 'Sign in'}
+              </Button>
+            </form>
+
+            <p className="mt-5 text-center text-[14px] leading-5 text-muted-foreground">
+              New here?{' '}
+              <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
+                Join free
+              </Link>
+            </p>
+          </>
+        )}
       </div>
     </main>
   )
@@ -173,16 +176,10 @@ function ClerkLoginContinue() {
 
   return (
     <div className="mt-3">
-      <Button
-        type="button"
-        size="sm"
-        className="rounded-full"
-        onClick={continueToApp}
-        disabled={isStarting}
-      >
+      <Button type="button" className={PRIMARY_BTN} onClick={continueToApp} disabled={isStarting}>
         {isStarting ? 'Loading profile...' : 'Continue to dashboard'}
       </Button>
-      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {error && <p className="mt-2 text-[14px] leading-5 text-destructive">{error}</p>}
     </div>
   )
 }

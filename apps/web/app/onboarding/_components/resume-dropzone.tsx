@@ -16,23 +16,23 @@ export function ResumeDropzone({ file, status, disabled, onChange }: ResumeDropz
   const isBusy = status === 'uploading' || status === 'processing'
 
   function getStateClass() {
-    if (isDragOver) return 'border-primary bg-primary/5 ring-2 ring-primary/30'
+    if (isDragOver) return 'border-foreground bg-muted ring-2 ring-primary/30'
     if (status === 'failed') return 'border-destructive/50 bg-destructive/5'
-    if (file) return 'border-primary/40 bg-primary/5'
-    if (isBusy) return 'border-border/50 bg-muted/30'
-    return 'border-border/70 bg-background/70 hover:border-primary/30 hover:bg-primary/5'
+    if (file) return 'border-foreground/40 bg-muted'
+    if (isBusy) return 'border-border-input/50 bg-muted/60'
+    return 'border-border-input bg-card hover:bg-muted'
   }
 
   function getIcon() {
     if (status === 'failed') {
-      return <AlertCircle className="h-8 w-8 text-destructive" />
+      return <AlertCircle className="h-6 w-6 text-destructive" />
     }
     if (file) {
-      return <FileText className="h-8 w-8 text-primary" />
+      return <FileText className="h-6 w-6 text-foreground" />
     }
     return (
       <UploadCloud
-        className={cn('h-8 w-8', isDragOver ? 'text-primary' : 'text-muted-foreground')}
+        className={cn('h-6 w-6', isDragOver ? 'text-foreground' : 'text-muted-foreground')}
       />
     )
   }
@@ -52,8 +52,9 @@ export function ResumeDropzone({ file, status, disabled, onChange }: ResumeDropz
   return (
     <label
       className={cn(
-        'flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 text-center',
-        'transition-[color,box-shadow,background-color,border-color] duration-150 ease-out hover:shadow-lg hover:shadow-foreground/[0.04]',
+        'flex min-h-[168px] cursor-pointer flex-col items-center justify-center gap-2 rounded-[20px] border border-dashed px-6 text-center',
+        'transition-[background-color,border-color] duration-150 ease-out',
+        'has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-link',
         getStateClass(),
       )}
       onDragEnter={() => !disabled && setIsDragOver(true)}
@@ -68,8 +69,8 @@ export function ResumeDropzone({ file, status, disabled, onChange }: ResumeDropz
       }}
     >
       {getIcon()}
-      <span className="text-sm font-medium text-foreground">{getPrimaryText()}</span>
-      <span className="text-xs text-muted-foreground">{getSubtext()}</span>
+      <span className="text-[14px] leading-5 font-medium text-foreground">{getPrimaryText()}</span>
+      <span className="text-[14px] leading-5 text-muted-foreground">{getSubtext()}</span>
       <input
         type="file"
         accept=".pdf,.doc,.docx"

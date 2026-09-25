@@ -1,10 +1,9 @@
 'use client'
 import Link from 'next/link'
-import { Avatar, AvatarFallback, AvatarImage } from '@brynzit/ui/components/ui/avatar'
-import { Badge } from '@brynzit/ui/components/ui/badge'
-import { Card } from '@brynzit/ui/components/ui/card'
+import { Heart } from 'lucide-react'
+import { Button } from '@brynzit/ui/components/ui/button'
 import { cn } from '@brynzit/ui/lib/utils'
-import { MapPin, Sparkles } from 'lucide-react'
+import { useSavedJob } from '../../_lib/saved-jobs'
 import type { PublicJobItem } from '../../_lib/candidate-types'
 
 interface JobCardProps {
@@ -28,100 +27,98 @@ const REMOTE_LABELS: Record<'onsite' | 'hybrid' | 'remote', string> = {
 }
 
 export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
+  const { saved, toggle } = useSavedJob(job.id)
+
   // The backend formats pay with its currency ("USD 160k–210k/yr",
   // "INR 18L–25L/yr"). The card must not reformat it: this used to hardcode "$",
   // which mislabelled every Indian salary — ₹20L would have read as $2M.
   const pay = job.compensation_label
-  const skills = job.skills_display?.length ? job.skills_display : job.skills
+
+  // Text, not a badge: the DS allows no tags on a card. The reasons are what
+  // make the label read as evidence rather than marketing.
+  const matchLabel =
+    isLoggedIn && job.match_strength === 'strong'
+      ? 'Strong match'
+      : isLoggedIn && job.match_strength === 'partial'
+        ? 'Partial match'
+        : null
+  const matchReasons = matchLabel ? (job.match_reasons?.slice(0, 2) ?? []) : []
+
+  const meta = [
+    EMPLOYMENT_LABELS[job.employment_type],
+    job.remote_mode && REMOTE_LABELS[job.remote_mode],
+    job.location,
+    job.openings > 1 && `${job.openings} openings`,
+    // `!= null` on purpose: a real 0 is worth showing, and mocks omit the field.
+    job.applicants_count != null &&
+      `${job.applicants_count} applicant${job.applicants_count === 1 ? '' : 's'}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
-    <Link
-      href={`/jobs/${job.id}`}
-      className="group block"
-      tabIndex={isLocked ? -1 : undefined}
-      aria-hidden={isLocked}
+    <div
+      inert={isLocked}
+      className={cn(
+        'group relative flex h-full flex-col rounded-[20px] border border-border bg-card p-5',
+        'transition-[background-color,box-shadow] duration-150 ease-out hover:bg-muted hover:shadow-raised',
+        isLocked && 'pointer-events-none blur-[4px] select-none',
+      )}
     >
-      <Card
-        className={cn(
-          'min-h-[178px] cursor-pointer rounded-[1.25rem] border-border/70 bg-card/85 p-5',
-          'transition-[color,box-shadow,transform] duration-150 ease-out',
-          'hover:-translate-y-px hover:bg-card hover:shadow-xl hover:shadow-foreground/[0.06]',
-          'group-focus-visible:outline-none group-focus-visible:ring-2 group-focus-visible:ring-ring',
-          isLocked && 'blur-[4px] pointer-events-none select-none',
-        )}
-      >
-        <div className="flex h-full flex-col">
-          <div className="space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-lg font-medium tracking-[-0.025em] text-foreground">
-                {job.title}
-              </p>
-              {job.openings > 1 && (
-                <Badge variant="outline" className="shrink-0 whitespace-nowrap">
-                  {job.openings} openings
-                </Badge>
-              )}
-            </div>
-            {job.company_name && (
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Avatar className="h-5 w-5">
-                  {job.company_logo_url && (
-                    <AvatarImage src={job.company_logo_url} alt={job.company_name} />
-                  )}
-                  <AvatarFallback className="text-[10px]">
-                    {job.company_name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {job.company_name}
-              </p>
-            )}
-            {job.location && (
-              <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 shrink-0" />
-                {job.location}
-              </p>
-            )}
-            {pay && <p className="text-sm font-medium text-foreground">{pay}</p>}
-            {job.applicants_count !== null && (
-              <p className="text-xs text-muted-foreground">
-                {job.applicants_count} applicant{job.applicants_count === 1 ? '' : 's'}
-              </p>
-            )}
+      <Link
+        href={`/jobs/${job.id}`}
+        className="absolute inset-0 z-0 rounded-[20px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
+        aria-label={job.title}
+      />
 
-            {/* Explaining the match is what makes the badge trustworthy — a bare
-                "Strong match" reads as marketing. */}
-            {isLoggedIn &&
-              job.match_reasons?.length > 0 &&
-              job.match_strength !== 'none' && (
-                <p className="flex items-start gap-1.5 pt-0.5 text-sm text-muted-foreground">
-                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                  <span className="line-clamp-2">
-                    {job.match_reasons.slice(0, 2).join(' · ')}
-                  </span>
-                </p>
-              )}
-          </div>
-
-          <div className="mt-auto flex flex-wrap gap-1.5 pt-5">
-            <Badge variant="secondary">{EMPLOYMENT_LABELS[job.employment_type]}</Badge>
-            {job.remote_mode && (
-              <Badge variant="secondary">{REMOTE_LABELS[job.remote_mode]}</Badge>
-            )}
-            {skills.slice(0, 3).map(skill => (
-              <Badge key={skill} variant="outline">
-                {skill}
-              </Badge>
-            ))}
-            {skills.length > 3 && <Badge variant="outline">+{skills.length - 3} more</Badge>}
-            {isLoggedIn && job.match_strength === 'strong' && (
-              <Badge variant="default">Strong match</Badge>
-            )}
-            {isLoggedIn && job.match_strength === 'partial' && (
-              <Badge variant="secondary">Partial match</Badge>
-            )}
-          </div>
+      <div className="relative z-10 flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-muted text-[16px] leading-6 font-semibold text-foreground group-hover:bg-card">
+          {job.company_logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- unknown external hosts, no next.config remotePatterns
+            <img src={job.company_logo_url} alt={job.company_name ?? ''} className="h-full w-full object-cover" />
+          ) : (
+            (job.company_name ?? job.title).charAt(0).toUpperCase()
+          )}
         </div>
-      </Card>
-    </Link>
+
+        <div className="min-w-0 flex-1">
+          {/* Clamped so one long title cannot make its whole grid row taller; the full title is on the detail page. */}
+          <p title={job.title} className="line-clamp-2 text-[16px] leading-[22px] font-semibold text-foreground">
+            {job.title}
+          </p>
+          {pay && <p className="text-[14px] leading-5 text-muted-foreground">{pay}</p>}
+          {matchLabel && (
+            <p className="text-[14px] leading-5 text-muted-foreground">
+              <span className="font-medium text-foreground">{matchLabel}</span>
+              {matchReasons.length > 0 && ` · ${matchReasons.join(' · ')}`}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={saved ? 'Remove from saved jobs' : 'Save job'}
+          aria-pressed={saved}
+          className="-m-2 shrink-0 rounded-full p-2 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-link"
+        >
+          <Heart className={cn('h-5 w-5 text-foreground', saved && 'fill-foreground')} strokeWidth={1.6} />
+        </button>
+      </div>
+
+      <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-5">
+        <p title={meta} className="min-w-0 truncate text-[14px] leading-8 text-muted-foreground">
+          {meta}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 shrink-0 rounded-full border-foreground bg-card px-4 text-[14px] leading-5 font-medium shadow-none hover:bg-background"
+          asChild
+        >
+          <Link href={`/jobs/${job.id}`}>Apply</Link>
+        </Button>
+      </div>
+    </div>
   )
 }

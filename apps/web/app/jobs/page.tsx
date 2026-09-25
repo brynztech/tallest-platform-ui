@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Button } from '@brynzit/ui/components/ui/button'
@@ -25,8 +26,10 @@ function hasAnyFilter(filters: JobFilters, search: string): boolean {
 
 export default function JobsPage() {
   const { isLoggedIn, token } = useCandidateAuth()
-  const [searchText, setSearchText] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams.get('q') ?? ''
+  const [searchText, setSearchText] = useState(initialQuery)
+  const [debouncedSearch, setDebouncedSearch] = useState(initialQuery)
   const [filters, setFilters] = useState<JobFilters>(EMPTY_FILTERS)
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
@@ -73,6 +76,11 @@ export default function JobsPage() {
   const isPersonalized = firstPage?.personalized ?? false
   const isFiltered = hasAnyFilter(filters, debouncedSearch)
 
+  function searchNow(text: string) {
+    setSearchText(text)
+    setDebouncedSearch(text)
+  }
+
   // IntersectionObserver for load-more (mirrors BD leads page pattern)
   useEffect(() => {
     const el = loadMoreRef.current
@@ -87,118 +95,97 @@ export default function JobsPage() {
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
-        <FilterBar onSearchChange={setSearchText} onFiltersChange={setFilters} />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-[160px] rounded-xl" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-[1180px] px-6 py-8">
-        <FilterBar onSearchChange={setSearchText} onFiltersChange={setFilters} />
-        <p className="mt-6 text-sm text-destructive">
-          Couldn&apos;t load jobs. Check your connection or refresh.
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <main className="mx-auto max-w-[1180px] space-y-6 px-6 py-8">
-      <div className="space-y-2">
-        <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-          {isPersonalized ? 'Ranked for you' : 'Public preview'}
-        </p>
-        <h1 className="text-3xl font-light tracking-[-0.04em] text-foreground">Find roles worth your time</h1>
-        <p className="max-w-[560px] text-sm leading-6 text-muted-foreground">
-          {isPersonalized
-            ? 'Ordered by how well each role fits your profile. Every match shows why it matched.'
-            : 'Search live opportunities now. Upload your resume when you are ready and Brynzit will rank the roles where you have the strongest signal.'}
-        </p>
-      </div>
+    <main className="mx-auto max-w-[1184px] px-6 pt-8 pb-20 sm:px-8">
+      <h1 className="sr-only">Find roles worth your time</h1>
 
       {!isLoggedIn && (
-        <section className="overflow-hidden rounded-[1.75rem] border border-primary/10 bg-card/85 p-6 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-[640px] space-y-2">
-              <p className="text-sm font-medium text-primary">Reveal your best-fit roles</p>
-              <h2 className="text-2xl font-light tracking-[-0.035em] text-foreground">
-                Upload your resume. Let the AI scan show which jobs are actually worth applying to.
-              </h2>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Browse the preview, then create a free profile to run your resume through Brynzit&apos;s
-                parser, unlock match strength, and skip roles that waste your time.
-              </p>
-            </div>
-            <Button asChild className="shrink-0 rounded-full px-6 shadow-md shadow-primary/15">
-              <a href="/signup?intent=resume_scan">Upload resume to rank matches</a>
-            </Button>
+        <section className="mb-8 flex flex-col gap-4 rounded-[20px] border border-border bg-card p-5 sm:gap-5 sm:p-6 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-[640px]">
+            <p className="text-[14px] leading-5 text-muted-foreground">Reveal your best-fit roles</p>
+            <h2 className="mt-1 text-[20px] leading-[26px] font-semibold tracking-[-0.02em] text-balance text-foreground sm:text-[24px] sm:leading-[30px]">
+              Upload your resume. Let the AI scan show which jobs are actually worth applying to.
+            </h2>
+            <p className="mt-2 text-[14px] leading-5 text-muted-foreground sm:text-[16px] sm:leading-6">
+              Browse the preview, then create a free profile to run your resume through the Brynz
+              parser, unlock match strength, and skip roles that waste your time.
+            </p>
           </div>
+          <Button asChild className="h-10 shrink-0 rounded-full px-5 text-[14px] leading-5 font-medium text-primary-foreground">
+            <a href="/signup?intent=resume_scan">Upload Resume</a>
+          </Button>
         </section>
       )}
 
       <FilterBar
         onSearchChange={setSearchText}
+        onSearchSubmit={searchNow}
         onFiltersChange={setFilters}
         isPersonalized={isPersonalized}
+        initialSearch={initialQuery}
       />
 
       {total > 0 && (
-        <p className="px-1 text-sm text-muted-foreground" aria-live="polite">
+        <p className="mt-8 text-[14px] leading-5 text-muted-foreground" aria-live="polite">
           {total.toLocaleString()}
           {firstPage?.truncated ? '+' : ''} {total === 1 ? 'role' : 'roles'}
           {isFiltered ? ' match your filters' : ' open now'}
+          {isPersonalized && ' · Ranked for you'}
         </p>
       )}
 
-      {jobs.length === 0 ? (
-        <div className="py-12 text-center">
-          {isFiltered ? (
-            <>
-              <p className="text-base text-foreground">No roles match your filters</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Try widening your filters or clearing your search to see more opportunities.
-              </p>
-            </>
-          ) : (
-            <>
-              {/* Distinct from the filtered case on purpose: an empty unfiltered
-                  feed means nothing is currently published, not that the
-                  candidate searched badly. */}
-              <p className="text-base text-foreground">No roles are open right now</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                New roles are added continuously. Check back shortly, or create a profile to be
-                notified when something fits.
-              </p>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="relative overflow-hidden rounded-[1.5rem]">
+      <div className={total > 0 ? 'mt-3' : 'mt-8'}>
+        {isLoading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {jobs.map((job, idx) => {
-              const isLocked = !isLoggedIn && idx >= VISIBLE_LIMIT
-              return (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  isLoggedIn={isLoggedIn}
-                  isLocked={isLocked}
-                />
-              )
-            })}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-[136px] rounded-[20px]" />
+            ))}
           </div>
-          {!isLoggedIn && jobs.length > VISIBLE_LIMIT && <LockedJobsOverlay />}
-        </div>
-      )}
+        ) : error ? (
+          <p className="py-12 text-center text-[14px] leading-5 text-destructive">
+            Couldn&apos;t load jobs. Check your connection or refresh.
+          </p>
+        ) : jobs.length === 0 ? (
+          <div className="py-12 text-center">
+            {isFiltered ? (
+              <>
+                <p className="text-[16px] leading-6 font-semibold text-foreground">No roles match your filters</p>
+                <p className="mt-1 text-[14px] leading-5 text-muted-foreground">
+                  Try widening your filters or clearing your search to see more opportunities.
+                </p>
+              </>
+            ) : (
+              <>
+                {/* Distinct from the filtered case on purpose: an empty unfiltered
+                    feed means nothing is currently published, not that the
+                    candidate searched badly. */}
+                <p className="text-[16px] leading-6 font-semibold text-foreground">No roles are open right now</p>
+                <p className="mt-1 text-[14px] leading-5 text-muted-foreground">
+                  New roles are added continuously. Check back shortly, or create a profile to be
+                  notified when something fits.
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="relative">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {jobs.map((job, idx) => {
+                const isLocked = !isLoggedIn && idx >= VISIBLE_LIMIT
+                return (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isLoggedIn={isLoggedIn}
+                    isLocked={isLocked}
+                  />
+                )
+              })}
+            </div>
+            {!isLoggedIn && jobs.length > VISIBLE_LIMIT && <LockedJobsOverlay />}
+          </div>
+        )}
+      </div>
 
       <div ref={loadMoreRef} className="h-4" />
       {hasNextPage && (
@@ -207,6 +194,7 @@ export default function JobsPage() {
             variant="outline"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
+            className="h-10 rounded-full border-border-control bg-card px-5 text-[14px] leading-5 font-medium shadow-none hover:bg-background"
           >
             {isFetchingNextPage ? 'Loading…' : 'Load more jobs'}
           </Button>

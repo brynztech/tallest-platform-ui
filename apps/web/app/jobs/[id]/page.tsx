@@ -2,14 +2,14 @@
 import { use, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
-import { Badge } from '@brynzit/ui/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@brynzit/ui/components/ui/avatar'
-import { Separator } from '@brynzit/ui/components/ui/separator'
-import { MapPin } from 'lucide-react'
+import { Button } from '@brynzit/ui/components/ui/button'
+import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { candidateAuthHeaders } from '../../_lib/candidate-api'
 import { ApplySection } from './_components/apply-section'
+import { SaveJobButton } from '../_components/save-job-button'
+import { NOTICE, PRIMARY_BTN } from '../../_lib/ui-classes'
 import type { PublicJobItem, CandidateProfile } from '../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -60,8 +60,8 @@ const SOURCE_LABELS: Record<string, string> = {
   ashby: 'Ashby',
   recruitee: 'Recruitee',
   apify_linkedin: 'LinkedIn',
-  internal: 'Brynzit',
-  manual: 'Brynzit',
+  internal: 'Brynz',
+  manual: 'Brynz',
   whatsapp: 'WhatsApp',
 }
 
@@ -69,6 +69,21 @@ function sourceLabel(source: string): string {
   return (
     SOURCE_LABELS[source] ??
     source.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  )
+}
+
+const PAGE = 'mx-auto max-w-[944px] px-6 pt-8 pb-20 sm:px-8'
+const CHIP = 'inline-flex items-center rounded-full bg-muted px-3 py-1 text-[14px] leading-5 text-foreground'
+
+function BackLink() {
+  return (
+    <Link
+      href="/jobs"
+      className="inline-flex items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
+    >
+      <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
+      Back to jobs
+    </Link>
   )
 }
 
@@ -167,179 +182,188 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-[720px] px-6 py-12 space-y-4">
-        <Skeleton className="h-8 w-2/3" />
-        <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="h-[200px] w-full" />
+      <main className={PAGE}>
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="mt-6 h-[420px] rounded-[20px]" />
       </main>
     )
   }
 
   if (error || !job) {
     return (
-      <main className="mx-auto max-w-[720px] px-6 py-12">
-        <p className="text-sm text-destructive">Couldn&apos;t load this job. It may have been removed.</p>
-        <Link href="/jobs" className="mt-4 block text-sm text-muted-foreground hover:text-foreground">
-          &larr; Back to jobs
-        </Link>
+      <main className={PAGE}>
+        <BackLink />
+        <p className="mt-6 text-[16px] leading-6 text-foreground">
+          Couldn&apos;t load this job. It may have been removed.
+        </p>
       </main>
     )
   }
 
+  const skills = job.skills_display?.length ? job.skills_display : job.skills
+  const chips = [
+    EMPLOYMENT_LABELS[job.employment_type],
+    job.seniority && job.seniority.charAt(0).toUpperCase() + job.seniority.slice(1),
+    job.remote_mode && REMOTE_LABELS[job.remote_mode],
+    job.openings > 1 && `${job.openings} openings`,
+    // `!= null` on purpose: a real 0 is worth showing, and mocks omit the field.
+    job.applicants_count != null &&
+      `${job.applicants_count} applicant${job.applicants_count === 1 ? '' : 's'}`,
+  ].filter(Boolean)
+  const applyHref = safeHref(job.source_url)
+
   return (
-    <main className="mx-auto max-w-[860px] px-6 py-12">
-      <div>
-        <Link href="/jobs" className="text-sm text-muted-foreground hover:text-foreground">
-          &larr; Back to jobs
-        </Link>
-      </div>
+    <main className={PAGE}>
+      <BackLink />
 
-      <article className="mt-6 rounded-[1.75rem] border border-border/70 bg-card/85 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
-      <div className="space-y-4">
-        <h1 className="text-4xl font-light leading-tight tracking-[-0.045em] text-foreground">{job.title}</h1>
+      <article className="mt-6 rounded-[20px] border border-border bg-card p-6 sm:p-8">
+        <h1 className="text-[26px] leading-[32px] font-semibold tracking-[-0.03em] text-balance text-foreground sm:text-[32px] sm:leading-[38px]">
+          {job.title}
+        </h1>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] leading-6 text-muted-foreground">
           {job.company_name && (
-            <span className="flex items-center gap-1.5">
-              <Avatar className="h-5 w-5">
-                {job.company_logo_url && (
-                  <AvatarImage src={job.company_logo_url} alt={job.company_name} />
+            <span className="flex items-center gap-2">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-[14px] leading-5 font-semibold text-foreground">
+                {job.company_logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- unknown external hosts, no next.config remotePatterns
+                  <img src={job.company_logo_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  job.company_name.charAt(0).toUpperCase()
                 )}
-                <AvatarFallback className="text-[10px]">
-                  {job.company_name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              </span>
               {job.company_name}
             </span>
           )}
           {job.location && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              {job.location}
-            </span>
+            <>
+              {job.company_name && <span aria-hidden="true">·</span>}
+              <span>{job.location}</span>
+            </>
           )}
           {/* Backend-formatted and currency-qualified; never reformat it here. */}
           {job.compensation_label && (
-            <span className="text-foreground">{job.compensation_label}</span>
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="text-foreground">{job.compensation_label}</span>
+            </>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1">
-          <Badge variant="secondary">{EMPLOYMENT_LABELS[job.employment_type]}</Badge>
-          {job.seniority && (
-            <Badge variant="secondary">
-              {job.seniority.charAt(0).toUpperCase() + job.seniority.slice(1)}
-            </Badge>
-          )}
-          {job.remote_mode && (
-            <Badge variant="secondary">{REMOTE_LABELS[job.remote_mode]}</Badge>
-          )}
-          {job.openings > 1 && <Badge variant="outline">{job.openings} openings</Badge>}
-          {job.applicants_count !== null && (
-            <Badge variant="outline">
-              {job.applicants_count} applicant{job.applicants_count === 1 ? '' : 's'}
-            </Badge>
-          )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {chips.map(chip => (
+            <span key={String(chip)} className={CHIP}>{chip}</span>
+          ))}
           {/* Match badge — logged-in only (JOB-05) */}
           {isLoggedIn && job.match_strength === 'strong' && (
-            <Badge variant="default">Strong match</Badge>
+            <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[14px] leading-5 text-primary-foreground">
+              Strong match
+            </span>
           )}
-          {isLoggedIn && job.match_strength === 'partial' && (
-            <Badge variant="secondary">Partial match</Badge>
-          )}
+          {isLoggedIn && job.match_strength === 'partial' && <span className={CHIP}>Partial match</span>}
         </div>
 
-        {(job.skills_display?.length ? job.skills_display : job.skills).length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {(job.skills_display?.length ? job.skills_display : job.skills).map(skill => (
-              <Badge key={skill} variant="outline">{skill}</Badge>
+        {skills.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {skills.map(skill => (
+              <span
+                key={skill}
+                className="inline-flex items-center rounded-full border border-border-control bg-card px-3 py-1 text-[14px] leading-5 text-foreground"
+              >
+                {skill}
+              </span>
             ))}
           </div>
         )}
 
         {isLoggedIn && job.match_reasons?.length > 0 && job.match_strength !== 'none' && (
-          <ul className="space-y-1 text-sm text-muted-foreground">
+          <ul className="mt-3 space-y-1 text-[14px] leading-5 text-muted-foreground">
             {job.match_reasons.map(reason => (
               <li key={reason}>· {reason}</li>
             ))}
           </ul>
         )}
-      </div>
 
-      <Separator />
-
-      {/* T-05-02: JD rendered as plain text with whitespace-pre-wrap — no innerHTML usage */}
-      {job.description_summary && (
-        <div>
-          <h2 className="mb-3 text-base font-normal text-foreground">Job description</h2>
-          <p className="whitespace-pre-wrap text-base leading-[1.6] text-foreground">
-            {job.description_summary}
-          </p>
-        </div>
-      )}
-
-      {/* A scraped posting lives on the employer's own ATS — we cannot submit an
-          application on the candidate's behalf, so we send them there and say so
-          plainly rather than collecting an application we cannot deliver. Our own
-          client requisitions use the internal apply flow. */}
-      {job.job_kind === 'scraped' ? (
-        <div className="space-y-3 pt-2">
-          {safeHref(job.source_url) ? (
-            <>
-              <a
-                href={safeHref(job.source_url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground shadow-md shadow-primary/15 transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Apply on {job.company_name ?? 'company site'}
-              </a>
-              <p className="text-sm text-muted-foreground">
-                This role is posted on the employer&apos;s own careers site. You will apply there
-                directly, so Brynzit cannot track this application in your dashboard.
-              </p>
-            </>
+        {/* A scraped posting lives on the employer's own ATS — we cannot submit an
+            application on the candidate's behalf, so we send them there and say so
+            plainly rather than collecting an application we cannot deliver. Our own
+            client requisitions use the internal apply flow. */}
+        <div className="mt-6">
+          {job.job_kind === 'scraped' ? (
+            applyHref ? (
+              <>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    asChild
+                    className={PRIMARY_BTN}
+                  >
+                    <a href={applyHref} target="_blank" rel="noopener noreferrer">
+                      Apply on {job.company_name ?? 'company site'}
+                      <ArrowUpRight className="size-4" strokeWidth={1.8} />
+                    </a>
+                  </Button>
+                  <SaveJobButton jobId={job.id} />
+                </div>
+                <p className={`mt-4 ${NOTICE}`}>
+                  This role is posted on the employer&apos;s own careers site. You&apos;ll apply there
+                  directly, so Brynz can&apos;t track this application in your dashboard.
+                </p>
+              </>
+            ) : (
+              <>
+                <SaveJobButton jobId={job.id} />
+                <p className={`mt-4 ${NOTICE}`}>This posting has no application link available.</p>
+              </>
+            )
           ) : (
-            <p className="text-sm text-muted-foreground">
-              This posting has no application link available.
-            </p>
+            <ApplySection
+              jobId={job.id}
+              isLoggedIn={isLoggedIn}
+              completenessScore={profile?.completeness_score ?? null}
+            />
           )}
         </div>
-      ) : (
-        <ApplySection
-          jobId={job.id}
-          isLoggedIn={isLoggedIn}
-          completenessScore={profile?.completeness_score ?? null}
-        />
-      )}
 
-      {/* Other boards carrying this same real job — secondary to the primary
-          apply action above, just letting the candidate pick their preferred board. */}
-      {job.alternate_postings.length > 0 && (
-        <p className="pt-3 text-xs text-muted-foreground">
-          Also posted on:{' '}
-          {job.alternate_postings.map((alt, i) => {
-            const href = safeHref(alt.url)
-            return (
-              <span key={alt.url}>
-                {i > 0 && ' · '}
-                {href ? (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground"
-                  >
-                    {sourceLabel(alt.source)}
-                  </a>
-                ) : (
-                  sourceLabel(alt.source)
-                )}
-              </span>
-            )
-          })}
-        </p>
-      )}
+        {/* T-05-02: JD rendered as plain text with whitespace-pre-wrap — no innerHTML usage */}
+        {job.description_summary && (
+          <>
+            <hr className="mt-8 border-border" />
+            <section className="mt-8">
+              <h2 className="text-[16px] leading-6 font-semibold text-foreground">Job description</h2>
+              <p className="mt-3 max-w-[68ch] whitespace-pre-wrap text-[16px] leading-[26px] text-foreground">
+                {job.description_summary}
+              </p>
+            </section>
+          </>
+        )}
+
+        {/* Other boards carrying this same real job — secondary to the primary
+            apply action above, just letting the candidate pick their preferred board. */}
+        {job.alternate_postings.length > 0 && (
+          <p className="mt-8 text-[14px] leading-5 text-muted-foreground">
+            Also posted on:{' '}
+            {job.alternate_postings.map((alt, i) => {
+              const href = safeHref(alt.url)
+              return (
+                <span key={alt.url}>
+                  {i > 0 && ' · '}
+                  {href ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-foreground"
+                    >
+                      {sourceLabel(alt.source)}
+                    </a>
+                  ) : (
+                    sourceLabel(alt.source)
+                  )}
+                </span>
+              )
+            })}
+          </p>
+        )}
       </article>
     </main>
   )

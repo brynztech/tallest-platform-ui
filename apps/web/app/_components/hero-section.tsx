@@ -1,23 +1,62 @@
 'use client'
-import Link from 'next/link'
-import { Button } from '@brynzit/ui/components/ui/button'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { SearchField } from './search-field'
+import { CategoryLinks } from './category-links'
+
+const CATEGORIES = [
+  'AI Engineer',
+  'Backend',
+  'FWP',
+  'Product Engineer',
+  'Frontend',
+  'Devops & AI',
+  'Design',
+  'Recruiting',
+]
 
 export function HeroSection() {
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+
+  function submitSearch() {
+    const q = query.trim()
+    router.push(q ? `/jobs?q=${encodeURIComponent(q)}` : '/jobs')
+  }
+
   return (
-    <div className="relative flex w-full max-w-[1120px] flex-col items-center pt-24 text-center md:pt-28">
-      <div className="pointer-events-none absolute top-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-      <p className="relative mb-5 rounded-full border border-border/70 bg-card/70 px-4 py-1 text-xs text-muted-foreground shadow-sm">
-        Private talent matching for serious candidates
-      </p>
-      <h1 className="relative max-w-[1060px] text-balance text-[clamp(4.25rem,10vw,6.75rem)] font-light leading-[0.96] tracking-[-0.055em] text-foreground md:text-[120px]">
-        The talent platform built for you.
+    <div className="flex w-full max-w-[1120px] flex-col items-center text-center">
+      <span className="mb-5 flex items-center gap-2 rounded-full border border-border-control bg-card px-3.5 py-1.5 text-[14px] leading-5 text-muted-foreground shadow-badge">
+        Trusted by
+        <span className="flex h-5 w-5 items-center justify-center rounded-[6px] bg-[#F26B21] text-[11px] font-bold text-white">
+          Y
+        </span>
+        Combinator
+      </span>
+
+      <h1 className="text-[34px] leading-[38px] font-semibold tracking-[-0.035em] text-balance text-foreground sm:text-[48px] sm:leading-[52px]">
+        Your AI Job Search Engine
       </h1>
-      <p className="relative mt-7 max-w-[520px] text-base leading-7 text-muted-foreground">
-        Brynzit matches engineers and designers to the roles they actually want.
+
+      <p className="mt-4 max-w-[600px] text-[16px] leading-[26px] text-balance text-muted-foreground">
+        Brynz watches 50,000+ career pages across Workday, Greenhouse, Lever, Ashby and 15+ more
+        ATSes, and submits a tailored resume the moment a fitting role goes live.
       </p>
-      <Button asChild size="lg" className="relative mt-8 rounded-full px-7 shadow-lg shadow-primary/15 transition-transform duration-150 ease-out hover:-translate-y-0.5">
-        <Link href="/signup">Join the talent pool</Link>
-      </Button>
+
+      <div className="mt-8 flex w-full justify-center">
+        <SearchField
+          id="hero-search"
+          label="Let's Find Your Next Role?"
+          placeholder="Frontend"
+          value={query}
+          onChange={setQuery}
+          onSubmit={submitSearch}
+        />
+      </div>
+
+      <div className="mt-5">
+        <CategoryLinks items={CATEGORIES} />
+      </div>
     </div>
   )
 }

@@ -1,15 +1,15 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { WebProviders } from './_components/web-providers'
 import { SiteNav } from './_components/site-nav'
 import { Toaster } from '@brynzit/ui/components/ui/sonner'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: 'Brynzit — Find your next role',
-  description: 'The talent platform built for speed.',
+  title: 'Brynz — Find your next role',
+  description: 'Brynz is an AI job search engine.',
 }
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={geist.variable}>
+    <html lang="en" className={inter.variable}>
       <body className="bg-background text-foreground font-sans antialiased">
         <WebProviders>
           <SiteNav />

@@ -9,6 +9,7 @@ import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
 import type { CandidateAuthResponse } from '../_lib/candidate-types'
+import { FIELD, NOTICE, PANEL, PRIMARY_BTN, SECONDARY_BTN } from '../_lib/ui-classes'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -77,119 +78,124 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-6 py-10">
-      <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-7 shadow-2xl shadow-foreground/[0.05] backdrop-blur">
-      <div className="space-y-2 text-center">
-        <p className="text-sm font-medium text-primary">Free resume scan</p>
-        <h1 className="text-3xl font-light tracking-tight text-foreground">Reveal your best-fit roles</h1>
-        <p className="text-sm text-muted-foreground">
-          Create your profile, upload your resume, and let Brynzit rank the jobs worth your time.
-        </p>
-      </div>
-
-      {clerkPublishableKey ? (
-        <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/[0.03] p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Clerk signup is ready</p>
-          <p className="mt-1">
-            Use Clerk to create your account, then continue here to upload your resume and run the
-            AI match scan.
+    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-4 py-10">
+      <div className={PANEL}>
+        <div className="space-y-2 text-center">
+          <p className="text-[14px] leading-5 text-muted-foreground">Free resume scan</p>
+          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-balance text-foreground">
+            Reveal your best-fit roles
+          </h1>
+          <p className="text-[14px] leading-5 text-muted-foreground">
+            Create your profile, upload your resume, and let Brynz rank the jobs worth your time.
           </p>
-          <SignUpButton mode="modal">
-            <Button type="button" variant="outline" size="sm" className="mt-3 rounded-full">
-              Continue with Clerk
+        </div>
+
+        {clerkPublishableKey ? (
+          <div className={`mt-6 ${NOTICE}`}>
+            <p className="font-medium text-foreground">Clerk signup is ready</p>
+            <p className="mt-1">
+              Use Clerk to create your account, then continue here to upload your resume and run the
+              AI match scan.
+            </p>
+            <SignUpButton mode="modal">
+              <Button type="button" variant="outline" className={`mt-3 ${SECONDARY_BTN}`}>
+                Continue with Clerk
+              </Button>
+            </SignUpButton>
+            <ClerkOnboardingStart />
+          </div>
+        ) : (
+          <div className={`mt-6 ${NOTICE}`}>
+            <p className="font-medium text-foreground">Demo user for local verification</p>
+            <p className="mt-1">
+              Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
+              <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>, or create any mock
+              account while Clerk keys are not configured.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className={`mt-3 ${SECONDARY_BTN}`}
+              onClick={() => {
+                setFirstName('Demo')
+                setLastName('Candidate')
+                setEmail(DEMO_EMAIL)
+                setPassword(DEMO_PASSWORD)
+              }}
+            >
+              Fill demo candidate
             </Button>
-          </SignUpButton>
-          <ClerkOnboardingStart />
-        </div>
-      ) : (
-        <div className="mt-6 rounded-2xl border border-border/70 bg-muted/35 p-4 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Demo user for local verification</p>
-          <p className="mt-1">
-            Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
-            <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>, or create any mock
-            account while Clerk keys are not configured.
+          </div>
+        )}
+
+        {!clerkPublishableKey && (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First name</Label>
+                <Input
+                  id="firstName"
+                  className={FIELD}
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last name</Label>
+                <Input
+                  id="lastName"
+                  className={FIELD}
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                className={FIELD}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                className={FIELD}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </div>
+
+            {error && <p className="text-[14px] leading-5 text-destructive">{error}</p>}
+
+            <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={isSubmitting}>
+              {isSubmitting ? 'Creating account...' : 'Create account'}
+            </Button>
+          </form>
+        )}
+
+        {!clerkPublishableKey && (
+          <p className="mt-5 text-center text-[14px] leading-5 text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
+              Sign in
+            </Link>
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-3 rounded-full"
-            onClick={() => {
-              setFirstName('Demo')
-              setLastName('Candidate')
-              setEmail(DEMO_EMAIL)
-              setPassword(DEMO_PASSWORD)
-            }}
-          >
-            Fill demo candidate
-          </Button>
-        </div>
-      )}
-
-      {!clerkPublishableKey && (
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First name</Label>
-            <Input
-              id="firstName"
-              value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last name</Label>
-            <Input
-              id="lastName"
-              value={lastName}
-              onChange={(event) => setLastName(event.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </div>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating account...' : 'Create account'}
-        </Button>
-      </form>
-      )}
-
-      {!clerkPublishableKey && (
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{' '}
-        <Link href="/login" className="text-foreground underline underline-offset-4">
-          Sign in
-        </Link>
-      </p>
-      )}
+        )}
       </div>
     </main>
   )
@@ -244,16 +250,10 @@ function ClerkOnboardingStart() {
 
   return (
     <div className="mt-3">
-      <Button
-        type="button"
-        size="sm"
-        className="rounded-full"
-        onClick={startOnboarding}
-        disabled={isStarting}
-      >
+      <Button type="button" className={PRIMARY_BTN} onClick={startOnboarding} disabled={isStarting}>
         {isStarting ? 'Starting scan...' : 'Continue to resume scan'}
       </Button>
-      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {error && <p className="mt-2 text-[14px] leading-5 text-destructive">{error}</p>}
     </div>
   )
 }

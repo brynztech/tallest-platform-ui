@@ -10,8 +10,9 @@ function readFile(relPath: string): string {
 describe('Profile edit + site nav polish (POL-06)', () => {
   const profile = readFile('profile/edit/page.tsx')
   const nav = readFile('_components/site-nav.tsx')
-  it('profile skill remove button has an accent focus ring', () => {
-    expect(profile).toContain('focus-visible:ring-ring')
+  it('profile skills are removable chips with a link-blue focus outline on the × button', () => {
+    expect(profile).toContain('RemovableChip')
+    expect(readFile('_components/removable-chip.tsx')).toContain('focus-visible:outline-link')
   })
   it('site nav links transition colour with explicit duration', () => {
     expect(nav.match(/transition-colors duration-150 ease-out/g)?.length).toBe(2)

@@ -55,19 +55,25 @@ describe('CandidateAuthContext (T-05-03)', () => {
 describe('HeroSection', () => {
   const src = readFile('_components/hero-section.tsx')
 
-  it('renders h1 with text-[120px] font-light class', () => {
-    expect(src).toContain('text-[120px]')
-    expect(src).toContain('font-light')
+  it('renders the one display headline (48px semibold) once per page', () => {
+    expect(src.match(/<h1/g)?.length).toBe(1)
+    expect(src).toContain('sm:text-[48px]')
+    expect(src).toContain('Your AI Job Search Engine')
   })
 
-  it('renders a link to /signup', () => {
-    expect(src).toContain('href="/signup"')
+  it('uses no font-light (weights are 400, 500 and 600 only)', () => {
+    expect(src).not.toContain('font-light')
   })
 
-  it('uses font-light only for the editorial headline (D-03)', () => {
-    // font-light appears exactly once — on the h1
-    const matches = src.match(/font-light/g)
-    expect(matches?.length).toBe(1)
+  it('hands the search to /jobs?q= so the jobs page can prefill it', () => {
+    expect(src).toContain('SearchField')
+    expect(src).toContain('/jobs?q=')
+    expect(src).toContain('encodeURIComponent')
+  })
+
+  it('offers category quick-links that are real /jobs?q= searches', () => {
+    expect(src).toContain('CategoryLinks')
+    expect(readFile('_components/category-links.tsx')).toContain('/jobs?q=')
   })
 })
 
