@@ -1,7 +1,6 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { SignUpButton, useAuth, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@brynzit/ui/components/ui/button'
@@ -10,17 +9,13 @@ import { Label } from '@brynzit/ui/components/ui/label'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
 import type { CandidateAuthResponse } from '../_lib/candidate-types'
 import { FIELD, NOTICE, PANEL, PRIMARY_BTN, SECONDARY_BTN } from '../_lib/ui-classes'
+import { safeRedirect } from '../_lib/safe-redirect'
+import { ClerkSignUp } from './_components/clerk-sign-up'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 const DEMO_EMAIL = 'demo@brynzit.local'
 const DEMO_PASSWORD = 'demo-password'
-
-function safeRedirect(value: string | null): string | null {
-  if (!value) return null
-  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null
-  return value
-}
 
 export default function SignupPage() {
   const router = useRouter()
@@ -91,26 +86,14 @@ export default function SignupPage() {
         </div>
 
         {clerkPublishableKey ? (
-          <div className={`mt-6 ${NOTICE}`}>
-            <p className="font-medium text-foreground">Clerk signup is ready</p>
-            <p className="mt-1">
-              Use Clerk to create your account, then continue here to upload your resume and run the
-              AI match scan.
-            </p>
-            <SignUpButton mode="modal">
-              <Button type="button" variant="outline" className={`mt-3 ${SECONDARY_BTN}`}>
-                Continue with Clerk
-              </Button>
-            </SignUpButton>
-            <ClerkOnboardingStart />
-          </div>
+          <ClerkSignUp />
         ) : (
           <div className={`mt-6 ${NOTICE}`}>
             <p className="font-medium text-foreground">Demo user for local verification</p>
             <p className="mt-1">
               Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
               <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>, or create any mock
-              account while Clerk keys are not configured.
+              account while sign-in isn't configured.
             </p>
             <Button
               type="button"
@@ -198,62 +181,5 @@ export default function SignupPage() {
         )}
       </div>
     </main>
-  )
-}
-
-function ClerkOnboardingStart() {
-  const router = useRouter()
-  const { isSignedIn, userId, getToken } = useAuth()
-  const { user } = useUser()
-  const { signIn } = useCandidateAuth()
-  const [isStarting, setIsStarting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  if (!isSignedIn || !userId) return null
-  const clerkUserId = userId
-
-  async function startOnboarding() {
-    setIsStarting(true)
-    setError(null)
-
-    const token = await getToken()
-    if (!token) {
-      setIsStarting(false)
-      setError('Could not read your Clerk session. Please try again.')
-      return
-    }
-
-    const email = user?.primaryEmailAddress?.emailAddress ?? ''
-    signIn(token, { id: clerkUserId, clerk_user_id: clerkUserId, email })
-
-    const response = await fetch(`${API_BASE}/api/v1/candidate/onboarding/start`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        full_name: user?.fullName || undefined,
-      }),
-    })
-
-    setIsStarting(false)
-    if (!response.ok) {
-      setError('Could not start your candidate profile. Please try again.')
-      return
-    }
-
-    localStorage.setItem('candidate_onboarding_intent', 'resume_scan')
-    router.push('/onboarding/1')
-  }
-
-  return (
-    <div className="mt-3">
-      <Button type="button" className={PRIMARY_BTN} onClick={startOnboarding} disabled={isStarting}>
-        {isStarting ? 'Starting scan...' : 'Continue to resume scan'}
-      </Button>
-      {error && <p className="mt-2 text-[14px] leading-5 text-destructive">{error}</p>}
-    </div>
   )
 }

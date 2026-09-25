@@ -28,9 +28,7 @@ export function HeroSection() {
     <div className="flex w-full max-w-[1120px] flex-col items-center text-center">
       <span className="mb-5 flex items-center gap-2 rounded-full border border-border-control bg-card px-3.5 py-1.5 text-[14px] leading-5 text-muted-foreground shadow-badge">
         Trusted by
-        <span className="flex h-5 w-5 items-center justify-center rounded-[6px] bg-[#F26B21] text-[11px] font-bold text-white">
-          Y
-        </span>
+        <img src="/brand/y-combinator.svg" alt="Y" width={20} height={20} className="h-5 w-5 rounded-[4px]" />
         Combinator
       </span>
 

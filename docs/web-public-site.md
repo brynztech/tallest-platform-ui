@@ -61,7 +61,8 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 
 | Piece | File |
 |---|---|
-| Header | `app/_components/site-nav.tsx` (real routes only, no "For Talent / For Companies") |
+| Header | `app/_components/site-nav.tsx` (real routes only; Brynz is talent-only for now, so no "For Companies") |
+| Logos | `public/brand/brynz-mark.jpeg` (nav mark, 200x200 source, shown at 28px) and `public/brand/y-combinator.svg` (trust badge) |
 | Hero | `app/_components/hero-section.tsx` |
 | Search pill (one size, 56px, used by the hero and the jobs toolbar) | `app/_components/search-field.tsx` |
 | Category links | `app/_components/category-links.tsx` (links to `/jobs?q=`, or fills the search when `onSelect` is set) |
@@ -73,6 +74,8 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 | Shared class strings (buttons, panel, notice, fields) | `app/_lib/ui-classes.ts` |
 | Removable chip (skills, filters) | `app/_components/removable-chip.tsx` |
 | Account pages | `app/login`, `app/signup`, `app/onboarding/1-3`, `app/dashboard`, `app/profile/edit` |
+| Sign-in and sign-up cards (Clerk headless underneath) | `app/login/_components/clerk-sign-in.tsx`, `app/signup/_components/clerk-sign-up.tsx`, `app/sso-callback/page.tsx` |
+| Auth hand-off, redirect check, shared bits | `app/_lib/use-finish-auth.ts`, `app/_lib/safe-redirect.ts`, `app/_components/auth-parts.tsx` |
 | Job detail and apply flow | `app/jobs/[id]/page.tsx`, `app/jobs/[id]/_components/apply-section.tsx` |
 
 ## Behaviour
@@ -98,6 +101,35 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 - Account pages are one flat panel on `canvas` (420px sign-in and sign-up, 560px onboarding, about
   690px profile). Fields are 40px `border-input` pills from `ui-classes.ts`, one full-width
   primary button per panel, skills as removable chips, application status as a chip.
+- Sign-in and sign-up are our own cards (`ClerkSignIn`, `ClerkSignUp`). Clerk runs headless
+  underneath (`useSignIn`, `useSignUp`), so accounts and tokens are unchanged, but no Clerk
+  screen, logo, "Secured by" line or dev-mode banner is shown. Visible copy must not name the
+  vendor (guarded in `auth.test.tsx`).
+- Sign-in steps: email and password, "Forgot password?" (emailed code, then a new password), a
+  second factor when the account needs one (emailed code or authenticator app), a forced new
+  password, and Google. Sign-up steps: name, email, password, 6-digit emailed code, then
+  onboarding step 1, or Google. A visitor who is already signed in sees "Continue", not the form.
+- Hand-off (`use-finish-auth.ts`): after any successful sign-in the candidate token is stored
+  BEFORE navigating (protected pages read it on their first render), the candidate profile is
+  started (`POST /api/v1/candidate/onboarding/start`), then the router moves on. A failure shows
+  in the card and does not navigate.
+- Google uses the classic `authenticateWithRedirect`, not `signIn.sso()` or `signUp.sso()`. The
+  new methods reuse the current attempt and silently do nothing after any earlier try, even a
+  failed password. The destination survives the round trip in sessionStorage
+  (`brynz_auth_destination`). Google returns to `/sso-callback`, which first completes the
+  provider callback and then, on `?done=1`, runs the hand-off.
+- Sign-up has bot protection on in the Clerk dev instance. Its "Verify you are human" box draws
+  into `<div id="clerk-captcha">` (Clerk needs that id, keep it) and the request waits until a
+  person ticks it. A hint shows after 2.5s. Automation cannot pass it.
+- `?redirect=` is only honoured for same-site paths (`safe-redirect.ts`). With no
+  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` the pages show the local demo form and `/sso-callback`
+  sends visitors to `/login`.
+- Not yet exercised with a real account (needs a person): ticking the bot check and finishing
+  sign-up with the emailed code, Google consent through to the landing page, the second-factor
+  and forced-new-password steps, and the forgot-password happy path. Run in a real browser on a
+  production build: card rendering at 1512 and 390 wide, wrong-password error and retry, the
+  forgot-password error path, the Google redirect (also after a failed password), and the bot
+  check drawing inside the card.
 - Protected pages (dashboard, onboarding, profile) redirect to login on a hard reload even when
   signed in: their redirect effect runs before the auth provider reads localStorage. They work
   when reached by client-side navigation. Open, not fixed.
@@ -119,6 +151,10 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 4. Company logos use a plain `<img>`: `next.config` has no `remotePatterns`, and `next/image`
    throws for unknown hosts.
 5. Never run two web dev servers, they share `apps/web/.next` and corrupt the Turbopack cache.
+6. To check sign-in in a browser, build with the key passed inline
+   (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=... pnpm --filter @brynzit/web build`), serve it on
+   another port (`next start -p 3100`), and never write the key to a file. The build rewrites
+   the tracked `apps/web/next-env.d.ts`, so `git restore` it before committing.
 
 ## Tests (`apps/web/src/__tests__`)
 
@@ -128,7 +164,9 @@ display headline and the `/jobs?q=` hand-off (`landing`), card hover, focus outl
 overlay (`visual-polish`), match text, openings, hybrid and skills on the detail page
 (`job-feed-canonical`), single toolbar mount, inert locked cards and saved-jobs safety
 (`job-board`), and the account pages: no glass, heavy shadow or font-light, and visible copy
-says Brynz (`visual-polish-forms`).
+says Brynz (`visual-polish-forms`). The sign-in and sign-up cards: no vendor wording in visible
+copy, the flow steps and the callback route (`auth`), and the hand-off order, request and error
+messages, run as a behaviour test with mocks (`use-finish-auth`).
 
 ## Decisions log
 
@@ -146,3 +184,9 @@ says Brynz (`visual-polish-forms`).
   new forms and panels guidance and matching previews. Dashboard, login, signup, onboarding and
   profile edit restyled to it: flat panels, pill fields, chips, no backdrop blur or heavy
   shadows, "Brynzit" in visible copy changed to "Brynz".
+- 2026-09-25: The hosted Clerk modal named the vendor and the dev instance everywhere. Login and
+  signup now use our own cards on the compact DS, backed by Clerk headless, and `ClerkProvider`
+  points at `/login` and `/signup`.
+- 2026-09-25: Real logos in. The nav mark is the Brynz logo file (was a drawn navy square) and the
+  trust badge uses the official Y Combinator SVG (was an orange "Y" tile). Product is talent-only for
+  now: no "For Companies" tab.

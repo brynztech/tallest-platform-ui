@@ -31,7 +31,7 @@ export function WebProviders({ children }: { children: React.ReactNode }) {
   return (
     <MSWProvider>
       {clerkPublishableKey ? (
-        <ClerkProvider publishableKey={clerkPublishableKey}>
+        <ClerkProvider publishableKey={clerkPublishableKey} signInUrl="/login" signUpUrl="/signup">
           {app}
         </ClerkProvider>
       ) : (

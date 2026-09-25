@@ -1,25 +1,20 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { SignInButton, useAuth, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@brynzit/ui/components/ui/button'
 import { Input } from '@brynzit/ui/components/ui/input'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
-import { FIELD, NOTICE, PANEL, PRIMARY_BTN, SECONDARY_BTN } from '../_lib/ui-classes'
+import { FIELD, NOTICE, PANEL, PRIMARY_BTN } from '../_lib/ui-classes'
+import { safeRedirect } from '../_lib/safe-redirect'
+import { ClerkSignIn } from './_components/clerk-sign-in'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 const DEMO_EMAIL = 'demo@brynzit.local'
 const DEMO_PASSWORD = 'demo-password'
-
-function safeRedirect(value: string | null): string | null {
-  if (!value) return null
-  if (!value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null
-  return value
-}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -61,18 +56,7 @@ export default function LoginPage() {
         </div>
 
         {clerkPublishableKey ? (
-          <div className={`mt-6 ${NOTICE}`}>
-            <p className="font-medium text-foreground">Use your Clerk account</p>
-            <p className="mt-1">
-              Sign in to see your applications, finish your profile, and continue your resume match scan.
-            </p>
-            <SignInButton mode="modal">
-              <Button type="button" variant="outline" className={`mt-3 ${SECONDARY_BTN}`}>
-                Sign in with Clerk
-              </Button>
-            </SignInButton>
-            <ClerkLoginContinue />
-          </div>
+          <ClerkSignIn />
         ) : (
           <>
             <div className={`mt-6 ${NOTICE}`}>
@@ -126,60 +110,5 @@ export default function LoginPage() {
         )}
       </div>
     </main>
-  )
-}
-
-function ClerkLoginContinue() {
-  const router = useRouter()
-  const { isSignedIn, userId, getToken } = useAuth()
-  const { user } = useUser()
-  const { signIn } = useCandidateAuth()
-  const [isStarting, setIsStarting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  if (!isSignedIn || !userId) return null
-  const clerkUserId = userId
-
-  async function continueToApp() {
-    setIsStarting(true)
-    setError(null)
-    const token = await getToken()
-    if (!token) {
-      setIsStarting(false)
-      setError('Could not read your Clerk session. Please try again.')
-      return
-    }
-
-    const email = user?.primaryEmailAddress?.emailAddress ?? ''
-    signIn(token, { id: clerkUserId, clerk_user_id: clerkUserId, email })
-
-    const response = await fetch(`${API_BASE}/api/v1/candidate/onboarding/start`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        full_name: user?.fullName || undefined,
-      }),
-    })
-
-    setIsStarting(false)
-    if (!response.ok) {
-      setError('Could not load your candidate profile. Please try again.')
-      return
-    }
-
-    router.push(safeRedirect(new URLSearchParams(window.location.search).get('redirect')) ?? '/dashboard')
-  }
-
-  return (
-    <div className="mt-3">
-      <Button type="button" className={PRIMARY_BTN} onClick={continueToApp} disabled={isStarting}>
-        {isStarting ? 'Loading profile...' : 'Continue to dashboard'}
-      </Button>
-      {error && <p className="mt-2 text-[14px] leading-5 text-destructive">{error}</p>}
-    </div>
   )
 }

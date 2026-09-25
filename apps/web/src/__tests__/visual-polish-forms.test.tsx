@@ -81,6 +81,9 @@ describe('Account pages use the flat compact system (2026-09-25)', () => {
     'onboarding/2/page.tsx',
     'onboarding/3/page.tsx',
     'profile/edit/page.tsx',
+    'login/_components/clerk-sign-in.tsx',
+    'signup/_components/clerk-sign-up.tsx',
+    'sso-callback/page.tsx',
   ]
   for (const file of PAGES) {
     it(`${file}: no glass, heavy shadow, rem-radius panel or font-light`, () => {

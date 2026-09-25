@@ -21,9 +21,7 @@ export function SiteNav() {
   return (
     <nav className="sticky top-0 z-40 flex h-16 items-center border-b border-canvas-rule bg-background px-4 sm:px-6">
       <Link href="/" className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand">
-          <span className="h-2.5 w-2.5 rounded-[3px] bg-background" />
-        </span>
+        <img src="/brand/brynz-mark.jpeg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg" />
         <span className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-foreground">Brynz</span>
       </Link>
 
