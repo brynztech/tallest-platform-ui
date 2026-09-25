@@ -192,7 +192,7 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_http" {
 
 resource "aws_vpc_security_group_ingress_rule" "backend_api" {
   for_each = {
-    for item in setproduct(var.backend_allowed_cidrs, [8000]) :
+    for item in setproduct(var.backend_allowed_cidrs, [80, 8000]) :
     "${item[0]}-${item[1]}" => {
       cidr = item[0]
       port = item[1]

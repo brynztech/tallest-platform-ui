@@ -12,16 +12,16 @@ Planned EC2 hosts:
 
 | Environment | Function | Repo | Branch | Public access |
 | --- | --- | --- | --- | --- |
-| dev | frontend | `talent-platform-ui` | `frontend-dev` | Elastic IP, ports `3000`, `3001` |
-| dev | backend | `talent-platform` | `backend-dev` | Elastic IP, port `8000` |
+| dev | frontend | `talent-platform-ui` | `frontend-dev` | Elastic IP, ports `80` (nginx), `3000`, `3001` |
+| dev | backend | `talent-platform` | `backend-dev` | Elastic IP, port `8000`; `80` (nginx) once the security group change is applied |
 | prod | frontend | `talent-platform-ui` | `frontend-prod` | scaffolded only |
 | prod | backend | `talent-platform` | `backend-prod` | scaffolded only |
 
 There are no domains yet. Access is by Elastic IP:
 
-- Public candidate site: `http://<frontend-dev-eip>:3000`
+- Public candidate site: `http://<frontend-dev-eip>` (nginx; `:3000` still answers during the switch)
 - Internal console: `http://<frontend-dev-eip>:3001`
-- Backend API/docs: `http://<backend-dev-eip>:8000/docs`
+- Backend API/docs: `http://<backend-dev-eip>:8000/docs` (`http://<backend-dev-eip>/docs` once port 80 is open)
 
 ## Elastic IP Behavior
 
@@ -200,6 +200,7 @@ The frontend workflow:
 8. Starts them with systemd:
    - `brynzit-web` on port `3000`
    - `brynzit-console` on port `3001`
+9. Installs nginx and serves `brynzit-web` on port `80` (`infra/nginx/web.conf`).
 
 Useful EC2 commands:
 
@@ -236,6 +237,37 @@ uvicorn platform.main:app --host 0.0.0.0 --port 8000
 ```
 
 Add a real `/health` endpoint before using this for production traffic; `/docs` is only a temporary smoke check.
+
+## Reverse Proxy (nginx)
+
+Dev only so far (2026-09-25). Goal: the plain IP instead of IP plus port, then a
+domain per service (backend, candidate site, console). One backend serves both
+sites.
+
+- **Frontend host:** nginx on port `80` serves the candidate site (`infra/nginx/web.conf`,
+  passes `Host`/`X-Forwarded-*` for Next.js and Clerk). The console stays on
+  `:3001` until it gets its own domain.
+- **Backend host:** nginx on port `80` serves the API (`talent-platform/infra/nginx/api.conf`).
+- Both deploys run `nginx -t` before reloading and check the proxied URL
+  (`MARKER: nginx proxy passed`).
+
+Remaining steps, in order:
+
+1. Apply the backend security group change (port `80` added to `backend_api`
+   in `modules/ec2-pair/main.tf`; purely additive, the existing `8000` rule is
+   untouched):
+   ```bash
+   cd infra/terraform/ec2-basic/environments/dev
+   terraform plan    # expect: 1 to add (backend ingress 0.0.0.0/0 port 80), 0 to change, 0 to destroy
+   terraform apply
+   ```
+2. Point the sites at the backend's port 80: set GitHub `development`
+   environment secrets `DEV_NEXT_PUBLIC_API_URL` and `DEV_BACKEND_API_URL` to
+   `http://<backend-dev-eip>`, then re-run the frontend deploy (both apps bake
+   the URL in at build time).
+3. Once nothing uses them, close `3000` and `8000` to the internet.
+4. Domains: point DNS at each Elastic IP, add `server_name` blocks and TLS
+   (then `443`), and update the backend's `CORS_ALLOWED_ORIGINS`.
 
 ## Stop And Start Dev EC2
 

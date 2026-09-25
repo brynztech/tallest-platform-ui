@@ -63,7 +63,9 @@ jobs:
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
 
           sudo apt-get update
-          sudo apt-get install -y ca-certificates curl git
+          # --no-upgrade: re-downloading an already-installed curl 404'd on the
+          # Ubuntu mirror once and failed a backend deploy; same line here.
+          sudo apt-get install -y --no-upgrade ca-certificates curl git nginx
 
           if ! command -v node >/dev/null 2>&1; then
             curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -193,4 +195,27 @@ jobs:
           sleep 5
           curl -fsS http://localhost:3000 >/dev/null
           curl -fsS http://localhost:3001 >/dev/null
+
+          # nginx serves the candidate site on port 80 (infra/nginx/web.conf);
+          # the console stays on :3001. nginx -t gates the reload.
+          sudo install -m 644 "$APP_DIR/infra/nginx/web.conf" /etc/nginx/sites-available/brynzit-web
+          sudo ln -sf /etc/nginx/sites-available/brynzit-web /etc/nginx/sites-enabled/brynzit-web
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t
+          sudo systemctl enable nginx
+          sudo systemctl reload-or-restart nginx
+          # A reload applies asynchronously, and the stock default site answers
+          # 200 too — so poll for a page that is really the Next.js site.
+          for attempt in $(seq 1 15); do
+            PAGE="$(curl -fsS http://localhost/ || true)"
+            if [[ "$PAGE" == *"/_next/"* ]]; then
+              break
+            fi
+            if [ "$attempt" -eq 15 ]; then
+              echo "::error::nginx is not proxying port 80 to the candidate site"
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "MARKER: nginx proxy passed"
           REMOTE
