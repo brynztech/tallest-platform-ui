@@ -17,7 +17,13 @@ Planned EC2 hosts:
 | prod | frontend | `talent-platform-ui` | `frontend-prod` | scaffolded only |
 | prod | backend | `talent-platform` | `backend-prod` | scaffolded only |
 
-There are no domains yet. Access is by Elastic IP:
+Dev domains (2026-09-26, A records at Hostinger for `trybrynz.com`, plain http until TLS is added):
+
+- Public candidate site: `http://talent.trybrynz.com` (frontend EIP)
+- Internal console: `http://hire.trybrynz.com` (frontend EIP)
+- Backend API/docs: `http://api.trybrynz.com/docs` (backend EIP)
+
+Access by Elastic IP still works:
 
 - Public candidate site: `http://<frontend-dev-eip>` (nginx; `:3000` still answers during the switch)
 - Internal console: `http://<frontend-dev-eip>:3001`
@@ -200,7 +206,7 @@ The frontend workflow:
 8. Starts them with systemd:
    - `brynzit-web` on port `3000`
    - `brynzit-console` on port `3001`
-9. Installs nginx and serves `brynzit-web` on port `80` (`infra/nginx/web.conf`).
+9. Installs nginx and serves `brynzit-web` on port `80`, plus `brynzit-console` for `hire.trybrynz.com` (`infra/nginx/web.conf`).
 
 Useful EC2 commands:
 
@@ -244,9 +250,10 @@ Dev only so far (2026-09-25). Goal: the plain IP instead of IP plus port, then a
 domain per service (backend, candidate site, console). One backend serves both
 sites.
 
-- **Frontend host:** nginx on port `80` serves the candidate site (`infra/nginx/web.conf`,
-  passes `Host`/`X-Forwarded-*` for Next.js and Clerk). The console stays on
-  `:3001` until it gets its own domain.
+- **Frontend host:** nginx on port `80` serves the candidate site for `talent.` and the plain
+  IP, and the console for `hire.` (`infra/nginx/web.conf`, passes `Host`/`X-Forwarded-*` for
+  Next.js and Clerk). The console block has the backend's 12 MB body and 300 s read caps,
+  because every console API call goes through it. The console still answers on `:3001` too.
 - **Backend host:** nginx on port `80` serves the API (`talent-platform/infra/nginx/api.conf`).
 - Both deploys run `nginx -t` before reloading and check the proxied URL
   (`MARKER: nginx proxy passed`).
@@ -260,11 +267,20 @@ Done on 2026-09-25:
    the frontend redeployed. `DEV_BACKEND_API_URL` is not set, so the console's
    server-side proxy falls back to the same URL.
 
+Done on 2026-09-26:
+
+3. A records at Hostinger for `trybrynz.com`: `talent` and `hire` to the frontend EIP, `api`
+   to the backend EIP.
+4. `web.conf` routes `hire.` to the console, and the backend's `CORS_ALLOWED_ORIGINS` default
+   lists `talent.` and `hire.` over http and https.
+
 Remaining:
 
-3. Once nothing uses them, close `3000` and `8000` to the internet.
-4. Domains: point DNS at each Elastic IP, add `server_name` blocks and TLS
-   (then `443`), and update the backend's `CORS_ALLOWED_ORIGINS`.
+5. Once nothing uses them, close `3000` and `8000` to the internet.
+6. TLS: certificates on both hosts, port `443` in both security groups, and the https
+   `server` blocks in the repos' nginx files (every deploy rewrites them, so hand edits are
+   lost). Then `DEV_NEXT_PUBLIC_API_URL` to `https://api.trybrynz.com`, the job page canonical
+   link to `talent.trybrynz.com`, and a Clerk production instance for `trybrynz.com`.
 
 ## Stop And Start Dev EC2
 
