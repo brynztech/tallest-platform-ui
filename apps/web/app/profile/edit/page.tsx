@@ -190,16 +190,16 @@ export default function ProfileEditPage() {
   const score = profile?.completeness_score ?? 0
 
   return (
-    <main className="mx-auto max-w-[688px] px-4 pt-8 pb-20 sm:px-8">
+    <main className="mx-auto max-w-[688px] px-4 pt-4 pb-20 sm:px-8 sm:pt-6">
       <Link
         href="/jobs"
-        className="inline-flex items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
+        className="inline-flex h-10 items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
         Back to jobs
       </Link>
 
-      <div className={`mt-6 ${PANEL}`}>
+      <div className={`mt-3 ${PANEL}`}>
         <div className="space-y-3">
           <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Edit profile</h1>
           {/* PUB-05: Completeness meter — value from API only, never computed in UI (D-18) */}

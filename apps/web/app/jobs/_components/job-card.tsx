@@ -61,18 +61,18 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
       inert={isLocked}
       className={cn(
         'group relative flex h-full flex-col rounded-[20px] border border-border bg-card p-5',
-        'transition-[background-color,box-shadow] duration-150 ease-out hover:bg-muted hover:shadow-raised',
+        'transition-[background-color,box-shadow] duration-150 ease-out hover:bg-muted hover:shadow-raised active:bg-muted',
         isLocked && 'pointer-events-none blur-[4px] select-none',
       )}
     >
       <Link
         href={`/jobs/${job.id}`}
-        className="absolute inset-0 z-0 rounded-[20px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
+        className="absolute inset-0 z-0 rounded-[20px] [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
         aria-label={job.title}
       />
 
       <div className="relative z-10 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-muted text-[16px] leading-6 font-semibold text-foreground group-hover:bg-card">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-muted text-[16px] leading-6 font-semibold text-foreground group-hover:bg-card group-active:bg-card">
           {job.company_logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element -- unknown external hosts, no next.config remotePatterns
             <img src={job.company_logo_url} alt={job.company_name ?? ''} className="h-full w-full object-cover" />
@@ -100,20 +100,21 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
           onClick={toggle}
           aria-label={saved ? 'Remove from saved jobs' : 'Save job'}
           aria-pressed={saved}
-          className="-m-2 shrink-0 rounded-full p-2 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-link"
+          className="-m-2.5 shrink-0 rounded-full p-2.5 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-link sm:-m-2 sm:p-2"
         >
           <Heart className={cn('h-5 w-5 text-foreground', saved && 'fill-foreground')} strokeWidth={1.6} />
         </button>
       </div>
 
       <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-5">
-        <p title={meta} className="min-w-0 truncate text-[14px] leading-8 text-muted-foreground">
+        {/* Two lines on phones so a long location is readable, one line (ellipsis) from sm. */}
+        <p title={meta} className="min-w-0 line-clamp-2 text-[14px] leading-5 text-muted-foreground sm:line-clamp-1 sm:leading-8">
           {meta}
         </p>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 shrink-0 rounded-full border-foreground bg-card px-4 text-[14px] leading-5 font-medium shadow-none hover:bg-background"
+          className="h-10 shrink-0 rounded-full border-foreground bg-card px-4 text-[14px] leading-5 font-medium shadow-none hover:bg-background sm:h-8"
           asChild
         >
           <Link href={`/jobs/${job.id}`}>Apply</Link>

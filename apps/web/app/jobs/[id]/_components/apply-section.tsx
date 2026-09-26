@@ -8,7 +8,7 @@ import { Textarea } from '@brynzit/ui/components/ui/textarea'
 import { Progress } from '@brynzit/ui/components/ui/progress'
 import { Label } from '@brynzit/ui/components/ui/label'
 import { candidateJsonHeaders } from '../../../_lib/candidate-api'
-import { NOTICE, PRIMARY_BTN as PRIMARY, SECONDARY_BTN as SECONDARY, TEXTAREA } from '../../../_lib/ui-classes'
+import { ACTION_ROW, NOTICE, PRIMARY_BTN as PRIMARY, SECONDARY_BTN as SECONDARY, TEXTAREA } from '../../../_lib/ui-classes'
 import { SaveJobButton } from '../../_components/save-job-button'
 import type { CandidateApplication } from '../../../_lib/candidate-types'
 
@@ -48,7 +48,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
   if (!isLoggedIn) {
     return (
       <div>
-        <div className="flex flex-wrap gap-3">
+        <div className={ACTION_ROW}>
           <Button asChild className={PRIMARY}>
             <Link href={`/signup?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`}>Sign up to apply</Link>
           </Button>
@@ -61,7 +61,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
 
   if (applied) {
     return (
-      <div className="flex flex-wrap gap-3">
+      <div className={ACTION_ROW}>
         <Button disabled variant="outline" className={SECONDARY}>
           Applied
         </Button>
@@ -88,7 +88,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
           />
           <p className="mt-1 text-right text-[14px] leading-5 text-muted-foreground">{note.length} / 200</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className={ACTION_ROW}>
           <Button
             onClick={() => applyMutation.mutate()}
             className={PRIMARY}
@@ -109,7 +109,7 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
         Your profile is {score}% complete. Reach 70% to apply in one click.
       </p>
       <Progress value={score} className="h-2 [&>div]:bg-primary" />
-      <div className="flex flex-wrap gap-3">
+      <div className={ACTION_ROW}>
         <Button asChild variant="outline" className={SECONDARY}>
           <Link href="/profile/edit">Complete your profile</Link>
         </Button>

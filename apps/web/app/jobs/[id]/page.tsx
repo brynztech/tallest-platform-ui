@@ -9,7 +9,7 @@ import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { candidateAuthHeaders } from '../../_lib/candidate-api'
 import { ApplySection } from './_components/apply-section'
 import { SaveJobButton } from '../_components/save-job-button'
-import { NOTICE, PRIMARY_BTN } from '../../_lib/ui-classes'
+import { ACTION_ROW, NOTICE, PRIMARY_BTN } from '../../_lib/ui-classes'
 import type { PublicJobItem, CandidateProfile } from '../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -72,14 +72,14 @@ function sourceLabel(source: string): string {
   )
 }
 
-const PAGE = 'mx-auto max-w-[944px] px-6 pt-8 pb-20 sm:px-8'
+const PAGE = 'mx-auto max-w-[944px] px-4 pt-4 pb-20 sm:px-8 sm:pt-6'
 const CHIP = 'inline-flex items-center rounded-full bg-muted px-3 py-1 text-[14px] leading-5 text-foreground'
 
 function BackLink() {
   return (
     <Link
       href="/jobs"
-      className="inline-flex items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
+      className="inline-flex h-10 items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
     >
       <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
       Back to jobs
@@ -216,12 +216,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     <main className={PAGE}>
       <BackLink />
 
-      <article className="mt-6 rounded-[20px] border border-border bg-card p-6 sm:p-8">
+      <article className="mt-3 rounded-[20px] border border-border bg-card p-5 sm:p-8">
         <h1 className="text-[26px] leading-[32px] font-semibold tracking-[-0.03em] text-balance text-foreground sm:text-[32px] sm:leading-[38px]">
           {job.title}
         </h1>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] leading-6 text-muted-foreground">
+        {/* Company, place and pay stack on phones (no dangling dots), and run inline from sm. */}
+        <div className="mt-3 flex flex-col gap-y-1 text-[16px] leading-6 text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
           {job.company_name && (
             <span className="flex items-center gap-2">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-[14px] leading-5 font-semibold text-foreground">
@@ -237,14 +238,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           )}
           {job.location && (
             <>
-              {job.company_name && <span aria-hidden="true">·</span>}
+              {job.company_name && <span aria-hidden="true" className="hidden sm:inline">·</span>}
               <span>{job.location}</span>
             </>
           )}
           {/* Backend-formatted and currency-qualified; never reformat it here. */}
           {job.compensation_label && (
             <>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true" className="hidden sm:inline">·</span>
               <span className="text-foreground">{job.compensation_label}</span>
             </>
           )}
@@ -292,7 +293,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           {job.job_kind === 'scraped' ? (
             applyHref ? (
               <>
-                <div className="flex flex-wrap gap-3">
+                <div className={ACTION_ROW}>
                   <Button
                     asChild
                     className={PRIMARY_BTN}

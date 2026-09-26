@@ -15,6 +15,9 @@ const CATEGORIES = [
   'Recruiting',
 ]
 
+// Typed into the empty search box, one after another. The first one matches the static placeholder.
+const SEARCH_HINTS = ['Frontend', 'Backend', 'AI Engineer', 'Product Engineer', 'Design']
+
 export function HeroSection() {
   const router = useRouter()
   const [query, setQuery] = useState('')
@@ -41,18 +44,19 @@ export function HeroSection() {
         ATSes, and submits a tailored resume the moment a fitting role goes live.
       </p>
 
-      <div className="mt-8 flex w-full justify-center">
+      <div className="mt-6 flex w-full justify-center sm:mt-8">
         <SearchField
           id="hero-search"
           label="Let's Find Your Next Role?"
           placeholder="Frontend"
+          hints={SEARCH_HINTS}
           value={query}
           onChange={setQuery}
           onSubmit={submitSearch}
         />
       </div>
 
-      <div className="mt-5">
+      <div className="mt-3 self-stretch sm:mt-5 sm:self-center">
         <CategoryLinks items={CATEGORIES} />
       </div>
     </div>

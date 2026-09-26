@@ -4,7 +4,9 @@
 export const PRIMARY_BTN = 'h-10 rounded-full px-5 text-[14px] leading-5 font-medium text-primary-foreground'
 export const SECONDARY_BTN =
   'h-10 rounded-full border-border-control bg-card px-5 text-[14px] leading-5 font-medium shadow-none hover:bg-background'
-export const PANEL = 'rounded-[20px] border border-border bg-card p-6 sm:p-8'
+// Apply and Save: stacked and full width on phones, side by side from sm.
+export const ACTION_ROW = 'flex flex-col gap-3 sm:flex-row sm:flex-wrap [&>*]:w-full sm:[&>*]:w-auto'
+export const PANEL ='rounded-[20px] border border-border bg-card p-6 sm:p-8'
 export const NOTICE = 'rounded-2xl bg-background px-4 py-3 text-[14px] leading-5 text-muted-foreground'
 export const FIELD = 'h-10 rounded-full border-border-input bg-muted px-4 text-[16px] shadow-none md:text-[16px]'
 export const TEXTAREA = 'rounded-2xl border-border-input bg-muted px-4 py-3 text-[16px] shadow-none md:text-[16px]'

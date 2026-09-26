@@ -96,22 +96,23 @@ export default function JobsPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <main className="mx-auto max-w-[1184px] px-6 pt-8 pb-20 sm:px-8">
+    <main className="mx-auto max-w-[1184px] px-4 pt-6 pb-20 sm:px-8 sm:pt-8">
       <h1 className="sr-only">Find roles worth your time</h1>
 
       {!isLoggedIn && (
-        <section className="mb-8 flex flex-col gap-4 rounded-[20px] border border-border bg-card p-5 sm:gap-5 sm:p-6 md:flex-row md:items-center md:justify-between">
+        <section className="mb-6 flex flex-col gap-4 rounded-[20px] border border-border bg-card p-5 sm:mb-8 sm:gap-5 sm:p-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-[640px]">
             <p className="text-[14px] leading-5 text-muted-foreground">Reveal your best-fit roles</p>
             <h2 className="mt-1 text-[20px] leading-[26px] font-semibold tracking-[-0.02em] text-balance text-foreground sm:text-[24px] sm:leading-[30px]">
               Upload your resume. Let the AI scan show which jobs are actually worth applying to.
             </h2>
-            <p className="mt-2 text-[14px] leading-5 text-muted-foreground sm:text-[16px] sm:leading-6">
+            {/* The pitch's second sentence is dropped on phones: the heading already carries it. */}
+            <p className="mt-2 hidden text-[16px] leading-6 text-muted-foreground sm:block">
               Browse the preview, then create a free profile to run your resume through the Brynz
               parser, unlock match strength, and skip roles that waste your time.
             </p>
           </div>
-          <Button asChild className="h-10 shrink-0 rounded-full px-5 text-[14px] leading-5 font-medium text-primary-foreground">
+          <Button asChild className="h-10 shrink-0 rounded-full px-5 text-[14px] leading-5 font-medium text-primary-foreground max-md:w-full">
             <a href="/signup?intent=resume_scan">Upload Resume</a>
           </Button>
         </section>
@@ -126,7 +127,7 @@ export default function JobsPage() {
       />
 
       {total > 0 && (
-        <p className="mt-8 text-[14px] leading-5 text-muted-foreground" aria-live="polite">
+        <p className="mt-6 text-[14px] leading-5 text-muted-foreground sm:mt-8" aria-live="polite">
           {total.toLocaleString()}
           {firstPage?.truncated ? '+' : ''} {total === 1 ? 'role' : 'roles'}
           {isFiltered ? ' match your filters' : ' open now'}

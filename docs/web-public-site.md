@@ -66,6 +66,7 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 | Logos | `public/brand/brynz-mark.jpeg` (nav mark, 200x200 source, shown at 28px) and `public/brand/y-combinator.svg` (trust badge) |
 | Hero | `app/_components/hero-section.tsx` |
 | Search pill (one size, 56px, used by the hero and the jobs toolbar) | `app/_components/search-field.tsx` |
+| Hero search typing effect | `app/_lib/use-typed-hints.ts` (hints are `SEARCH_HINTS` in `hero-section.tsx`) |
 | Category links | `app/_components/category-links.tsx` (links to `/jobs?q=`, or fills the search when `onSelect` is set) |
 | Home job teaser | `app/_components/featured-jobs.tsx` |
 | Job card | `app/jobs/_components/job-card.tsx` (the only card, home and `/jobs`) |
@@ -92,8 +93,9 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 - Pay is `compensation_label` exactly as the backend formats it, never reformatted. 0 of 432
   jobs had pay on 2026-09-24, so the line is usually absent.
 - Meta line: type, work setup, location, openings, applicants (`!= null`, a real 0 shows).
-  The title clamps to 2 lines and the meta to 1 (full text in the `title` attribute), so one
-  long posting cannot stretch its whole grid row. The full text is on the detail page.
+  The title clamps to 2 lines and the meta to 1 from `sm` up (2 on phones, where the list is one
+  column) with the full text in the `title` attribute, so one long posting cannot stretch its
+  whole grid row. The full text is on the detail page.
 - Match strength and the top two reasons show as text for signed-in candidates, not as badges,
   because the DS allows no tags on a card. Skills show on the detail page only.
 - Saving is browser-only (`brynz_saved_jobs` in localStorage) until a saved-jobs API exists.
@@ -131,6 +133,24 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
   production build: card rendering at 1512 and 390 wide, wrong-password error and retry, the
   forgot-password error path, the Google redirect (also after a failed password), and the bot
   check drawing inside the card.
+- Phones (below `sm`, 640px), checked at 320, 360, 390 and 430 wide with no sideways scroll on
+  any page: gutters are 16px, everything you tap is at least 40px (nav pills, filter pills, card
+  Apply, save heart, category and back links get a 40px hit area, only links inside a sentence
+  are exempt), and buttons that sit side by side on a laptop stack full width (`ACTION_ROW`).
+  The header drops the wordmark below 360px so it still fits at 320.
+- The category links and the `/jobs` filter pills are one swipeable row on phones and wrap and
+  centre from `sm`. The row bleeds to the screen edges, so its parent must be stretched to the
+  page gutter (`self-stretch sm:self-center`), and it has 4px of vertical padding so a scroller
+  does not clip the focus rings.
+- On phones a card shows its press state (`active:`, since `hover:` never fires on touch), the
+  job page stacks company, place and pay with no dangling dot, and the `/jobs` banner drops its
+  second sentence (the heading carries it) and shows a full-width button.
+- Hero search effect: the empty box types its hints one after another (Frontend, Backend, AI
+  Engineer, Product Engineer, Design). It starts on the static placeholder, so nothing flickers,
+  and it stops for reduced motion, on focus, once there is a query, while the box is scrolled off
+  screen and while the tab is hidden. Only the placeholder text changes, so screen readers keep
+  the label and get a stable value on focus. This is the one authored motion on purpose, there
+  is no entrance animation on the page.
 - Protected pages (dashboard, onboarding, profile) redirect to login on a hard reload even when
   signed in: their redirect effect runs before the auth provider reads localStorage. They work
   when reached by client-side navigation. Open, not fixed.
@@ -167,7 +187,9 @@ overlay (`visual-polish`), match text, openings, hybrid and skills on the detail
 (`job-board`), and the account pages: no glass, heavy shadow or font-light, and visible copy
 says Brynz (`visual-polish-forms`). The sign-in and sign-up cards: no vendor wording in visible
 copy, the flow steps and the callback route (`auth`), and the hand-off order, request and error
-messages, run as a behaviour test with mocks (`use-finish-auth`).
+messages, run as a behaviour test with mocks (`use-finish-auth`). The hero search typing effect:
+the sequence and wrap-around, reduced motion, disabled, off screen and hidden tab, on fake timers
+(`use-typed-hints`).
 
 ## Decisions log
 
@@ -191,3 +213,8 @@ messages, run as a behaviour test with mocks (`use-finish-auth`).
 - 2026-09-25: Real logos in. The nav mark is the Brynz logo file (was a drawn navy square) and the
   trust badge uses the official Y Combinator SVG (was an orange "Y" tile). Product is talent-only for
   now: no "For Companies" tab.
+- 2026-09-26: Phone pass. The audit at 320 to 430 wide found no sideways scroll but many taps under
+  40px, filter and category rows wrapping over several lines, clipped card meta and a dangling dot
+  on the job page (fixes under Behaviour). The hero search now types its hints. The design system
+  artifact is unchanged: laptop numbers stand, phones only get larger tap areas. The console
+  (hire.) shows a "laptop only" screen below 1024px, see `apps/console/app/CLAUDE.md`.

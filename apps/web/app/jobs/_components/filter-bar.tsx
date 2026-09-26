@@ -82,8 +82,9 @@ function labelFor(options: Array<{ value: string; label: string }>, value: strin
 
 // The trigger already ships h-9 (36px), text-sm and gap-2, which is the pill size.
 // Anything taller needs `data-[size=default]:h-*`: a plain `h-*` loses to it on specificity.
-const PILL = 'rounded-full border-border-control bg-card px-4 shadow-none'
-const TOGGLE = 'h-9 rounded-full px-4 text-[14px] leading-5 font-normal shadow-none'
+// Phones get 40px pills that sit in one swipeable row (shrink-0 keeps them from squashing).
+const PILL = 'shrink-0 rounded-full border-border-control bg-card px-4 shadow-none data-[size=default]:h-10 sm:data-[size=default]:h-9'
+const TOGGLE = 'h-10 shrink-0 rounded-full px-4 text-[14px] leading-5 font-normal shadow-none sm:h-9'
 const TOGGLE_OFF = 'border-border-control bg-card hover:bg-background'
 
 export function FilterBar({ onSearchChange, onSearchSubmit, onFiltersChange, isPersonalized, initialSearch }: FilterBarProps) {
@@ -135,7 +136,7 @@ export function FilterBar({ onSearchChange, onSearchSubmit, onFiltersChange, isP
         onSubmit={() => onSearchSubmit(searchText)}
       />
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+      <div className="-mx-4 mt-3 flex items-center gap-2 self-stretch overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:mx-0 sm:mt-4 sm:flex-wrap sm:justify-center sm:self-center sm:overflow-visible sm:px-0 sm:py-0 [&::-webkit-scrollbar]:hidden">
         <Select
           value={filters.country || 'all'}
           onValueChange={v => handleFilterChange('country', v === 'all' ? '' : v)}
@@ -248,7 +249,7 @@ export function FilterBar({ onSearchChange, onSearchSubmit, onFiltersChange, isP
         </div>
       )}
 
-      <div className="mt-4">
+      <div className="mt-1 self-stretch sm:mt-4 sm:self-center">
         <CategoryLinks items={CATEGORIES} onSelect={selectCategory} />
       </div>
     </div>

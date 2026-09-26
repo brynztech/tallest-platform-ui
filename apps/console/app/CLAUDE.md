@@ -265,6 +265,17 @@ the system rather than matching its legacy look.
 
 ## 9. Decisions log
 
+### 2026-09-26 — Laptop only: below 1024px the console shows one notice and nothing else
+The console is for the recruiting team on laptops and `hire.trybrynz.com` is public, so a phone
+gets a single screen: "Laptop only. This view is only available on laptop devices." `app/layout.tsx`
+renders `DesktopOnlyNotice` (`lg:hidden`, a DS card on the cream page, 20/600 title, 14/400 body) and
+wraps `{children}` in `hidden lg:contents`: the app is `display: none` below lg and `contents` from lg
+up, so the laptop layout is untouched. The gate is CSS on width, not a device check: a laptop window
+narrower than 1024px shows the notice until it is widened, and the hidden app still mounts (nothing is
+visible or tappable, so that is fine). Wiring is guarded by `src/__tests__/desktop-only.test.ts`; the
+rendered result was checked at 390 and 1280 wide in a real browser. Changing the threshold means
+changing `lg` in those two places.
+
 ### 2026-09-09 — Ops Interviews list: DS pass + resolved candidate/requisition names
 Dropped the banned `backdrop-blur` sticky header and the `text-primary` link.
 Bigger issue than styling: rows rendered a raw candidate UUID and a bare

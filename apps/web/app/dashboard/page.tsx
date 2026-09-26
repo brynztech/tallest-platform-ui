@@ -93,7 +93,7 @@ export default function DashboardPage() {
                 <div className="min-w-0 space-y-0.5">
                   <Link
                     href={`/jobs/${application.job_id}`}
-                    className="text-[16px] leading-6 font-semibold text-foreground hover:underline"
+                    className="py-2 text-[16px] leading-6 font-semibold text-foreground hover:underline"
                   >
                     {application.job_title ?? 'Open role'}
                   </Link>

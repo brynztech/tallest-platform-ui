@@ -20,9 +20,10 @@ export function SiteNav() {
 
   return (
     <nav className="sticky top-0 z-40 flex h-16 items-center border-b border-canvas-rule bg-background px-4 sm:px-6">
-      <Link href="/" className="flex items-center gap-2">
+      {/* The wordmark gives way to the mark alone below 360px so the bar still fits at 320. */}
+      <Link href="/" aria-label="Brynz" className="flex h-10 items-center gap-2">
         <img src="/brand/brynz-mark.jpeg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg" />
-        <span className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-foreground">Brynz</span>
+        <span className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-foreground max-[359px]:hidden">Brynz</span>
       </Link>
 
       <div className="flex flex-1 justify-center">
@@ -33,8 +34,8 @@ export function SiteNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex h-9 items-center rounded-full px-3 text-[14px] leading-5 font-medium transition-colors duration-150 ease-out sm:px-4',
-                active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+                'flex h-10 items-center rounded-full px-3 text-[14px] leading-5 font-medium transition-colors duration-150 ease-out sm:h-9 sm:px-4',
+                active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted active:bg-muted',
               )}
             >
               {item.label}
@@ -49,8 +50,8 @@ export function SiteNav() {
             <Link
               href="/dashboard"
               className={cn(
-                'flex h-9 items-center rounded-full px-3 text-[14px] leading-5 font-medium transition-colors duration-150 ease-out sm:px-4',
-                pathname === '/dashboard' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+                'flex h-10 items-center rounded-full px-3 text-[14px] leading-5 font-medium transition-colors duration-150 ease-out sm:h-9 sm:px-4',
+                pathname === '/dashboard' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted active:bg-muted',
               )}
             >
               Dashboard
@@ -58,7 +59,7 @@ export function SiteNav() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border-control bg-card"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border-control bg-card sm:h-9 sm:w-9"
                   aria-label="Account menu"
                 >
                   <Avatar className="h-6 w-6">

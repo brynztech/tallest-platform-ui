@@ -26,7 +26,7 @@ export function TextAction(props: ComponentProps<'button'>) {
     <button
       type="button"
       {...props}
-      className="rounded text-[14px] leading-5 font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link disabled:opacity-50"
+      className="-my-2.5 rounded py-2.5 text-[14px] leading-5 font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link disabled:opacity-50"
     />
   )
 }

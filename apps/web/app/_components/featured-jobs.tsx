@@ -35,7 +35,7 @@ export function FeaturedJobs() {
   const featured = [...withLogo, ...withoutLogo].slice(0, FEATURED_COUNT)
 
   return (
-    <div className="mt-12 grid w-full max-w-[1120px] grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-8 grid w-full max-w-[1120px] grid-cols-1 gap-4 sm:mt-12 md:grid-cols-2 xl:grid-cols-3">
       {featured.map(job => (
         <JobCard key={job.id} job={job} isLoggedIn={isLoggedIn} />
       ))}
