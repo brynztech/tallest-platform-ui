@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthenticateWithRedirectCallback, useAuth } from '@clerk/nextjs'
 import { PANEL } from '../_lib/ui-classes'
@@ -22,7 +22,12 @@ export default function SsoCallbackPage() {
   }, [router])
 
   if (!clerkPublishableKey) return null
-  return <Callback />
+  // ?done= only exists in the browser; the handoff has nothing to prerender.
+  return (
+    <Suspense>
+      <Callback />
+    </Suspense>
+  )
 }
 
 function Callback() {

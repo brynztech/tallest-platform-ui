@@ -167,8 +167,11 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 2. `SelectTrigger` ships `data-[size=default]:h-9` (36px, the current pill size). For anything
    taller a plain `h-*` loses on specificity, pass `data-[size=default]:h-*` so tailwind-merge
    replaces it.
-3. `MSWProvider` renders nothing until it mounts client-side, so `curl` returns an empty body.
-   Verify UI in a real browser (Playwright), not from HTML.
+3. Pages render on the server, and search engines read that HTML. `MSWProvider` holds rendering
+   back only when `NEXT_PUBLIC_API_MOCKING=enabled`. Until 2026-09-30 it held back always, so
+   every page shipped an empty `<body>`. Server rendering has 2 rules:
+   - Read `window` and `localStorage` only inside effects or handlers.
+   - `useSearchParams` needs a `<Suspense>` boundary or a dynamic route. `/jobs` is dynamic for this. Without one, `next build` fails.
 4. Company logos use a plain `<img>`: `next.config` has no `remotePatterns`, and `next/image`
    throws for unknown hosts.
 5. Never run two web dev servers, they share `apps/web/.next` and corrupt the Turbopack cache.
@@ -218,3 +221,15 @@ the sequence and wrap-around, reduced motion, disabled, off screen and hidden ta
   on the job page (fixes under Behaviour). The hero search now types its hints. The design system
   artifact is unchanged: laptop numbers stand, phones only get larger tap areas. The console
   (hire.) shows a "laptop only" screen below 1024px, see `apps/console/app/CLAUDE.md`.
+- 2026-09-29: Backend added Lever and SmartRecruiters job sources. `/jobs/[id]` names them in "also
+  posted on" links (`SOURCE_LABELS`). Without an entry the label falls back to title case, which
+  would have shown "Smartrecruiters". The Remote filter was checked in a real browser against a
+  local backend: 86 remote roles, both new sources included. SEO plan for the site:
+  `self-prompts/seo-strategy.md`.
+- 2026-09-30: Search engines saw an empty page on every route (gotcha 3). Now:
+  - Pages render on the server, and `/jobs/[id]` fetches its job there.
+  - Each job page has its own title, description, canonical URL and JobPosting structured data (`app/_lib/job-posting.ts`).
+  - Missing, closed or hidden jobs return a real 404.
+  - `sitemap.xml` lists every job in the public feed, and `robots.txt` blocks the signed-in pages.
+  - The canonical host is `https://talent.trybrynz.com` (`app/_lib/site.ts`).
+  - Checked against a production build, as Googlebot and in a real browser: content, metadata, 404s, sitemap, no hydration errors, filters and Save still working. Plan and next steps: `self-prompts/seo-strategy.md`.

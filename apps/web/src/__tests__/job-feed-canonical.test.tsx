@@ -150,7 +150,10 @@ describe('Filter bar — new controls', () => {
 })
 
 describe('Job detail page — canonical contract', () => {
-  const src = readFile('jobs/[id]/page.tsx')
+  // The server page, its client UI, and the structured data it emits.
+  const src = ['jobs/[id]/page.tsx', 'jobs/[id]/_components/job-detail.tsx', '_lib/job-posting.ts']
+    .map(readFile)
+    .join('\n')
 
   it('never publishes a hardcoded currency in structured data', () => {
     // Previously emitted currency: 'USD' unconditionally, which would state an

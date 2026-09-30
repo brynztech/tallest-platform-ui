@@ -1,5 +1,8 @@
+import type { Metadata } from 'next'
 import { HeroSection } from './_components/hero-section'
 import { FeaturedJobs } from './_components/featured-jobs'
+
+export const metadata: Metadata = { alternates: { canonical: '/' } }
 
 export default function HomePage() {
   return (

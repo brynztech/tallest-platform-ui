@@ -3,12 +3,14 @@ import { Inter } from 'next/font/google'
 import { WebProviders } from './_components/web-providers'
 import { SiteNav } from './_components/site-nav'
 import { Toaster } from '@brynzit/ui/components/ui/sonner'
+import { SITE_URL } from './_lib/site'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: 'Brynz — Find your next role',
+  metadataBase: new URL(SITE_URL),
+  title: { default: 'Brynz — Find your next role', template: '%s · Brynz' },
   description: 'Brynz is an AI job search engine.',
 }
 
