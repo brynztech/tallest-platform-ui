@@ -8,20 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
-import { Textarea } from '@brynzit/ui/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@brynzit/ui/components/ui/select'
 import { Progress } from '@brynzit/ui/components/ui/progress'
-import { Separator } from '@brynzit/ui/components/ui/separator'
-import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
 import { Popover, PopoverContent, PopoverTrigger } from '@brynzit/ui/components/ui/popover'
 import {
   Command,
@@ -32,7 +19,6 @@ import {
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { RemovableChip } from '../../_components/removable-chip'
 import { candidateAuthHeaders, candidateJsonHeaders } from '../../_lib/candidate-api'
-import { FIELD, PANEL, PRIMARY_BTN, SELECT, TEXTAREA } from '../../_lib/ui-classes'
 import type { CandidateProfile, CandidateProfileUpdate } from '../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -188,230 +174,167 @@ export default function ProfileEditPage() {
   if (!isLoggedIn) return null
 
   const score = profile?.completeness_score ?? 0
+  const errors = form.formState.errors
+  // Empty select option means "not set": keep it undefined so the optional enums validate.
+  const unsetIfEmpty = { setValueAs: (v: string) => v || undefined }
 
   return (
-    <main className="mx-auto max-w-[688px] px-4 pt-4 pb-20 sm:px-8 sm:pt-6">
-      <Link
-        href="/jobs"
-        className="inline-flex h-10 items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
-      >
+    <main className="wrap page mid">
+      <Link href="/jobs" className="inline-link inline-flex items-center gap-2 justify-self-start">
         <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
         Back to jobs
       </Link>
 
-      <div className={`mt-3 ${PANEL}`}>
-        <div className="space-y-3">
-          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Edit profile</h1>
-          {/* PUB-05: Completeness meter — value from API only, never computed in UI (D-18) */}
-          {!isLoading && (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-3">
-                <Progress value={score} className="h-1.5 flex-1 [&>div]:bg-primary" />
-                <span className="shrink-0 text-[14px] leading-5 text-muted-foreground">{score}% complete</span>
-              </div>
-              {score < 70 && (
-                <p className="text-[14px] leading-5 text-muted-foreground">Reach 70% to unlock 1-click apply</p>
-              )}
+      <div className="page-head">
+        <h1 className="d2">
+          Edit <em>profile</em>
+        </h1>
+        {/* PUB-05: Completeness meter — value from API only, never computed in UI (D-18) */}
+        {!isLoading && (
+          <div className="grid gap-1">
+            <div className="flex items-center justify-between gap-3">
+              <Progress value={score} className="flex-1" />
+              <span className="small shrink-0">{score}% complete</span>
             </div>
-          )}
-        </div>
-
-        {isLoading ? (
-          <div className="mt-6 space-y-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full rounded-full" />
-            ))}
+            {score < 70 && <p className="small">Reach 70% to unlock 1-click apply</p>}
           </div>
-        ) : (
-          <form
-            onSubmit={form.handleSubmit(v => mutation.mutate(v))}
-            className="mt-8 space-y-8"
-          >
-            {/* Personal section */}
-            <section className="space-y-4">
-              <h2 className="text-[16px] leading-6 font-semibold text-foreground">Personal</h2>
-              <Separator />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="first_name">First name</Label>
-                  <Input id="first_name" className={FIELD} {...form.register('first_name')} />
-                  {form.formState.errors.first_name && (
-                    <p className="text-[14px] leading-5 text-destructive">
-                      {form.formState.errors.first_name.message}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last_name">Last name</Label>
-                  <Input id="last_name" className={FIELD} {...form.register('last_name')} />
-                  {form.formState.errors.last_name && (
-                    <p className="text-[14px] leading-5 text-destructive">
-                      {form.formState.errors.last_name.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="headline">Headline</Label>
-                <Input
-                  id="headline"
-                  className={FIELD}
-                  placeholder="e.g. Senior Product Engineer"
-                  {...form.register('headline')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="experience_summary">Experience summary (optional)</Label>
-                <Textarea
-                  id="experience_summary"
-                  rows={4}
-                  className={TEXTAREA}
-                  {...form.register('experience_summary')}
-                />
-              </div>
-            </section>
-
-            {/* Skills section */}
-            <section className="space-y-4">
-              <h2 className="text-[16px] leading-6 font-semibold text-foreground">Skills</h2>
-              <Separator />
-              <Popover open={skillsOpen} onOpenChange={setSkillsOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    type="button"
-                    className="h-10 w-full justify-start rounded-full border-border-input bg-muted px-4 text-[16px] font-normal shadow-none hover:bg-muted"
-                  >
-                    {skills.length === 0 ? 'Add skills…' : `${skills.length} selected`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] rounded-2xl p-0">
-                  <Command>
-                    <CommandInput placeholder="Search skills…" />
-                    <CommandList>
-                      {SKILL_SUGGESTIONS.map(skill => (
-                        <CommandItem key={skill} onSelect={() => toggleSkill(skill)}>
-                          {skills.includes(skill) ? '✓ ' : '  '}
-                          {skill}
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {skills.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {skills.map(skill => (
-                    <RemovableChip
-                      key={skill}
-                      label={skill}
-                      removeLabel={`Remove ${skill}`}
-                      onRemove={() => toggleSkill(skill)}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* Preferences section */}
-            <section className="space-y-4">
-              <h2 className="text-[16px] leading-6 font-semibold text-foreground">Preferences</h2>
-              <Separator />
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  className={FIELD}
-                  placeholder="City, Country"
-                  {...form.register('location')}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Remote preference</Label>
-                <Select
-                  defaultValue={profile?.remote_preference ?? undefined}
-                  onValueChange={v =>
-                    form.setValue(
-                      'remote_preference',
-                      v as ProfileEditValues['remote_preference'],
-                    )
-                  }
-                >
-                  <SelectTrigger className={SELECT}>
-                    <SelectValue placeholder="Select preference…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="remote_only">Remote only</SelectItem>
-                    <SelectItem value="hybrid">Hybrid</SelectItem>
-                    <SelectItem value="onsite">On-site</SelectItem>
-                    <SelectItem value="flexible">Flexible</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Seniority</Label>
-                <Select
-                  defaultValue={profile?.seniority ?? undefined}
-                  onValueChange={v =>
-                    form.setValue('seniority', v as ProfileEditValues['seniority'])
-                  }
-                >
-                  <SelectTrigger className={SELECT}>
-                    <SelectValue placeholder="Select level…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="junior">Junior</SelectItem>
-                    <SelectItem value="mid">Mid</SelectItem>
-                    <SelectItem value="senior">Senior</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="principal">Principal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </section>
-
-            {/* Links section */}
-            <section className="space-y-4">
-              <h2 className="text-[16px] leading-6 font-semibold text-foreground">Links</h2>
-              <Separator />
-              <div className="space-y-2">
-                <Label htmlFor="github_url">GitHub URL (optional)</Label>
-                <Input
-                  id="github_url"
-                  type="url"
-                  className={FIELD}
-                  placeholder="https://github.com/username"
-                  {...form.register('github_url')}
-                />
-                {form.formState.errors.github_url && (
-                  <p className="text-[14px] leading-5 text-destructive">
-                    {form.formState.errors.github_url.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="linkedin_url">LinkedIn URL (optional)</Label>
-                <Input
-                  id="linkedin_url"
-                  type="url"
-                  className={FIELD}
-                  placeholder="https://linkedin.com/in/username"
-                  {...form.register('linkedin_url')}
-                />
-                {form.formState.errors.linkedin_url && (
-                  <p className="text-[14px] leading-5 text-destructive">
-                    {form.formState.errors.linkedin_url.message}
-                  </p>
-                )}
-              </div>
-            </section>
-
-            <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving…' : 'Save changes'}
-            </Button>
-          </form>
         )}
       </div>
+
+      {isLoading ? (
+        <div className="job skeleton" aria-hidden="true" />
+      ) : (
+        <form onSubmit={form.handleSubmit(v => mutation.mutate(v))} className="panel">
+          {/* Personal section */}
+          <section className="grid gap-4">
+            <h2 className="d3">Personal</h2>
+            <div className="row2">
+              <div className={errors.first_name ? 'field invalid' : 'field'}>
+                <label htmlFor="first_name">First name</label>
+                <input id="first_name" {...form.register('first_name')} />
+                {errors.first_name && <span className="err">{errors.first_name.message}</span>}
+              </div>
+              <div className={errors.last_name ? 'field invalid' : 'field'}>
+                <label htmlFor="last_name">Last name</label>
+                <input id="last_name" {...form.register('last_name')} />
+                {errors.last_name && <span className="err">{errors.last_name.message}</span>}
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="headline">Headline</label>
+              <input id="headline" placeholder="e.g. Senior Product Engineer" {...form.register('headline')} />
+            </div>
+            <div className="field">
+              <label htmlFor="experience_summary">
+                Experience summary <span className="opt">(optional)</span>
+              </label>
+              <textarea id="experience_summary" rows={4} {...form.register('experience_summary')} />
+            </div>
+          </section>
+
+          {/* Skills section */}
+          <section className="grid gap-4">
+            <h2 className="d3">Skills</h2>
+            <Popover open={skillsOpen} onOpenChange={setSkillsOpen}>
+              <PopoverTrigger asChild>
+                <button type="button" className="btn btn-ghost justify-self-start">
+                  {skills.length === 0 ? 'Add skills…' : `${skills.length} selected`}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search skills…" />
+                  <CommandList>
+                    {SKILL_SUGGESTIONS.map(skill => (
+                      <CommandItem key={skill} onSelect={() => toggleSkill(skill)}>
+                        {skills.includes(skill) ? '✓ ' : '  '}
+                        {skill}
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {skills.length > 0 && (
+              <div className="chips">
+                {skills.map(skill => (
+                  <RemovableChip
+                    key={skill}
+                    label={skill}
+                    removeLabel={`Remove ${skill}`}
+                    onRemove={() => toggleSkill(skill)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Preferences section */}
+          <section className="grid gap-4">
+            <h2 className="d3">Preferences</h2>
+            <div className="field">
+              <label htmlFor="location">Location</label>
+              <input id="location" placeholder="City, Country" {...form.register('location')} />
+            </div>
+            <div className="row2">
+              <div className="field">
+                <label htmlFor="remote_preference">Remote preference</label>
+                <select id="remote_preference" {...form.register('remote_preference', unsetIfEmpty)}>
+                  <option value="">Select preference…</option>
+                  <option value="remote_only">Remote only</option>
+                  <option value="hybrid">Hybrid</option>
+                  <option value="onsite">On-site</option>
+                  <option value="flexible">Flexible</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="seniority">Seniority</label>
+                <select id="seniority" {...form.register('seniority', unsetIfEmpty)}>
+                  <option value="">Select level…</option>
+                  <option value="junior">Junior</option>
+                  <option value="mid">Mid</option>
+                  <option value="senior">Senior</option>
+                  <option value="staff">Staff</option>
+                  <option value="principal">Principal</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {/* Links section */}
+          <section className="grid gap-4">
+            <h2 className="d3">Links</h2>
+            <div className={errors.github_url ? 'field invalid' : 'field'}>
+              <label htmlFor="github_url">
+                GitHub URL <span className="opt">(optional)</span>
+              </label>
+              <input
+                id="github_url"
+                type="url"
+                placeholder="https://github.com/username"
+                {...form.register('github_url')}
+              />
+              {errors.github_url && <span className="err">{errors.github_url.message}</span>}
+            </div>
+            <div className={errors.linkedin_url ? 'field invalid' : 'field'}>
+              <label htmlFor="linkedin_url">
+                LinkedIn URL <span className="opt">(optional)</span>
+              </label>
+              <input
+                id="linkedin_url"
+                type="url"
+                placeholder="https://linkedin.com/in/username"
+                {...form.register('linkedin_url')}
+              />
+              {errors.linkedin_url && <span className="err">{errors.linkedin_url.message}</span>}
+            </div>
+          </section>
+
+          <button type="submit" className="btn btn-primary btn-block" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Saving…' : 'Save changes'}
+          </button>
+        </form>
+      )}
     </main>
   )
 }

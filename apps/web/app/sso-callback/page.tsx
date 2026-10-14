@@ -3,9 +3,13 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthenticateWithRedirectCallback, useAuth } from '@clerk/nextjs'
-import { PANEL } from '../_lib/ui-classes'
 import { safeRedirect } from '../_lib/safe-redirect'
-import { SSO_DESTINATION_KEY, SSO_DONE_URL, useFinishAuth, type AuthDestination } from '../_lib/use-finish-auth'
+import {
+  SSO_DESTINATION_KEY,
+  SSO_DONE_URL,
+  useFinishAuth,
+  type AuthDestination,
+} from '../_lib/use-finish-auth'
 import { FormError } from '../_components/auth-parts'
 
 const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -48,7 +52,7 @@ function Handoff() {
         continueSignUpUrl="/signup"
       />
       {/* Bot protection can ask for a challenge when a new account is created; it draws here. */}
-      <div id="clerk-captcha" className="mt-4 empty:hidden" />
+      <div id="clerk-captcha" className="empty:hidden" />
     </CallbackCard>
   )
 }
@@ -58,7 +62,10 @@ function readDestination(): AuthDestination {
     const raw = sessionStorage.getItem(SSO_DESTINATION_KEY)
     if (raw) {
       const saved = JSON.parse(raw) as Partial<AuthDestination>
-      return { next: safeRedirect(saved.next ?? null) ?? '/dashboard', onboarding: saved.onboarding === true }
+      return {
+        next: safeRedirect(saved.next ?? null) ?? '/dashboard',
+        onboarding: saved.onboarding === true,
+      }
     }
   } catch {
     /* corrupt or unavailable storage: fall through to the default */
@@ -91,15 +98,19 @@ function Finish() {
 
 function CallbackCard({ error, children }: { error: string | null; children?: React.ReactNode }) {
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-4 py-10">
-      <div className={`${PANEL} text-center`}>
-        <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Signing you in</h1>
-        <p className="mt-2 text-[14px] leading-5 text-muted-foreground">One moment while we finish up.</p>
-        <div className="mt-4">
-          <FormError message={error} />
-        </div>
-        {children}
+    <main className="wrap page narrow">
+      <div className="page-head">
+        <h1 className="d2">
+          Signing you <em>in</em>
+        </h1>
+        <p className="lede">One moment while we finish up.</p>
       </div>
+      {(error || children) && (
+        <div className="panel">
+          <FormError message={error} />
+          {children}
+        </div>
+      )}
     </main>
   )
 }

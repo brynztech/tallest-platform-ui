@@ -17,9 +17,9 @@ describe('Job board page (JOB-01)', () => {
     expect(src.match(/<FilterBar/g)?.length).toBe(1)
   })
 
-  it('seeds the search from ?q= handed off by the hero', () => {
+  it('seeds the search from ?q= so links like /jobs?q=Backend prefill it', () => {
     expect(src).toContain("searchParams.get('q')")
-    expect(src).toContain('initialSearch')
+    expect(src).toContain('useState(initialQuery)')
   })
 
   it('uses useInfiniteQuery for cursor pagination', () => {
@@ -41,7 +41,7 @@ describe('Job board page (JOB-01)', () => {
   })
 
   it('shows 6 skeleton cards when isLoading', () => {
-    expect(src).toContain('Skeleton')
+    expect(src).toContain('job skeleton')
     expect(src).toContain('length: 6')
   })
 
@@ -89,10 +89,9 @@ describe('Anonymous gating (JOB-06)', () => {
   const jobCardSrc = readFile('jobs/_components/job-card.tsx')
   const jobPageSrc = readFile('jobs/page.tsx')
 
-  it('cards beyond index 4 have blur-[4px] class via cn() conditional', () => {
-    expect(jobCardSrc).toContain('blur-[4px]')
-    expect(jobCardSrc).toContain('pointer-events-none')
-    expect(jobCardSrc).toContain('select-none')
+  it('cards beyond index 4 get the blurred .locked state', () => {
+    expect(jobCardSrc).toContain("'job locked'")
+    expect(readFile('globals.css')).toContain('.job.locked { filter: blur(4px); pointer-events: none; user-select: none; }')
   })
 
   it('JobCard uses isLocked prop to apply blur conditionally', () => {
@@ -114,10 +113,9 @@ describe('Anonymous gating (JOB-06)', () => {
     expect(jobPageSrc).toContain('isLoggedIn')
   })
 
-  it('job board invites anonymous candidates to upload a resume for AI-ranked matches', () => {
-    expect(jobPageSrc).toContain('Upload your resume')
-    expect(jobPageSrc).toContain('Reveal your best-fit roles')
-    expect(jobPageSrc).toContain('/signup?intent=resume_scan')
+  it('job board invites candidates to create a profile', () => {
+    expect(readFile('jobs/_components/talent-sections.tsx')).toContain('Create profile')
+    expect(readFile('jobs/_components/talent-sections.tsx')).toContain('href="/signup"')
   })
 
   it('locked overlay uses resume-first value copy and preserves resume scan intent', () => {
@@ -128,40 +126,32 @@ describe('Anonymous gating (JOB-06)', () => {
   })
 })
 
-describe('FilterBar (D-07, D-08)', () => {
+describe('Search and FilterBar (D-07, D-08)', () => {
   const src = readFile('jobs/_components/filter-bar.tsx')
+  const page = readFile('jobs/page.tsx')
 
-  it('renders the search field with a placeholder', () => {
-    expect(src).toContain('SearchField')
-    expect(src).toContain('placeholder')
-    expect(readFile('_components/search-field.tsx')).toContain('<input')
+  it('renders the search input with a typing placeholder', () => {
+    expect(page).toContain('className="searchbar"')
+    expect(page).toContain('data-type-ph')
   })
 
-  it('fills the search in place when a category link is picked', () => {
-    expect(src).toContain('CategoryLinks')
-    expect(src).toContain('onSelect={selectCategory}')
+  it('category links search in place and toggle off when picked again', () => {
+    expect(page).toContain('className="taglinks"')
+    expect(page).toContain("searchNow(debouncedSearch === cat ? '' : cat)")
   })
 
-  it('has Role type and Seniority Select dropdowns', () => {
+  it('has Role type and Seniority dropdowns', () => {
     expect(src).toContain('role_type')
     expect(src).toContain('seniority')
   })
 
-  it('has Remote toggle button', () => {
-    expect(src).toContain('remote')
+  it('filter changes call onFiltersChange immediately (D-08 — no debounce)', () => {
+    expect(src).toContain('onFiltersChange({ ...filters, [key]: value })')
   })
 
-  it('filter dropdown changes call onFiltersChange immediately (D-08 — no debounce)', () => {
-    // Immediate = onFiltersChange called directly inside handleFilterChange
-    expect(src).toContain('onFiltersChange(next)')
-  })
-
-  it('active filter pills render below filter bar', () => {
-    expect(src).toContain('hasActiveFilters')
-  })
-
-  it('Clear all resets all filters immediately', () => {
-    expect(src).toContain('clearAll')
+  it('Clear filters resets search and filters immediately', () => {
+    expect(src).toContain('Clear filters')
+    expect(page).toContain('function clearAll()')
   })
 
   it('exports JobFilters type interface', () => {
@@ -180,8 +170,8 @@ describe('LockedJobsOverlay component', () => {
     expect(src).toContain('/signup')
   })
 
-  it('has absolute positioning for overlay effect', () => {
-    expect(src).toContain('absolute')
+  it('uses the overlay class that is absolutely positioned', () => {
+    expect(src).toContain('locked-overlay')
   })
 })
 

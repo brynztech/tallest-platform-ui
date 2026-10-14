@@ -3,17 +3,14 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Textarea } from '@brynzit/ui/components/ui/textarea'
 import { Progress } from '@brynzit/ui/components/ui/progress'
-import { Label } from '@brynzit/ui/components/ui/label'
 import { candidateJsonHeaders } from '../../../_lib/candidate-api'
-import { ACTION_ROW, NOTICE, PRIMARY_BTN as PRIMARY, SECONDARY_BTN as SECONDARY, TEXTAREA } from '../../../_lib/ui-classes'
 import { SaveJobButton } from '../../_components/save-job-button'
 import type { CandidateApplication } from '../../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-
+// Apply and Save: stacked and full width on phones, side by side from sm.
+export const ACTION_ROW = 'flex flex-col gap-3 sm:flex-row sm:flex-wrap'
 
 interface ApplySectionProps {
   jobId: string
@@ -47,14 +44,14 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
 
   if (!isLoggedIn) {
     return (
-      <div>
+      <div className="grid gap-4">
         <div className={ACTION_ROW}>
-          <Button asChild className={PRIMARY}>
-            <Link href={`/signup?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`}>Sign up to apply</Link>
-          </Button>
+          <Link className="btn btn-primary" href={`/signup?redirect=${encodeURIComponent(`/jobs/${jobId}`)}`}>
+            Sign up to apply
+          </Link>
           <SaveJobButton jobId={jobId} />
         </div>
-        <p className={`mt-4 ${NOTICE}`}>Sign in to apply for this role.</p>
+        <p className="notice">Sign in to apply for this role.</p>
       </div>
     )
   }
@@ -62,9 +59,9 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
   if (applied) {
     return (
       <div className={ACTION_ROW}>
-        <Button disabled variant="outline" className={SECONDARY}>
+        <button type="button" className="btn btn-ghost" disabled>
           Applied
-        </Button>
+        </button>
         <SaveJobButton jobId={jobId} />
       </div>
     )
@@ -72,30 +69,28 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
 
   if (score >= 70) {
     return (
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="apply-note" className="text-[14px] leading-5 font-medium text-foreground">
-            Add a note (optional)
-          </Label>
-          <Textarea
+      <div className="grid gap-4">
+        <div className="field">
+          <label htmlFor="apply-note">Add a note (optional)</label>
+          <textarea
             id="apply-note"
             rows={3}
             maxLength={200}
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="Optional note to the recruiter…"
-            className={`mt-2 ${TEXTAREA}`}
           />
-          <p className="mt-1 text-right text-[14px] leading-5 text-muted-foreground">{note.length} / 200</p>
+          <p className="small text-right">{note.length} / 200</p>
         </div>
         <div className={ACTION_ROW}>
-          <Button
+          <button
+            type="button"
+            className="btn btn-primary"
             onClick={() => applyMutation.mutate()}
-            className={PRIMARY}
             disabled={applyMutation.isPending || note.length > 200}
           >
             {applyMutation.isPending ? 'Submitting…' : 'Apply now'}
-          </Button>
+          </button>
           <SaveJobButton jobId={jobId} />
         </div>
       </div>
@@ -104,15 +99,13 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
 
   // Incomplete profile state — completeness_score < 70
   return (
-    <div className="space-y-4">
-      <p className="text-[14px] leading-5 text-muted-foreground">
-        Your profile is {score}% complete. Reach 70% to apply in one click.
-      </p>
-      <Progress value={score} className="h-2 [&>div]:bg-primary" />
+    <div className="grid gap-4">
+      <p className="small">Your profile is {score}% complete. Reach 70% to apply in one click.</p>
+      <Progress value={score} />
       <div className={ACTION_ROW}>
-        <Button asChild variant="outline" className={SECONDARY}>
-          <Link href="/profile/edit">Complete your profile</Link>
-        </Button>
+        <Link className="btn btn-ghost" href="/profile/edit">
+          Complete your profile
+        </Link>
         <SaveJobButton jobId={jobId} />
       </div>
     </div>

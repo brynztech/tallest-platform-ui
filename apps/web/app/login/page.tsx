@@ -3,11 +3,7 @@
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
-import { FIELD, NOTICE, PANEL, PRIMARY_BTN } from '../_lib/ui-classes'
 import { safeRedirect } from '../_lib/safe-redirect'
 import { ClerkSignIn } from './_components/clerk-sign-in'
 
@@ -44,65 +40,68 @@ export default function LoginPage() {
 
     const data = (await response.json()) as { access_token: string }
     signIn(data.access_token, { id: 'mock-candidate-id', email })
-    router.push(safeRedirect(new URLSearchParams(window.location.search).get('redirect')) ?? '/jobs')
+    router.push(
+      safeRedirect(new URLSearchParams(window.location.search).get('redirect')) ?? '/jobs',
+    )
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[420px] flex-col justify-center px-4 py-10">
-      <div className={PANEL}>
-        <div className="space-y-2 text-center">
-          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Sign in</h1>
-          <p className="text-[14px] leading-5 text-muted-foreground">Continue to your Brynz candidate account.</p>
-        </div>
+    <main className="wrap page narrow">
+      <div className="page-head">
+        <h1 className="d2">
+          Sign <em>in</em>
+        </h1>
+        <p className="lede">Continue to your Brynz candidate account.</p>
+      </div>
 
+      <div className="panel">
         {clerkPublishableKey ? (
           <ClerkSignIn />
         ) : (
           <>
-            <div className={`mt-6 ${NOTICE}`}>
-              <p className="font-medium text-foreground">Demo user</p>
+            <div className="notice">
+              <p>
+                <strong>Demo user</strong>
+              </p>
               <p className="mt-1">
-                Use <span className="font-mono text-foreground">{DEMO_EMAIL}</span> with password{' '}
-                <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>.
+                Use <code>{DEMO_EMAIL}</code> with password <code>{DEMO_PASSWORD}</code>.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
+            <form onSubmit={handleSubmit} className="grid gap-4">
+              <div className="field">
+                <label htmlFor="email">Email</label>
+                <input
                   id="email"
                   type="email"
                   autoComplete="email"
-                  className={FIELD}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
+              <div className="field">
+                <label htmlFor="password">Password</label>
+                <input
                   id="password"
                   type="password"
                   autoComplete="current-password"
-                  className={FIELD}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   required
                 />
               </div>
 
-              {error && <p className="text-[14px] leading-5 text-destructive">{error}</p>}
+              {error && <p className="notice err">{error}</p>}
 
-              <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={isSubmitting}>
+              <button type="submit" className="btn btn-primary btn-block" disabled={isSubmitting}>
                 {isSubmitting ? 'Signing in...' : 'Sign in'}
-              </Button>
+              </button>
             </form>
 
-            <p className="mt-5 text-center text-[14px] leading-5 text-muted-foreground">
+            <p className="small text-center">
               New here?{' '}
-              <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
+              <Link href="/signup" className="inline-link">
                 Join free
               </Link>
             </p>

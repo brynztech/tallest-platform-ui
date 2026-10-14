@@ -1,14 +1,12 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
-import { Skeleton } from '@brynzit/ui/components/ui/skeleton'
-import { Button } from '@brynzit/ui/components/ui/button'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import Link from 'next/link'
 import { useCandidateAuth } from '../../../_components/candidate-auth-context'
 import { candidateAuthHeaders } from '../../../_lib/candidate-api'
-import { ApplySection } from './apply-section'
+import { ACTION_ROW, ApplySection } from './apply-section'
 import { SaveJobButton } from '../../_components/save-job-button'
-import { ACTION_ROW, NOTICE, PRIMARY_BTN } from '../../../_lib/ui-classes'
+import { logoColor } from '../../_components/job-card'
 import type { PublicJobItem, CandidateProfile } from '../../../_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -58,15 +56,9 @@ function sourceLabel(source: string): string {
   )
 }
 
-const PAGE = 'mx-auto max-w-[944px] px-4 pt-4 pb-20 sm:px-8 sm:pt-6'
-const CHIP = 'inline-flex items-center rounded-full bg-muted px-3 py-1 text-[14px] leading-5 text-foreground'
-
 function BackLink() {
   return (
-    <Link
-      href="/jobs"
-      className="inline-flex h-10 items-center gap-2 text-[14px] leading-5 font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
-    >
+    <Link href="/jobs" className="inline-link inline-flex items-center gap-2 justify-self-start">
       <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
       Back to jobs
     </Link>
@@ -109,20 +101,17 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
 
   if (isLoading) {
     return (
-      <main className={PAGE}>
-        <Skeleton className="h-5 w-28" />
-        <Skeleton className="mt-6 h-[420px] rounded-[20px]" />
+      <main className="wrap page mid">
+        <div className="job skeleton" aria-hidden="true" />
       </main>
     )
   }
 
   if (error || !job) {
     return (
-      <main className={PAGE}>
+      <main className="wrap page mid">
         <BackLink />
-        <p className="mt-6 text-[16px] leading-6 text-foreground">
-          Couldn&apos;t load this job. It may have been removed.
-        </p>
+        <p className="notice err">Couldn&apos;t load this job. It may have been removed.</p>
       </main>
     )
   }
@@ -139,109 +128,93 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
   ].filter(Boolean)
   const applyHref = safeHref(job.source_url)
 
+  // Backend-formatted and currency-qualified; never reformat the pay label here.
+  const meta = [job.location, job.compensation_label].filter(Boolean).join(' · ')
+
   return (
-    <main className={PAGE}>
+    <main className="wrap page mid">
       <BackLink />
 
-      <article className="mt-3 rounded-[20px] border border-border bg-card p-5 sm:p-8">
-        <h1 className="text-[26px] leading-[32px] font-semibold tracking-[-0.03em] text-balance text-foreground sm:text-[32px] sm:leading-[38px]">
-          {job.title}
-        </h1>
-
-        {/* Company, place and pay stack on phones (no dangling dots), and run inline from sm. */}
-        <div className="mt-3 flex flex-col gap-y-1 text-[16px] leading-6 text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
-          {job.company_name && (
-            <span className="flex items-center gap-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted text-[14px] leading-5 font-semibold text-foreground">
+      <article className="grid gap-6">
+        <header className="page-head">
+          {job.company_name ? (
+            <div className="modal-job">
+              <div
+                className="lg overflow-hidden"
+                style={{ background: job.company_logo_url ? 'var(--surface)' : logoColor(job.company_name) }}
+                aria-hidden="true"
+              >
                 {job.company_logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element -- unknown external hosts, no next.config remotePatterns
                   <img src={job.company_logo_url} alt="" className="h-full w-full object-cover" />
                 ) : (
                   job.company_name.charAt(0).toUpperCase()
                 )}
-              </span>
-              {job.company_name}
-            </span>
+              </div>
+              <div className="min-w-0">
+                <b>{job.company_name}</b>
+                {meta && <p className="small">{meta}</p>}
+              </div>
+            </div>
+          ) : (
+            meta && <p className="small">{meta}</p>
           )}
-          {job.location && (
-            <>
-              {job.company_name && <span aria-hidden="true" className="hidden sm:inline">·</span>}
-              <span>{job.location}</span>
-            </>
-          )}
-          {/* Backend-formatted and currency-qualified; never reformat it here. */}
-          {job.compensation_label && (
-            <>
-              <span aria-hidden="true" className="hidden sm:inline">·</span>
-              <span className="text-foreground">{job.compensation_label}</span>
-            </>
-          )}
-        </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {chips.map(chip => (
-            <span key={String(chip)} className={CHIP}>{chip}</span>
-          ))}
-          {/* Match badge — logged-in only (JOB-05) */}
-          {isLoggedIn && job.match_strength === 'strong' && (
-            <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-[14px] leading-5 text-primary-foreground">
-              Strong match
-            </span>
-          )}
-          {isLoggedIn && job.match_strength === 'partial' && <span className={CHIP}>Partial match</span>}
-        </div>
+          <h1 className="d2">{job.title}</h1>
 
-        {skills.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {skills.map(skill => (
-              <span
-                key={skill}
-                className="inline-flex items-center rounded-full border border-border-control bg-card px-3 py-1 text-[14px] leading-5 text-foreground"
-              >
-                {skill}
-              </span>
+          <div className="chips">
+            {chips.map(chip => (
+              <span key={String(chip)} className="chip">{chip}</span>
             ))}
+            {/* Match badge — logged-in only (JOB-05) */}
+            {isLoggedIn && job.match_strength === 'strong' && <span className="pill-ok">Strong match</span>}
+            {isLoggedIn && job.match_strength === 'partial' && <span className="pill-n">Partial match</span>}
           </div>
-        )}
 
-        {isLoggedIn && job.match_reasons?.length > 0 && job.match_strength !== 'none' && (
-          <ul className="mt-3 space-y-1 text-[14px] leading-5 text-muted-foreground">
-            {job.match_reasons.map(reason => (
-              <li key={reason}>· {reason}</li>
-            ))}
-          </ul>
-        )}
+          {skills.length > 0 && (
+            <div className="chips">
+              {skills.map(skill => (
+                <span key={skill} className="chip on">{skill}</span>
+              ))}
+            </div>
+          )}
+
+          {isLoggedIn && job.match_reasons?.length > 0 && job.match_strength !== 'none' && (
+            <ul className="small grid gap-1">
+              {job.match_reasons.map(reason => (
+                <li key={reason}>· {reason}</li>
+              ))}
+            </ul>
+          )}
+        </header>
 
         {/* A scraped posting lives on the employer's own ATS — we cannot submit an
             application on the candidate's behalf, so we send them there and say so
             plainly rather than collecting an application we cannot deliver. Our own
             client requisitions use the internal apply flow. */}
-        <div className="mt-6">
+        <div>
           {job.job_kind === 'scraped' ? (
             applyHref ? (
-              <>
+              <div className="grid gap-4">
                 <div className={ACTION_ROW}>
-                  <Button
-                    asChild
-                    className={PRIMARY_BTN}
-                  >
-                    <a href={applyHref} target="_blank" rel="noopener noreferrer">
-                      Apply on {job.company_name ?? 'company site'}
-                      <ArrowUpRight className="size-4" strokeWidth={1.8} />
-                    </a>
-                  </Button>
+                  <a className="btn btn-primary" href={applyHref} target="_blank" rel="noopener noreferrer">
+                    Apply on {job.company_name ?? 'company site'}
+                    <ArrowUpRight className="size-4" strokeWidth={1.8} />
+                  </a>
                   <SaveJobButton jobId={job.id} />
                 </div>
-                <p className={`mt-4 ${NOTICE}`}>
+                <p className="notice">
                   This role is posted on the employer&apos;s own careers site. You&apos;ll apply there
                   directly, so Brynz can&apos;t track this application in your dashboard.
                 </p>
-              </>
+              </div>
             ) : (
-              <>
-                <SaveJobButton jobId={job.id} />
-                <p className={`mt-4 ${NOTICE}`}>This posting has no application link available.</p>
-              </>
+              <div className="grid gap-4">
+                <div className={ACTION_ROW}>
+                  <SaveJobButton jobId={job.id} />
+                </div>
+                <p className="notice">This posting has no application link available.</p>
+              </div>
             )
           ) : (
             <ApplySection
@@ -254,21 +227,16 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
 
         {/* T-05-02: JD rendered as plain text with whitespace-pre-wrap — no innerHTML usage */}
         {job.description_summary && (
-          <>
-            <hr className="mt-8 border-border" />
-            <section className="mt-8">
-              <h2 className="text-[16px] leading-6 font-semibold text-foreground">Job description</h2>
-              <p className="mt-3 max-w-[68ch] whitespace-pre-wrap text-[16px] leading-[26px] text-foreground">
-                {job.description_summary}
-              </p>
-            </section>
-          </>
+          <section className="panel">
+            <h2 className="d3">Job description</h2>
+            <p className="whitespace-pre-wrap">{job.description_summary}</p>
+          </section>
         )}
 
         {/* Other boards carrying this same real job — secondary to the primary
             apply action above, just letting the candidate pick their preferred board. */}
-        {job.alternate_postings.length > 0 && (
-          <p className="mt-8 text-[14px] leading-5 text-muted-foreground">
+        {(job.alternate_postings?.length ?? 0) > 0 && (
+          <p className="small">
             Also posted on:{' '}
             {job.alternate_postings.map((alt, i) => {
               const href = safeHref(alt.url)
@@ -276,12 +244,7 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
                 <span key={alt.url}>
                   {i > 0 && ' · '}
                   {href ? (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline underline-offset-2 hover:text-foreground"
-                    >
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="inline-link">
                       {sourceLabel(alt.source)}
                     </a>
                   ) : (

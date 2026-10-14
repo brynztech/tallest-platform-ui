@@ -1,100 +1,128 @@
 'use client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Button } from '@brynzit/ui/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@brynzit/ui/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@brynzit/ui/components/ui/avatar'
-import { cn } from '@brynzit/ui/lib/utils'
+import { BrynzLogo } from './brynz-logo'
 import { useCandidateAuth } from './candidate-auth-context'
 
-const NAV_ITEMS = [{ href: '/jobs', label: 'Jobs' }]
+const NAV_ITEMS = [
+  { href: '/jobs', label: 'For Talent' },
+  { href: '/startups', label: 'Startups' },
+  { href: '/enterprises', label: 'Enterprises' },
+  { href: '/frontier-ai', label: 'Frontier AI' },
+  { href: '/iit-talent', label: 'IIT Talent' },
+]
+
+// Each page's header button points at that page's own form, as in the design source.
+const PAGE_CTA: Record<string, { href: string; label: string }> = {
+  '/startups': { href: '#brief', label: 'Get 5 vetted profiles' },
+  '/enterprises': { href: '#talk', label: 'Talk to us' },
+  '/frontier-ai': { href: '#lab', label: 'Hire for Frontier' },
+  '/iit-talent': { href: '#apply', label: 'Apply to join' },
+  '/jobs': { href: '/signup', label: 'Create profile' },
+}
+const DEFAULT_CTA = { href: '/startups#brief', label: 'Hire talent' }
 
 export function SiteNav() {
   const { isLoggedIn, candidate, signOut } = useCandidateAuth()
   const pathname = usePathname()
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // A route change closes the phone menu.
+  useEffect(() => setMenuOpen(false), [pathname])
+
+  const cta = (pathname === '/jobs' && isLoggedIn ? null : PAGE_CTA[pathname]) ?? DEFAULT_CTA
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   return (
-    <nav className="sticky top-0 z-40 flex h-16 items-center border-b border-canvas-rule bg-background px-4 sm:px-6">
-      {/* The wordmark gives way to the mark alone below 360px so the bar still fits at 320. */}
-      <Link href="/" aria-label="Brynz" className="flex h-10 items-center gap-2">
-        <img src="/brand/brynz-mark.jpeg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg" />
-        <span className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-foreground max-[359px]:hidden">Brynz</span>
-      </Link>
-
-      <div className="flex flex-1 justify-center">
-        {NAV_ITEMS.map(item => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex h-10 items-center rounded-full px-3 text-[14px] leading-5 font-medium transition-colors duration-150 ease-out sm:h-9 sm:px-4',
-                active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted active:bg-muted',
-              )}
-            >
+    <header className={scrolled ? 'nav scrolled' : 'nav'}>
+      <div className="wrap nav-in">
+        <BrynzLogo />
+        <nav className="nav-links" aria-label="Main">
+          {NAV_ITEMS.map(item => (
+            <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
               {item.label}
             </Link>
-          )
-        })}
+          ))}
+        </nav>
+        <div className="nav-cta">
+          {isLoggedIn ? (
+            <>
+              <Link className="text-link" href="/dashboard" aria-current={isActive('/dashboard') ? 'page' : undefined}>
+                Dashboard
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="avatar-btn" aria-label="Account menu">
+                    {candidate?.email?.[0]?.toUpperCase() ?? 'C'}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile/edit">My Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <Link className="text-link" href="/login">
+              Log in
+            </Link>
+          )}
+          <Link className="btn btn-primary btn-sm" href={cta.href}>
+            {cta.label}
+          </Link>
+          <button
+            className="menu-btn"
+            type="button"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen(open => !open)}
+          >
+            <span />
+          </button>
+        </div>
       </div>
-
-      <div className="flex items-center gap-2">
+      <div className="mobile-menu wrap" id="mobile-menu" hidden={!menuOpen}>
+        {NAV_ITEMS.map(item => (
+          <Link key={item.href} href={item.href}>
+            {item.label}
+          </Link>
+        ))}
+        <Link href="/contact">Contact</Link>
         {isLoggedIn ? (
           <>
-            <Link
-              href="/dashboard"
-              className={cn(
-                'flex h-10 items-center rounded-full px-3 text-[14px] leading-5 font-medium transition-colors duration-150 ease-out sm:h-9 sm:px-4',
-                pathname === '/dashboard' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted active:bg-muted',
-              )}
-            >
-              Dashboard
-            </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border-control bg-card sm:h-9 sm:w-9"
-                  aria-label="Account menu"
-                >
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback>{candidate?.email?.[0]?.toUpperCase() ?? 'C'}</AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href="/profile/edit">My Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/profile/edit">My Profile</Link>
+            <button type="button" className="mobile-menu-link" onClick={signOut}>
+              Sign out
+            </button>
           </>
         ) : (
-          <>
-            <Button
-              variant="outline"
-              className="h-10 rounded-full border-border-control bg-card px-3 text-[14px] leading-5 font-medium shadow-none hover:bg-background sm:px-5"
-              asChild
-            >
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button
-              className="h-10 rounded-full px-3 text-[14px] leading-5 font-medium text-primary-foreground sm:px-5"
-              asChild
-            >
-              <Link href="/signup">Sign up</Link>
-            </Button>
-          </>
+          <Link href="/login">Log in</Link>
         )}
+        <Link className="btn btn-primary" href={cta.href}>
+          {cta.label}
+        </Link>
       </div>
-    </nav>
+    </header>
   )
 }

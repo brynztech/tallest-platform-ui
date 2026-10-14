@@ -2,13 +2,10 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Progress } from '@brynzit/ui/components/ui/progress'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { candidateAuthHeaders } from '../../_lib/candidate-api'
 import type { ResumeParseStatus } from '../../_lib/candidate-types'
 import { ResumeDropzone } from '../_components/resume-dropzone'
-import { PANEL, PRIMARY_BTN } from '../../_lib/ui-classes'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -94,46 +91,33 @@ export default function OnboardingResumePage() {
   const isBusy = status === 'uploading' || status === 'processing'
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-[560px] flex-col justify-center px-4 py-10">
-      <div className={PANEL}>
-        <div className="mb-6 space-y-2">
-          <p className="text-[14px] leading-5 text-muted-foreground">Step 1 of 3</p>
-          <Progress value={33} className="h-1.5" />
-        </div>
-
-        <div className="space-y-2 text-center">
-          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Upload your resume</h1>
-          <p className="text-[14px] leading-5 text-muted-foreground">
-            {isResumeScanIntent
-              ? "We'll parse it to reveal your strongest-fit roles and prefill your profile."
-              : "We'll parse it to prefill your profile."}{' '}
-            PDF, DOC, and DOCX are supported.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <ResumeDropzone file={file} status={status} disabled={isBusy} onChange={setFile} />
-
-          {status === 'processing' && (
-            <p className="text-center text-[14px] leading-5 text-muted-foreground">Parsing your resume...</p>
-          )}
-          {error && <p className="text-center text-[14px] leading-5 text-destructive">{error}</p>}
-
-          <div className="flex gap-3">
-            <Button type="submit" className={`${PRIMARY_BTN} flex-1`} disabled={isBusy}>
-              {isBusy ? 'Working...' : 'Upload and continue'}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 rounded-full px-5 text-[14px] leading-5 font-medium text-muted-foreground hover:bg-muted"
-              onClick={() => router.push('/onboarding/2')}
-            >
-              Skip
-            </Button>
-          </div>
-        </form>
+    <main className="wrap page narrow">
+      <div className="page-head">
+        <div className="steps" aria-label="Step 1 of 3"><i className="on" /><i /><i /></div>
+        <h1 className="d2">Upload your <em>resume</em></h1>
+        <p className="lede">
+          {isResumeScanIntent
+            ? "We'll parse it to reveal your strongest-fit roles and prefill your profile."
+            : "We'll parse it to prefill your profile."}{' '}
+          PDF, DOC, and DOCX are supported.
+        </p>
       </div>
+
+      <form onSubmit={handleSubmit} className="panel">
+        <ResumeDropzone file={file} status={status} disabled={isBusy} onChange={setFile} />
+
+        {status === 'processing' && <p className="notice">Parsing your resume...</p>}
+        {error && <p className="notice err">{error}</p>}
+
+        <div className="flex gap-3">
+          <button type="submit" className="btn btn-primary flex-1" disabled={isBusy}>
+            {isBusy ? 'Working...' : 'Upload and continue'}
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => router.push('/onboarding/2')}>
+            Skip
+          </button>
+        </div>
+      </form>
     </main>
   )
 }

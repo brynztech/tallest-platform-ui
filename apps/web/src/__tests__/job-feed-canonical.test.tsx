@@ -118,7 +118,7 @@ describe('Filter bar — new controls', () => {
 
   it('exposes country, work setup, date posted and pay filters', () => {
     expect(src).toContain('Country')
-    expect(src).toContain('Work setup')
+    expect(src).toContain('Workplace')
     expect(src).toContain('Date posted')
     expect(src).toContain('Pay listed')
   })
@@ -141,11 +141,10 @@ describe('Filter bar — new controls', () => {
   })
 
   it('labels every select for screen readers', () => {
-    const selectTriggers = src.split('<SelectTrigger').slice(1)
-    expect(selectTriggers.length).toBeGreaterThan(3)
-    for (const fragment of selectTriggers) {
-      expect(fragment.slice(0, fragment.indexOf('>'))).toContain('aria-label')
-    }
+    const selects = src.split('<select').slice(1)
+    expect(selects.length).toBe(1) // one native select, mapped over SELECTS
+    expect(selects[0].slice(0, selects[0].indexOf('>'))).toContain('aria-label={s.label}')
+    expect(src.match(/label: '/g)!.length).toBeGreaterThan(4)
   })
 })
 

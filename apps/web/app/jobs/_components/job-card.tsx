@@ -1,8 +1,5 @@
 'use client'
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { cn } from '@brynzit/ui/lib/utils'
 import { useSavedJob } from '../../_lib/saved-jobs'
 import type { PublicJobItem } from '../../_lib/candidate-types'
 
@@ -10,6 +7,8 @@ interface JobCardProps {
   job: PublicJobItem
   isLoggedIn: boolean
   isLocked?: boolean
+  /** Stagger slot for the entrance animation. */
+  index?: number
 }
 
 const EMPLOYMENT_LABELS: Record<PublicJobItem['employment_type'], string> = {
@@ -21,21 +20,36 @@ const EMPLOYMENT_LABELS: Record<PublicJobItem['employment_type'], string> = {
 }
 
 const REMOTE_LABELS: Record<'onsite' | 'hybrid' | 'remote', string> = {
-  onsite: 'On-site',
+  onsite: 'Onsite',
   hybrid: 'Hybrid',
   remote: 'Remote',
 }
 
-export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
-  const { saved, toggle } = useSavedJob(job.id)
+// Letter tiles get a steady colour per company, from the design's logo set.
+const LOGO_COLORS = ['#141518', '#1E88D6', '#2E7D32', '#6A3FD1', '#C2410C', '#0F766E', '#1D4ED8', '#BE185D', '#0E7490', '#374151', '#7C2D12', '#4338CA']
+export function logoColor(name: string): string {
+  let h = 0
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) | 0
+  return LOGO_COLORS[Math.abs(h) % LOGO_COLORS.length]
+}
 
-  // The backend formats pay with its currency ("USD 160k–210k/yr",
-  // "INR 18L–25L/yr"). The card must not reformat it: this used to hardcode "$",
-  // which mislabelled every Indian salary — ₹20L would have read as $2M.
+function postedLabel(datePosted: string): string {
+  const days = Math.max(0, Math.floor((Date.now() - new Date(datePosted).getTime()) / 86_400_000))
+  if (Number.isNaN(days)) return 'Posted on company site'
+  if (days === 0) return 'Posted today on company site'
+  return `Posted ${days} ${days === 1 ? 'day' : 'days'} ago on company site`
+}
+
+const HEART = 'M12 20.3s-7.6-4.6-9.2-9.4C1.7 7.5 3.9 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3 4.4 6.4-1.6 4.8-9.2 9.4-9.2 9.4z'
+
+export function JobCard({ job, isLoggedIn, isLocked, index = 0 }: JobCardProps) {
+  const { saved, toggle } = useSavedJob(job.id)
+  const company = job.company_name ?? job.title
+
+  // The backend formats pay with its currency ("USD 160k–210k/yr", "INR 18L–25L/yr").
+  // Never reformat it: a hardcoded "$" once mislabelled every Indian salary.
   const pay = job.compensation_label
 
-  // Text, not a badge: the DS allows no tags on a card. The reasons are what
-  // make the label read as evidence rather than marketing.
   const matchLabel =
     isLoggedIn && job.match_strength === 'strong'
       ? 'Strong match'
@@ -44,82 +58,68 @@ export function JobCard({ job, isLoggedIn, isLocked }: JobCardProps) {
         : null
   const matchReasons = matchLabel ? (job.match_reasons?.slice(0, 2) ?? []) : []
 
-  const meta = [
+  const where = [
     EMPLOYMENT_LABELS[job.employment_type],
-    job.remote_mode && REMOTE_LABELS[job.remote_mode],
-    job.location,
+    [job.remote_mode && REMOTE_LABELS[job.remote_mode], job.location].filter(Boolean).join(', '),
     job.openings > 1 && `${job.openings} openings`,
     // `!= null` on purpose: a real 0 is worth showing, and mocks omit the field.
-    job.applicants_count != null &&
-      `${job.applicants_count} applicant${job.applicants_count === 1 ? '' : 's'}`,
+    job.applicants_count != null && `${job.applicants_count} applicant${job.applicants_count === 1 ? '' : 's'}`,
   ]
     .filter(Boolean)
     .join(' · ')
 
   return (
-    <div
+    <article
       inert={isLocked}
-      className={cn(
-        'group relative flex h-full flex-col rounded-[20px] border border-border bg-card p-5',
-        'transition-[background-color,box-shadow] duration-150 ease-out hover:bg-muted hover:shadow-raised active:bg-muted',
-        isLocked && 'pointer-events-none blur-[4px] select-none',
-      )}
+      className={isLocked ? 'job locked' : 'job'}
+      style={{ '--i': index % 9 } as React.CSSProperties}
     >
-      <Link
-        href={`/jobs/${job.id}`}
-        className="absolute inset-0 z-0 rounded-[20px] [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link"
-        aria-label={job.title}
-      />
-
-      <div className="relative z-10 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-muted text-[16px] leading-6 font-semibold text-foreground group-hover:bg-card group-active:bg-card">
+      <div className="job-top">
+        <div className="lg" style={{ background: job.company_logo_url ? 'var(--surface)' : logoColor(company) }} aria-hidden="true">
           {job.company_logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element -- unknown external hosts, no next.config remotePatterns
-            <img src={job.company_logo_url} alt={job.company_name ?? ''} className="h-full w-full object-cover" />
+            <img src={job.company_logo_url} alt="" />
           ) : (
-            (job.company_name ?? job.title).charAt(0).toUpperCase()
+            company.charAt(0).toUpperCase()
           )}
         </div>
-
-        <div className="min-w-0 flex-1">
-          {/* Clamped so one long title cannot make its whole grid row taller; the full title is on the detail page. */}
-          <p title={job.title} className="line-clamp-2 text-[16px] leading-[22px] font-semibold text-foreground">
-            {job.title}
-          </p>
-          {pay && <p className="text-[14px] leading-5 text-muted-foreground">{pay}</p>}
-          {matchLabel && (
-            <p className="text-[14px] leading-5 text-muted-foreground">
-              <span className="font-medium text-foreground">{matchLabel}</span>
-              {matchReasons.length > 0 && ` · ${matchReasons.join(' · ')}`}
-            </p>
-          )}
+        <div style={{ minWidth: 0 }}>
+          <h3 title={job.title}>
+            <Link className="job-link" href={`/jobs/${job.id}`}>
+              {job.title}
+            </Link>
+          </h3>
+          {job.company_name && <div className="job-co">{job.company_name}</div>}
+          <span className="posted">{postedLabel(job.date_posted)}</span>
         </div>
-
         <button
+          className="heart"
           type="button"
           onClick={toggle}
-          aria-label={saved ? 'Remove from saved jobs' : 'Save job'}
           aria-pressed={saved}
-          className="-m-2.5 shrink-0 rounded-full p-2.5 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-link sm:-m-2 sm:p-2"
+          aria-label={saved ? 'Remove from saved jobs' : 'Save job'}
         >
-          <Heart className={cn('h-5 w-5 text-foreground', saved && 'fill-foreground')} strokeWidth={1.6} />
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d={HEART} strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
-
-      <div className="relative z-10 mt-auto flex items-center justify-between gap-3 pt-5">
-        {/* Two lines on phones so a long location is readable, one line (ellipsis) from sm. */}
-        <p title={meta} className="min-w-0 line-clamp-2 text-[14px] leading-5 text-muted-foreground sm:line-clamp-1 sm:leading-8">
-          {meta}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10 shrink-0 rounded-full border-foreground bg-card px-4 text-[14px] leading-5 font-medium shadow-none hover:bg-background sm:h-8"
-          asChild
-        >
-          <Link href={`/jobs/${job.id}`}>Apply</Link>
-        </Button>
+      <div>
+        {(pay || matchLabel) && (
+          <p className="why">
+            {matchLabel && <b>{matchLabel}</b>}
+            {matchLabel && matchReasons.length > 0 && ` · ${matchReasons.join(' · ')}`}
+            {matchLabel && pay && ' · '}
+            {pay}
+          </p>
+        )}
       </div>
-    </div>
+      <div className="job-foot">
+        <div className="where" title={where}>{where}</div>
+        <Link className="btn btn-ghost" href={`/jobs/${job.id}`}>
+          Apply
+        </Link>
+      </div>
+    </article>
   )
 }

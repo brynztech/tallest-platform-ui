@@ -1,6 +1,7 @@
 # Public candidate site (apps/web) and the Brynz design system
 
-Scope: every page of `apps/web`: home, `/jobs`, `/jobs/[id]`, login, signup, the three
+Scope: every page of `apps/web`: home, the company pages (`/startups`, `/enterprises`,
+`/frontier-ai`, `/iit-talent`, `/contact`), `/jobs`, `/jobs/[id]`, login, signup, the three
 onboarding steps, the dashboard and profile edit. The console (`apps/console`) has its own
 system. `packages/ui` is shared and never edited for web work.
 
@@ -10,71 +11,104 @@ points at `https://talent.trybrynz.com/jobs/<id>` (it was `brynzit.com` until 20
 
 ## Source of truth
 
-- Design system artifact: https://claude.ai/artifact/Lam7THmhVm72bTT6UMevHT. Read it with the
-  Artifact tool: `project/README.md`, `project/tokens.json`, `project/components/<Name>/README.md`.
-  If this doc and the artifact disagree, the artifact wins. It was updated to the compact scale
-  on 2026-09-25 (artifact version 4, `tokens.json` version 2), so the numbers below and the
-  artifact agree. Style names changed in v2: `label-lg`, `body-lg`, `meta` and `caption` are gone,
-  `heading-xl`, `heading`, `label`, `body` are new.
-- The jobs list and job detail follow the "Brynz pages restyled" mockup (2026-09-24). It is not
-  readable as an artifact, so sizes were measured from screenshots and checked against the tokens
-  (nav pill 40, buttons 48, card padding 40, logo 56 all line up).
+- **Design source (v3, 2026-10-14):** the static Brynz site the user supplied (`brynz-site/`:
+  `index`, `candidates`, `startups`, `enterprises`, `frontier-ai`, `iit-talent`, `contact`, plus
+  `assets/styles.css`, `motion.js`, `app.js`). It replaces the compact v2 system (black ink, Inter,
+  pills only) from 2026-09-25. Those screens are the reference for the home page, every company page
+  and the talent page. Any new page is composed from the classes below, never from new one-off CSS.
+- **Design system artifact (v3):** https://claude.ai/artifact/6BBDASmYu3CU3BMUUi9xbk (created
+  2026-10-15: README, tokens, 16 components with live previews, logo). The v2 artifact
+  (`Lam7THmhVm72bTT6UMevHT`) belongs to another account and is retired. If the artifact and `globals.css` disagree, `globals.css` is right (it is the code) and
+  the artifact is stale: fix the artifact.
+- **Code:** `apps/web/app/globals.css` is the only place tokens and classes live. It holds the
+  design stylesheet as written (minus the palette picker and dark mode), then an "App pieces"
+  section for the candidate screens the design never drew. Add to that section, never per page.
 
-## Tokens (globals.css is the only place they live)
+## How the CSS is wired
 
-| DS token | Value | In code |
+- Tailwind v4 still loads (packages/ui primitives use it). The Brynz classes sit in
+  `@layer components`, so preflight loses to them and Tailwind utilities beat them.
+- Consequence: do not put a Brynz class on a shadcn `Button` or `Input`. Their built-in utilities
+  win and undo the class. Use plain `<button className="btn btn-primary">`, `<Link className="btn …">`
+  and native `<input>` inside `.field`. shadcn stays only where it brings behaviour: `DropdownMenu`
+  (account menu), `Skeleton`-free loading, `Dialog`, Radix `Select` where a native select cannot do.
+- The shadcn colour names (`--color-background`, `--color-primary`…) are mapped onto Brynz values at
+  the top of `globals.css`, so primitives match without per-component styling.
+- Tailwind utilities are fine for one-off layout (`flex`, `gap-3`, `mt-2`). Never use them for colour,
+  type size, radius or shadow: those come from Brynz classes.
+- Class name rule: no Brynz class may share a name with a Tailwind utility. `.ring` (the guarantee
+  dial) was renamed `.odo-ring` because Tailwind generated a `ring` box-shadow for it.
+
+## Tokens (`:root` in globals.css)
+
+| Token | Value | Use |
 |---|---|---|
-| canvas | `#f7f3f0` | `bg-background` |
-| canvas-rule | `#f4f0ed` | `border-canvas-rule` (header rule) |
-| surface | `#ffffff` | `bg-card` |
-| surface-muted | `#f0f0f0` | `bg-muted` (search fill, hovered card) |
-| ink / on-ink | `#000000` / `#ffffff` | `bg-primary` / `text-primary-foreground`, `text-foreground` |
-| ink-muted | `#6b6b6b` | `text-muted-foreground` |
-| link | `#3860bc` | `text-link` (category links only), focus ring, `outline-link` |
-| divider | `#b4b4c0` | `bg-divider` |
-| border-card / border-control / border-input | `#e8e7e5` / `#e5e5e5` / `#707070` | `border-border` / `border-border-control` / `border-border-input` |
-| brand | `#080e5a` | `bg-brand`, logo only |
-| shadow-raised / shadow-badge | see file | `shadow-raised` (hovered card, floating overlay) / `shadow-badge` |
+| `--brand` | `#141A4D` midnight navy | logo, primary button, navy panels, bars |
+| `--brand-2` | `#2A3593` | glow inside navy panels, chat bubble |
+| `--accent` / `--blue` | `#2F44C9` | links, focus ring, small labels (`.sub`, `.stepn`) |
+| `--bg` | `#F3F2EE` | page |
+| `--surface` | `#FFFFFF` | cards, panels |
+| `--field` | `#ECEBE6` | search fill, chips, empty bars |
+| `--ink` / `--ink-2` / `--muted` | `#0F1013` / `#45464E` / `#6D6E77` | text: headings / body / meta |
+| `--line` | `#E1DFD8` | every border |
+| `--on-navy` | `#F3F2EE` | text on navy |
+| `--yc` | `#F26522` | YC tile, saved heart, "hot" dots |
+| `--tint-a/b/c/d` | `#DFE3F7` / `#ECE5D5` / `#D9E8DD` / `#D6E6F2` | card visual backgrounds, in that order |
+| `--ok`, `--ok-bg`, `--warn`, `--warn-bg`, `--err` | green, amber, red | status pills, errors |
+| `--shadow`, `--shadow-lg` | soft navy shadows | raised card / hover |
+| `--r-md` / `--r-lg` | 18px / 28px | cards / big panels and bands |
+| `--wrap` / `--gutter` | 1200px / clamp(16px, 4vw, 40px) | page width via `.wrap` |
 
-Shape: every control is a full pill. Cards and blocks are `rounded-[20px]`. Almost flat: no
-gradients, no glass, no backdrop blur. Font is Inter, weights 400, 500 and 600 only
-(`layout.tsx`).
+Fonts (`layout.tsx`, `next/font`): **Figtree** for all UI text (`--f-sans`), **Newsreader** serif for
+display (`--f-serif`): `.d1`, `.d2`, card titles in doors and tracks, big numbers. Italic `<em>` inside
+`.d1`/`.d2` is the signature accent: one word per headline ("Talent that *ships*.").
 
-**Compact scale (2026-09-25, on request).** The design system was updated to these numbers, so
-they are now the DS. The first DS version had larger ones, kept here for history. Colours, pills
-and hairlines never changed:
+## Class catalog
 
-| Thing | First DS version | Now (DS v2) |
-|---|---|---|
-| Type sizes | 56 / 20 / 18 / 16 / 13, bold | 48 / 32 / 24 / 16 / 14, weights 400-600 |
-| Hero headline | 56/64 bold | 48/52 semibold, -0.035em (34/38 on phones) |
-| Hero search | 810 x 116, label left | 640 x 56 pill, arrow 40, label centered |
-| Header | 80px, buttons 48, nav pill 40 | 64px, buttons 40, nav pill 36 |
-| Job card | padding 40, logo 56, radius 28, about 230 tall | padding 20, logo 40, radius 20, about 138 tall |
-| Card Apply | 44px, 18px text | 32px, 14px text |
-| Filter pills | 44px, 16px text | 36px, 14px text |
-| Content width | 1180 to 1384 | 1120 (hero, grid, `/jobs`), 880 (detail) |
+| Need | Classes |
+|---|---|
+| Page width | `.wrap` (always), sections `.section` / `.section-tight`, `.pt0` to drop top padding |
+| Type | `.d1` hero (one per page, add `.fit` to keep it on one line), `.d2` section head, `.d3` card title, `.h4`, `.lede` intro, `.small` |
+| Section heading | `.section-head` (+ `.center`) wrapping a `.d2` and optional `.lede` |
+| Hero | `.hero` (text only, centred), `.trust` pill with `.yc` tile, `.hero-ctas`, `.rise .r1-.r4` entrance |
+| Buttons | `.btn` + `.btn-primary` (navy) / `.btn-ghost` (outlined) / `.btn-light` + `.btn-outline-light` (on navy), `.btn-sm`, `.btn-block` |
+| Cards | `.door` (home audience doors), `.hcard` (visual + step text, 3-up), `.vcard`/`.vpair` (2-up statements), `.bento` (+`.four`, `.prac .feat`), `.vt` (industry with `.ticker`), `.model` (engagement diagrams), `.stile` (stat tiles), `.path`, `.cmp` |
+| Navy bands | `.cta-band` (closing call to action, every page ends with one), `.story`, `.problem`, `.funnel`, `.netband` |
+| Lists | `.rows` (editorial rows), `.track` + `.tstep` (process stages), `.rail`, `.faq` (`<details>`), `.proof` chips, `.marquee` |
+| Small parts | `.chip` (`.on`, `.ok`), `.pill-ok`, `.pill-n`, `.status[data-s=0-3]`, `.mini` (white floating card inside visuals), `.kv` (definition list) |
+| Forms | `.note-form` or `.form` panel, `.field` (label + input/select/textarea + `.err`), `.row2`, `.seg` (pill radio group), `.file-drop`, `.done` |
+| Talent search | `.search-hero`, `.searchbar`, `.taglinks`, `.toolbar` + `.count` + `.filters` (native selects) + `.toggle` + `.clear`, `.jobs` grid, `.job` card, `.empty`, `.more` |
+| Header / footer | `.nav` (+`.scrolled`), `.mobile-menu`, `.footer` (`site-nav.tsx`, `site-footer.tsx`) |
+| App pieces (account screens) | `.page` (+`.narrow` 640, `.mid` 880) inside `.wrap`, `.page-head`, `.panel`, `.notice` (+`.err`, `.ok`), `.divider`, `.inline-link`, `.steps` (onboarding progress), `.avatar-btn` |
 
-Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do not register
-`--text-*` tokens (see gotcha 1). Spacing steps: 4, 8, 12, 16, 20, 24, 32, 48.
+## Motion (`app/_lib/motion.ts`, run by `SiteMotion` in the layout)
+
+Pages stay server components. Animation is declared in markup with a `data-*` hook and one client
+runner starts it for the current route and stops everything on navigation. Rule: the server HTML
+already shows the final state, motion only replays it while it is on screen, and nothing moves
+under `prefers-reduced-motion`.
+
+`data-live` (adds `.live` while visible, drives `.a-in`/`.a-grow`/`.a-pop`/`.a-stamp`), `data-flow`,
+`data-typer`, `data-cycle`, `data-thread`, `data-net`, `data-funnel`, `data-odo`, `data-days`,
+`data-ring`, `data-pool`, `data-pitch`, `data-kw`, `data-track`, `data-ticker`, `data-type-ph`
+(typing placeholder), `data-tabs`, `data-form`, `data-copy`, `.fit`, `.file-drop`.
+
+Company forms (`data-form`): validated in the browser, then the visitor gets a "Book a 15-minute
+call" link (`BOOKING_URL` in `app/_lib/site.ts`). No backend endpoint takes these notes yet.
 
 ## Where things live
 
 | Piece | File |
 |---|---|
-| Header | `app/_components/site-nav.tsx` (real routes only; Brynz is talent-only for now, so no "For Companies") |
-| Logos | `public/brand/brynz-mark.jpeg` (nav mark, 200x200 source, shown at 28px) and `public/brand/y-combinator.svg` (trust badge) |
-| Hero | `app/_components/hero-section.tsx` |
-| Search pill (one size, 56px, used by the hero and the jobs toolbar) | `app/_components/search-field.tsx` |
-| Hero search typing effect | `app/_lib/use-typed-hints.ts` (hints are `SEARCH_HINTS` in `hero-section.tsx`) |
-| Category links | `app/_components/category-links.tsx` (links to `/jobs?q=`, or fills the search when `onSelect` is set) |
-| Home job teaser | `app/_components/featured-jobs.tsx` |
-| Job card | `app/jobs/_components/job-card.tsx` (the only card, home and `/jobs`) |
-| Toolbar: search, filter pills, chips, category links | `app/jobs/_components/filter-bar.tsx` |
-| Anonymous gate | `app/jobs/_components/locked-jobs-overlay.tsx` |
+| Tokens and classes | `app/globals.css` |
+| Fonts, header, footer, motion runner | `app/layout.tsx` |
+| Header (5 audience links, Log in or Dashboard + account menu, Hire talent) | `app/_components/site-nav.tsx` |
+| Footer | `app/_components/site-footer.tsx` |
+| Logo mark (inline SVG, also `public/brand/brynz-mark.svg` as the favicon) | `app/_components/brynz-logo.tsx` |
+| Motion and form behaviour | `app/_lib/motion.ts`, `app/_components/site-motion.tsx` |
+| Home, company pages | `app/page.tsx`, `app/{startups,enterprises,frontier-ai,iit-talent,contact}/page.tsx` |
+| Talent page (search, feed, how it works) | `app/jobs/page.tsx`, `_components/{job-card,filter-bar,locked-jobs-overlay,talent-sections}.tsx` |
 | Save | `app/_lib/saved-jobs.ts`, `app/jobs/_components/save-job-button.tsx` |
-| Shared class strings (buttons, panel, notice, fields) | `app/_lib/ui-classes.ts` |
-| Removable chip (skills, filters) | `app/_components/removable-chip.tsx` |
 | Account pages | `app/login`, `app/signup`, `app/onboarding/1-3`, `app/dashboard`, `app/profile/edit` |
 | Sign-in and sign-up cards (Clerk headless underneath) | `app/login/_components/clerk-sign-in.tsx`, `app/signup/_components/clerk-sign-up.tsx`, `app/sso-callback/page.tsx` |
 | Auth hand-off, redirect check, shared bits | `app/_lib/use-finish-auth.ts`, `app/_lib/safe-redirect.ts`, `app/_components/auth-parts.tsx` |
@@ -82,14 +116,21 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 
 ## Behaviour
 
-- Hero search and category links go to `/jobs?q=`. `/jobs` seeds its search from `q`.
-- The toolbar is mounted once. It used to render in three branches, so each new query remounted
-  it and dropped the input's focus and text.
+- Home is a hub for four audiences (Talent, Startups, Enterprises, Frontier AI doors) plus the IIT
+  Talent strip. It has no search box; "Talent" goes to `/jobs`. Links like `/jobs?q=Backend` still
+  prefill the search.
+- Company pages are static server pages ported 1:1 from the design source. Their forms
+  (`data-form`) validate in the browser and then offer a booking link; nothing is sent anywhere.
+- `/jobs` is the design's talent page fed by the real API: serif hero, `.searchbar` with the typing
+  placeholder, `.taglinks` categories (click again to clear), `.toolbar` with the count and native
+  filter selects, then the `.jobs` grid, "How Brynz works" and the profile call to action.
+- The toolbar is mounted once, so typing never remounts it.
 - Search calls the backend `q`, which matches job title and company name only
   (`talent-platform/candidate/feed.py`). It does not match skills, so the placeholder says
   "roles or companies". The old Skills input is gone: 0 of 432 jobs had skills on 2026-09-24.
-- Card head row is logo, title (plus pay and match text) and the save heart, in one row. The DS
-  shows no company name text, identity comes from the logo or a letter tile.
+- Job card (design `.job`): logo or a letter tile in a steady per-company colour (`logoColor`),
+  title (links to the detail page), company, "Posted N days ago on company site", save heart, then
+  match text and pay, and the type · workplace, location line with an outlined Apply.
 - Pay is `compensation_label` exactly as the backend formats it, never reformatted. 0 of 432
   jobs had pay on 2026-09-24, so the line is usually absent.
 - Meta line: type, work setup, location, openings, applicants (`!= null`, a real 0 shows).
@@ -101,9 +142,10 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 - Saving is browser-only (`brynz_saved_jobs` in localStorage) until a saved-jobs API exists.
 - Locked cards are `inert` and blurred. Anonymous visitors still auto-load further pages, which
   moves the overlay down with the list. Open, not fixed.
-- Account pages are one flat panel on `canvas` (420px sign-in and sign-up, 560px onboarding, about
-  690px profile). Fields are 40px `border-input` pills from `ui-classes.ts`, one full-width
-  primary button per panel, skills as removable chips, application status as a chip.
+- Account pages are `.wrap.page` (`.narrow` 640px for sign-in, sign-up and onboarding, `.mid`
+  880px for profile and job detail): a `.page-head` with a serif `.d2`, then `.panel`s. Fields are
+  native inputs and selects inside `.field`, buttons are `.btn`, skills are removable `.chip`s,
+  onboarding shows a `.steps` bar, application status is a `.status` pill.
 - Sign-in and sign-up are our own cards (`ClerkSignIn`, `ClerkSignUp`). Clerk runs headless
   underneath (`useSignIn`, `useSignUp`), so accounts and tokens are unchanged, but no Clerk
   screen, logo, "Secured by" line or dev-mode banner is shown. Visible copy must not name the
@@ -133,24 +175,12 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
   production build: card rendering at 1512 and 390 wide, wrong-password error and retry, the
   forgot-password error path, the Google redirect (also after a failed password), and the bot
   check drawing inside the card.
-- Phones (below `sm`, 640px), checked at 320, 360, 390 and 430 wide with no sideways scroll on
-  any page: gutters are 16px, everything you tap is at least 40px (nav pills, filter pills, card
-  Apply, save heart, category and back links get a 40px hit area, only links inside a sentence
-  are exempt), and buttons that sit side by side on a laptop stack full width (`ACTION_ROW`).
-  The header drops the wordmark below 360px so it still fits at 320.
-- The category links and the `/jobs` filter pills are one swipeable row on phones and wrap and
-  centre from `sm`. The row bleeds to the screen edges, so its parent must be stretched to the
-  page gutter (`self-stretch sm:self-center`), and it has 4px of vertical padding so a scroller
-  does not clip the focus rings.
-- On phones a card shows its press state (`active:`, since `hover:` never fires on touch), the
-  job page stacks company, place and pay with no dangling dot, and the `/jobs` banner drops its
-  second sentence (the heading carries it) and shows a full-width button.
-- Hero search effect: the empty box types its hints one after another (Frontend, Backend, AI
-  Engineer, Product Engineer, Design). It starts on the static placeholder, so nothing flickers,
-  and it stops for reduced motion, on focus, once there is a query, while the box is scrolled off
-  screen and while the tab is hidden. Only the placeholder text changes, so screen readers keep
-  the label and get a stable value on focus. This is the one authored motion on purpose, there
-  is no entrance animation on the page.
+- Phones: the design's breakpoints apply (header collapses to the menu button at 900px, grids
+  go to 2 then 1 column, the hero headline shrinks to fit one line via `.fit`). The 2026-09-26
+  phone audit numbers (40px taps, swipeable filter row) were for the v2 layout and need a fresh
+  pass on v3.
+- Motion: every animation is a `data-*` hook run by `app/_lib/motion.ts` (see "Motion" above). The
+  `/jobs` search box types its hints via `data-type-ph`. All motion stops under reduced motion.
 - Protected pages (dashboard, onboarding, profile) redirect to login on a hard reload even when
   signed in: their redirect effect runs before the auth provider reads localStorage. They work
   when reached by client-side navigation. Open, not fixed.
@@ -183,16 +213,15 @@ Type uses arbitrary values, for example `text-[14px] leading-5 font-medium`. Do 
 ## Tests (`apps/web/src/__tests__`)
 
 These read source files and assert strings. When a design value changes, change the test in the
-same pass. What they guard: token values and the no `--text-*` rule (`visual-polish`), one
-display headline and the `/jobs?q=` hand-off (`landing`), card hover, focus outlines and flat
-overlay (`visual-polish`), match text, openings, hybrid and skills on the detail page
-(`job-feed-canonical`), single toolbar mount, inert locked cards and saved-jobs safety
-(`job-board`), and the account pages: no glass, heavy shadow or font-light, and visible copy
-says Brynz (`visual-polish-forms`). The sign-in and sign-up cards: no vendor wording in visible
-copy, the flow steps and the callback route (`auth`), and the hand-off order, request and error
-messages, run as a behaviour test with mocks (`use-finish-auth`). The hero search typing effect:
-the sequence and wrap-around, reduced motion, disabled, off screen and hidden tab, on fake timers
-(`use-typed-hints`).
+same pass. What they guard: Brynz tokens, the components layer, one light palette, no class that
+collides with a Tailwind utility, fonts and the shell, no `ui-classes` and no shadcn Button/Input
+on any page, one display headline per page (`visual-polish`), the home doors and nav links
+(`landing`), match text, openings, hybrid, filters and skills on the detail page
+(`job-feed-canonical`), single toolbar mount, inert locked cards, search and category behaviour and
+saved-jobs safety (`job-board`), and the account pages: page frame, dropzone states, chips, no
+glass or font-light, copy says Brynz (`visual-polish-forms`). The sign-in and sign-up cards: no
+vendor wording, the flow steps and the callback route (`auth`), and the hand-off order, run as a
+behaviour test with mocks (`use-finish-auth`).
 
 ## Decisions log
 
@@ -233,3 +262,11 @@ the sequence and wrap-around, reduced motion, disabled, off screen and hidden ta
   - `sitemap.xml` lists every job in the public feed, and `robots.txt` blocks the signed-in pages.
   - The canonical host is `https://talent.trybrynz.com` (`app/_lib/site.ts`).
   - Checked against a production build, as Googlebot and in a real browser: content, metadata, 404s, sitemap, no hydration errors, filters and Save still working. Plan and next steps: `self-prompts/seo-strategy.md`.
+- 2026-10-14: Brynz v3 adopted from the user's static design site (`brynz-site/`). Navy brand,
+  Figtree + Newsreader, beige page, the design's own class system. The site now serves companies
+  too (Startups, Enterprises, Frontier AI, IIT Talent, Contact), reversing the 2026-09-25
+  talent-only call. Home became the audience hub, `/jobs` the talent page. Old CSS, `ui-classes.ts`,
+  the hero search, `search-field`, `category-links`, `use-typed-hints`, `featured-jobs` and the JPEG
+  logo were deleted, not overridden. Every account page moved off shadcn Button/Input onto Brynz
+  classes. Dropped from the design: the navy palette picker and dark mode (one light palette).
+  Company forms have no endpoint yet, they hand off to `BOOKING_URL`.

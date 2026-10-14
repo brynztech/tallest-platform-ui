@@ -6,129 +6,105 @@ const APP_DIR = path.resolve(__dirname, '../../app')
 function readFile(relPath: string): string {
   return fs.readFileSync(path.join(APP_DIR, relPath), 'utf-8')
 }
+function appFiles(dir = APP_DIR): string[] {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) return appFiles(full)
+    return /\.(tsx|ts)$/.test(entry.name) ? [full] : []
+  })
+}
 
-describe('globals.css token foundation (POL-06, POL-07)', () => {
+// Brynz design system v3 (docs/web-public-site.md). globals.css is the only home of its
+// tokens and classes.
+describe('globals.css: Brynz v3 tokens', () => {
   const css = readFile('globals.css')
 
-  it('maps DS ink onto primary (the only accent fill)', () => {
-    expect(css).toContain('--color-primary: #000000')
-    expect(css).toContain('--color-primary-foreground: #ffffff')
+  it('defines the midnight navy brand, beige page and line colours', () => {
+    expect(css).toContain('--brand: #141A4D')
+    expect(css).toContain('--bg: #F3F2EE')
+    expect(css).toContain('--line: #E1DFD8')
   })
 
-  it('focus ring is the DS link blue (POL-06)', () => {
-    expect(css).toContain('--color-ring: #3860bc')
+  it('maps the shared shadcn names onto Brynz so primitives match', () => {
+    expect(css).toContain('--color-background: #F3F2EE')
+    expect(css).toContain('--color-primary: #141A4D')
+    expect(css).toContain('--color-ring: #2F44C9')
   })
 
-  it('sets the DS canvas as the page background (never pure white)', () => {
-    expect(css).toContain('--color-background: #f7f3f0')
+  it('keeps the Brynz classes in the components layer so Tailwind utilities still win', () => {
+    expect(css).toContain('@layer components {')
+    expect(css.indexOf('@layer components {')).toBeLessThan(css.indexOf('.btn {'))
   })
 
-  it('keeps brand navy identity-only: registered, never mapped onto primary', () => {
-    expect(css).toContain('--color-brand: #080e5a')
-    expect(css).not.toMatch(/--color-primary:\s*#080e5a/)
+  it('ships one light palette: no dark mode, no palette picker', () => {
+    expect(css).not.toContain('prefers-color-scheme: dark')
+    expect(css).not.toContain('data-palette')
+    expect(css).not.toContain('.palette')
+    expect(css).not.toContain('.dark')
   })
 
-  it('registers the DS-only tokens for utilities', () => {
-    for (const token of ['--color-link', '--color-divider', '--color-border-control', '--color-border-input', '--shadow-raised', '--shadow-badge']) {
-      expect(css).toContain(token)
-    }
+  it('has no class that collides with a Tailwind utility (.ring became .odo-ring)', () => {
+    expect(css).not.toMatch(/\.ring[\s{.]/)
+    expect(css).toContain('.odo-ring')
   })
 
   it('registers no custom --text-* size tokens', () => {
     // A named size like `text-nav` shares the `text-*` namespace with colours, and
-    // tailwind-merge (inside cn()) cannot tell them apart: it silently dropped
-    // `text-primary-foreground` from the Sign up button, leaving black on black.
-    // Use arbitrary values (text-[18px]) instead.
-    expect(css).not.toMatch(/--text-[a-z0-9-]+\s*:/)
-  })
-
-  it('overrides background in :root not body (Pitfall 2 — gradient match)', () => {
-    // background-color must NOT be set on a body {} rule
-    expect(css).not.toMatch(/body\s*\{[^}]*background-color/)
-  })
-
-  it('bumps radius to 0.625rem', () => {
-    expect(css).toContain('--radius: 0.625rem')
-  })
-
-  it('removes the .dark block entirely (POL-07 — no dark leakage)', () => {
-    expect(css).not.toContain('.dark')
-  })
-
-  it('no longer references the old blue-violet primary', () => {
-    expect(css).not.toContain('oklch(0.546 0.215 261.3)')
+    // tailwind-merge (inside cn()) cannot tell them apart.
+    expect(css).not.toMatch(/--text-[a-z]/)
   })
 
   it('preserves the Tailwind and shared theme imports', () => {
     expect(css).toContain('@import "tailwindcss"')
-    expect(css).toContain('@brynzit/ui/styles/theme.css')
+    expect(css).toContain('@import "@brynzit/ui/styles/theme.css"')
   })
 })
 
-describe('Landing hero polish (POL-01)', () => {
-  const src = readFile('_components/hero-section.tsx')
-  it('replaces inline paddingTop with Tailwind padding', () => {
-    expect(src).not.toContain('paddingTop')
-    expect(readFile('page.tsx')).toContain('pt-12')
+describe('layout: fonts and shell', () => {
+  const layout = readFile('layout.tsx')
+
+  it('loads Figtree for UI text and Newsreader for display', () => {
+    expect(layout).toContain('Figtree')
+    expect(layout).toContain('Newsreader')
   })
-  it('has no gradient background', () => {
-    expect(src).not.toContain('bg-gradient')
-  })
-  it('has no font-light (DS weights are 400-700)', () => {
-    expect(src).not.toContain('font-light')
+
+  it('renders the header, footer and motion runner on every page', () => {
+    expect(layout).toContain('<SiteNav />')
+    expect(layout).toContain('<SiteFooter />')
+    expect(layout).toContain('<SiteMotion />')
   })
 })
 
-describe('Job card hover polish (POL-02, POL-06)', () => {
-  const src = readFile('jobs/_components/job-card.tsx')
-  it('hovers flat: surface-muted fill and the raised shadow, no lift', () => {
-    expect(src).toContain('hover:bg-muted')
-    expect(src).toContain('hover:shadow-raised')
-    expect(src).not.toContain('translate')
+describe('Standardisation guards', () => {
+  const files = appFiles()
+
+  it('no page uses the removed ui-classes strings', () => {
+    expect(files.filter(f => fs.readFileSync(f, 'utf-8').includes('ui-classes'))).toEqual([])
   })
-  it('uses the valid bracketed multi-property transition, not transition-shadow', () => {
-    expect(src).toContain('transition-[background-color,box-shadow]')
-    expect(src).not.toContain('transition-shadow')
+
+  it('no page puts Brynz classes on shadcn Button or Input (their utilities would override them)', () => {
+    const offenders = files.filter(f =>
+      /@brynzit\/ui\/components\/ui\/(button|input|textarea|label)'/.test(fs.readFileSync(f, 'utf-8')),
+    )
+    expect(offenders).toEqual([])
   })
-  it('has a keyboard focus outline in link blue on the stretched link', () => {
-    expect(src).toContain('focus-visible:outline-link')
-  })
+
+  it.each(['page.tsx', 'startups/page.tsx', 'enterprises/page.tsx', 'frontier-ai/page.tsx', 'iit-talent/page.tsx', 'contact/page.tsx', 'jobs/page.tsx'])(
+    '%s has exactly one display headline',
+    file => {
+      const src = readFile(file)
+      expect(src.match(/<h1/g)?.length).toBe(1)
+      expect(src).toContain('className="d1')
+    },
+  )
 })
 
-describe('Raw button focus outlines (POL-06)', () => {
-  // Asserts the guarantee rather than an occurrence count: the chip buttons are
-  // rendered from a map, so a fixed count breaks on any refactor while saying
-  // nothing about whether the outlines are actually there.
-  for (const file of ['jobs/_components/filter-bar.tsx', '_components/search-field.tsx', 'jobs/_components/job-card.tsx', '_components/removable-chip.tsx']) {
-    it(`gives every raw button in ${file} the 2px link-blue focus outline`, () => {
-      const rawButtons = readFile(file).split('<button').slice(1)
-      expect(rawButtons.length).toBeGreaterThan(0)
-      for (const fragment of rawButtons) {
-        const openingTag = fragment.slice(0, fragment.indexOf('>'))
-        const attrs = openingTag.includes('className')
-          ? openingTag
-          : fragment.slice(0, fragment.indexOf('</button>'))
-        expect(attrs).toContain('focus-visible:outline-link')
-      }
-    })
-  }
-})
-
-describe('Locked-jobs overlay redesign (POL-05)', () => {
+describe('Locked-jobs overlay', () => {
   const src = readFile('jobs/_components/locked-jobs-overlay.tsx')
-  it('is anchored to the bottom of the grid', () => {
-    expect(src).toContain('absolute')
-    expect(src).toContain('bottom-0')
-  })
-  it('is flat: no gradient fade and no backdrop blur (DS)', () => {
-    expect(src).not.toContain('bg-gradient')
-    expect(src).not.toContain('backdrop-blur')
-  })
-  it('is a compact card: 20px radius and the raised shadow, no heavy shadow', () => {
-    expect(src).toContain('rounded-[20px]')
-    expect(src).toContain('shadow-raised')
-    expect(src).not.toContain('shadow-2xl')
-    expect(src).not.toContain('shadow-lg')
-    expect(src).not.toContain('top-1/4')
+
+  it('sits over the bottom of the grid as a Brynz panel', () => {
+    expect(src).toContain('locked-overlay')
+    expect(src).toContain('note-form')
+    expect(readFile('globals.css')).toMatch(/\.locked-overlay \{ position: absolute;/)
   })
 })

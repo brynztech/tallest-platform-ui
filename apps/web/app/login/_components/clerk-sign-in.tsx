@@ -3,10 +3,6 @@
 import { FormEvent, ReactNode, useState } from 'react'
 import Link from 'next/link'
 import { useAuth, useClerk, useSignIn } from '@clerk/nextjs'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
-import { FIELD, NOTICE, PRIMARY_BTN, SECONDARY_BTN } from '../../_lib/ui-classes'
 import { safeRedirect } from '../../_lib/safe-redirect'
 import {
   SSO_CALLBACK_URL,
@@ -42,7 +38,8 @@ export function ClerkSignIn() {
   const [busy, setBusy] = useState(false)
 
   function destination(): AuthDestination {
-    const next = safeRedirect(new URLSearchParams(window.location.search).get('redirect')) ?? '/dashboard'
+    const next =
+      safeRedirect(new URLSearchParams(window.location.search).get('redirect')) ?? '/dashboard'
     return { next, onboarding: false }
   }
 
@@ -83,7 +80,9 @@ export function ClerkSignIn() {
       setFactor('totp')
       goTo('second-factor')
     } else {
-      setError("This account needs a verification step we can't show here yet. Please contact support.")
+      setError(
+        "This account needs a verification step we can't show here yet. Please contact support.",
+      )
     }
   }
 
@@ -168,12 +167,12 @@ export function ClerkSignIn() {
 
   if (isSignedIn) {
     return (
-      <div className="mt-6 space-y-4">
-        <div className={NOTICE}>You&apos;re already signed in.</div>
+      <div className="grid gap-4">
+        <div className="notice">You&apos;re already signed in.</div>
         <FormError message={error} />
-        <Button
+        <button
           type="button"
-          className={`${PRIMARY_BTN} w-full`}
+          className="btn btn-primary btn-block"
           disabled={busy}
           onClick={() =>
             run(async () => {
@@ -183,7 +182,7 @@ export function ClerkSignIn() {
           }
         >
           {busy ? 'Loading profile...' : 'Continue to dashboard'}
-        </Button>
+        </button>
         <p className="text-center">
           <TextAction onClick={() => clerk.signOut()}>Use a different account</TextAction>
         </p>
@@ -220,7 +219,13 @@ export function ClerkSignIn() {
         onBack={() => goTo('credentials')}
       >
         <CodeField value={code} onChange={setCode} />
-        <PasswordField id="new-password" label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
+        <PasswordField
+          id="new-password"
+          label="New password"
+          value={newPassword}
+          onChange={setNewPassword}
+          autoComplete="new-password"
+        />
       </StepForm>
     )
   }
@@ -236,7 +241,14 @@ export function ClerkSignIn() {
         error={error}
         onBack={() => goTo('credentials')}
       >
-        <PasswordField id="new-password" label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" autoFocus />
+        <PasswordField
+          id="new-password"
+          label="New password"
+          value={newPassword}
+          onChange={setNewPassword}
+          autoComplete="new-password"
+          autoFocus
+        />
       </StepForm>
     )
   }
@@ -263,18 +275,17 @@ export function ClerkSignIn() {
 
   return (
     <>
-      <form onSubmit={submitCredentials} className="mt-6 space-y-4">
+      <form onSubmit={submitCredentials} className="grid gap-4">
         <EmailField value={email} onChange={setEmail} />
-        <div className="space-y-2">
+        <div className="field">
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="password">Password</Label>
+            <label htmlFor="password">Password</label>
             <TextAction onClick={() => goTo('forgot')}>Forgot password?</TextAction>
           </div>
-          <Input
+          <input
             id="password"
             type="password"
             autoComplete="current-password"
-            className={FIELD}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -283,26 +294,25 @@ export function ClerkSignIn() {
 
         <FormError message={error} />
 
-        <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={!isLoaded || busy}>
+        <button type="submit" className="btn btn-primary btn-block" disabled={!isLoaded || busy}>
           {busy ? 'Signing in...' : 'Sign in'}
-        </Button>
+        </button>
       </form>
 
       <OrDivider />
 
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className={`${SECONDARY_BTN} w-full`}
+        className="btn btn-ghost btn-block"
         disabled={!isLoaded || busy}
         onClick={continueWithGoogle}
       >
         Continue with Google
-      </Button>
+      </button>
 
-      <p className="mt-5 text-center text-[14px] leading-5 text-muted-foreground">
+      <p className="small text-center">
         New here?{' '}
-        <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
+        <Link href="/signup" className="inline-link">
           Join free
         </Link>
       </p>
@@ -332,13 +342,13 @@ function StepForm({
   children: ReactNode
 }) {
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-4">
-      <p className="text-[14px] leading-5 text-muted-foreground">{lead}</p>
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <p className="small">{lead}</p>
       {children}
       <FormError message={error} />
-      <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={busy || disabled}>
+      <button type="submit" className="btn btn-primary btn-block" disabled={busy || disabled}>
         {busy ? busyLabel : submitLabel}
-      </Button>
+      </button>
       <p className="text-center">
         <TextAction onClick={onBack}>Back to sign in</TextAction>
       </p>
@@ -346,16 +356,23 @@ function StepForm({
   )
 }
 
-function EmailField({ value, onChange, autoFocus }: { value: string; onChange: (value: string) => void; autoFocus?: boolean }) {
+function EmailField({
+  value,
+  onChange,
+  autoFocus,
+}: {
+  value: string
+  onChange: (value: string) => void
+  autoFocus?: boolean
+}) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="email">Email</Label>
-      <Input
+    <div className="field">
+      <label htmlFor="email">Email</label>
+      <input
         id="email"
         type="email"
         autoComplete="email"
         autoFocus={autoFocus}
-        className={FIELD}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -380,14 +397,13 @@ function PasswordField({
   autoFocus?: boolean
 }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <input
         id={id}
         type="password"
         autoComplete={autoComplete}
         autoFocus={autoFocus}
-        className={FIELD}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -398,14 +414,13 @@ function PasswordField({
 
 function CodeField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="code">Code</Label>
-      <Input
+    <div className="field">
+      <label htmlFor="code">Code</label>
+      <input
         id="code"
         inputMode="numeric"
         autoComplete="one-time-code"
         autoFocus
-        className={FIELD}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required

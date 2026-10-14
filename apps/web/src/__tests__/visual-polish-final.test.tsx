@@ -10,12 +10,12 @@ function readFile(relPath: string): string {
 describe('Profile edit + site nav polish (POL-06)', () => {
   const profile = readFile('profile/edit/page.tsx')
   const nav = readFile('_components/site-nav.tsx')
-  it('profile skills are removable chips with a link-blue focus outline on the × button', () => {
+  it('profile skills are removable chips with a labelled × button', () => {
     expect(profile).toContain('RemovableChip')
-    expect(readFile('_components/removable-chip.tsx')).toContain('focus-visible:outline-link')
+    expect(readFile('_components/removable-chip.tsx')).toContain('className="chip-x"')
   })
-  it('site nav links transition colour with explicit duration', () => {
-    expect(nav.match(/transition-colors duration-150 ease-out/g)?.length).toBe(2)
+  it('site nav marks the current page for screen readers', () => {
+    expect(nav).toContain("aria-current={isActive(item.href) ? 'page' : undefined}")
   })
 })
 

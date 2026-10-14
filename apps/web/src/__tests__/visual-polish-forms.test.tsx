@@ -17,14 +17,12 @@ describe('ResumeDropzone crafted states (POL-04)', () => {
   it('calls preventDefault to allow drop', () => {
     expect(src.match(/preventDefault\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(2)
   })
-  it('has a distinct failed state', () => {
-    expect(src).toContain('border-destructive/50')
+  it('has a distinct failed state (the field turns red)', () => {
+    expect(src).toContain("status === 'failed' ? ' invalid' : ''")
   })
-  it('has a drag-over ring state', () => {
-    expect(src).toContain('ring-2 ring-primary/30')
-  })
-  it('uses an UploadCloud icon', () => {
-    expect(src).toContain('UploadCloud')
+  it('has a drag-over state from the shared .file-drop.over class', () => {
+    expect(src).toContain("isDragOver ? ' over' : ''")
+    expect(readFile('globals.css')).toContain('.file-drop.over')
   })
   it('does not use the invalid transition-shadow utility', () => {
     expect(src).not.toContain('transition-shadow')
@@ -44,35 +42,28 @@ describe('Onboarding step 1 consumes ResumeDropzone (POL-04)', () => {
 describe('Auth form polish (POL-03)', () => {
   const login = readFile('login/page.tsx')
   const signup = readFile('signup/page.tsx')
-  it('login and signup use the 24px semibold panel heading, never font-light', () => {
+  it('login and signup use the narrow page frame with a serif page heading', () => {
     for (const src of [login, signup]) {
-      expect(src).toContain('text-[24px]')
-      expect(src).toContain('font-semibold')
+      expect(src).toContain('wrap page narrow')
+      expect(src).toContain('className="d2"')
       expect(src).not.toContain('font-light')
     }
-  })
-  it('login and signup space their fields with space-y-4', () => {
-    expect(login).toContain('space-y-4')
-    expect(signup).toContain('space-y-4')
-  })
-  it('signup keeps its wider max-w-[420px] (2-col name grid)', () => {
-    expect(signup).toContain('max-w-[420px]')
   })
 })
 
 describe('Onboarding step 2 normalization (POL-03, POL-06)', () => {
   const src = readFile('onboarding/2/page.tsx')
-  it('normalizes width to max-w-[560px]', () => {
-    expect(src).toContain('max-w-[560px]')
-    expect(src).not.toContain('max-w-[640px]')
+  it('uses the narrow page frame and the step bar', () => {
+    expect(src).toContain('wrap page narrow')
+    expect(src).toContain('className="steps"')
   })
-  it('renders skills as removable chips whose × button has the link-blue focus outline', () => {
+  it('renders skills as removable chips with a labelled × button', () => {
     expect(src).toContain('RemovableChip')
-    expect(readFile('_components/removable-chip.tsx')).toContain('focus-visible:outline-link')
+    expect(readFile('_components/removable-chip.tsx')).toContain('aria-label={removeLabel}')
   })
 })
 
-describe('Account pages use the flat compact system (2026-09-25)', () => {
+describe('Account pages stay flat and say Brynz', () => {
   const PAGES = [
     'dashboard/page.tsx',
     'login/page.tsx',

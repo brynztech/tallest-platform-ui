@@ -52,28 +52,23 @@ describe('CandidateAuthContext (T-05-03)', () => {
   })
 })
 
-describe('HeroSection', () => {
-  const src = readFile('_components/hero-section.tsx')
+describe('Home page', () => {
+  const src = readFile('page.tsx')
 
-  it('renders the one display headline (48px semibold) once per page', () => {
+  it('renders the one display headline once', () => {
     expect(src.match(/<h1/g)?.length).toBe(1)
-    expect(src).toContain('sm:text-[48px]')
-    expect(src).toContain('Your AI Job Search Engine')
+    expect(src).toContain('Talent that <em>ships</em>')
   })
 
-  it('uses no font-light (weights are 400, 500 and 600 only)', () => {
-    expect(src).not.toContain('font-light')
+  it('opens a door for each audience', () => {
+    for (const href of ['/jobs', '/startups', '/enterprises', '/frontier-ai', '/iit-talent']) {
+      expect(src).toContain(`href="${href}"`)
+    }
   })
 
-  it('hands the search to /jobs?q= so the jobs page can prefill it', () => {
-    expect(src).toContain('SearchField')
-    expect(src).toContain('/jobs?q=')
-    expect(src).toContain('encodeURIComponent')
-  })
-
-  it('offers category quick-links that are real /jobs?q= searches', () => {
-    expect(src).toContain('CategoryLinks')
-    expect(readFile('_components/category-links.tsx')).toContain('/jobs?q=')
+  it('stays a server component (motion runs from data-* hooks)', () => {
+    expect(src).not.toContain("'use client'")
+    expect(src).toContain('data-typer')
   })
 })
 
@@ -92,9 +87,15 @@ describe('SiteNav', () => {
     expect(src).toContain('useCandidateAuth')
   })
 
-  it('renders Sign in and Join free links when logged out', () => {
+  it('renders Log in and Hire talent when logged out', () => {
     expect(src).toContain('href="/login"')
-    expect(src).toContain('href="/signup"')
+    expect(src).toContain('href="/startups#brief"')
+  })
+
+  it('links every audience page', () => {
+    for (const href of ['/jobs', '/startups', '/enterprises', '/frontier-ai', '/iit-talent']) {
+      expect(src).toContain(`href: '${href}'`)
+    }
   })
 
   it('renders My Profile and Sign out items when logged in', () => {

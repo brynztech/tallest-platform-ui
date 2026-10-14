@@ -3,10 +3,6 @@
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { useAuth, useClerk, useSignUp } from '@clerk/nextjs'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
-import { FIELD, NOTICE, PRIMARY_BTN, SECONDARY_BTN } from '../../_lib/ui-classes'
 import { safeRedirect } from '../../_lib/safe-redirect'
 import {
   SSO_CALLBACK_URL,
@@ -63,7 +59,11 @@ export function ClerkSignUp() {
   function rememberOnboarding() {
     localStorage.setItem(
       'candidate_onboarding_profile',
-      JSON.stringify({ first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim() }),
+      JSON.stringify({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        email: email.trim(),
+      }),
     )
     rememberRedirect()
   }
@@ -140,12 +140,12 @@ export function ClerkSignUp() {
 
   if (isSignedIn) {
     return (
-      <div className="mt-6 space-y-4">
-        <div className={NOTICE}>You&apos;re already signed in.</div>
+      <div className="grid gap-4">
+        <div className="notice">You&apos;re already signed in.</div>
         <FormError message={error} />
-        <Button
+        <button
           type="button"
-          className={`${PRIMARY_BTN} w-full`}
+          className="btn btn-primary btn-block"
           disabled={busy}
           onClick={() =>
             run(async () => {
@@ -156,7 +156,7 @@ export function ClerkSignUp() {
           }
         >
           {busy ? 'Starting scan...' : 'Continue to resume scan'}
-        </Button>
+        </button>
         <p className="text-center">
           <TextAction onClick={() => clerk.signOut()}>Use a different account</TextAction>
         </p>
@@ -166,18 +166,17 @@ export function ClerkSignUp() {
 
   if (step === 'verify') {
     return (
-      <form onSubmit={submitCode} className="mt-6 space-y-4">
-        <p className="text-[14px] leading-5 text-muted-foreground">
+      <form onSubmit={submitCode} className="grid gap-4">
+        <p className="small">
           We sent a 6-digit code to {email.trim()}. Enter it to verify your email.
         </p>
-        <div className="space-y-2">
-          <Label htmlFor="code">Code</Label>
-          <Input
+        <div className="field">
+          <label htmlFor="code">Code</label>
+          <input
             id="code"
             inputMode="numeric"
             autoComplete="one-time-code"
             autoFocus
-            className={FIELD}
             value={code}
             onChange={(event) => setCode(event.target.value)}
             required
@@ -186,14 +185,14 @@ export function ClerkSignUp() {
 
         <FormError message={error} />
         {info && (
-          <p role="status" className="text-[14px] leading-5 text-muted-foreground">
+          <p role="status" className="notice">
             {info}
           </p>
         )}
 
-        <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={busy}>
+        <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
           {busy ? 'Verifying...' : 'Verify and continue'}
-        </Button>
+        </button>
         <p className="flex items-center justify-center gap-4">
           <TextAction onClick={resendCode} disabled={busy}>
             Resend code
@@ -208,25 +207,23 @@ export function ClerkSignUp() {
 
   return (
     <>
-      <form onSubmit={submitDetails} className="mt-6 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First name</Label>
-            <Input
+      <form onSubmit={submitDetails} className="grid gap-4">
+        <div className="row2">
+          <div className="field">
+            <label htmlFor="firstName">First name</label>
+            <input
               id="firstName"
               autoComplete="given-name"
-              className={FIELD}
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last name</Label>
-            <Input
+          <div className="field">
+            <label htmlFor="lastName">Last name</label>
+            <input
               id="lastName"
               autoComplete="family-name"
-              className={FIELD}
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
               required
@@ -234,26 +231,24 @@ export function ClerkSignUp() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
             id="email"
             type="email"
             autoComplete="email"
-            className={FIELD}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
+        <div className="field">
+          <label htmlFor="password">Password</label>
+          <input
             id="password"
             type="password"
             autoComplete="new-password"
-            className={FIELD}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -265,31 +260,30 @@ export function ClerkSignUp() {
 
         <FormError message={error} />
         {slow && (
-          <p role="status" className="text-center text-[14px] leading-5 text-muted-foreground">
+          <p role="status" className="small text-center">
             If a &quot;Verify you are human&quot; box appears above, tick it to continue.
           </p>
         )}
 
-        <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={!isLoaded || busy}>
+        <button type="submit" className="btn btn-primary btn-block" disabled={!isLoaded || busy}>
           {busy ? 'Creating account...' : 'Create account'}
-        </Button>
+        </button>
       </form>
 
       <OrDivider />
 
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className={`${SECONDARY_BTN} w-full`}
+        className="btn btn-ghost btn-block"
         disabled={!isLoaded || busy}
         onClick={continueWithGoogle}
       >
         Continue with Google
-      </Button>
+      </button>
 
-      <p className="mt-5 text-center text-[14px] leading-5 text-muted-foreground">
+      <p className="small text-center">
         Already have an account?{' '}
-        <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
+        <Link href="/login" className="inline-link">
           Sign in
         </Link>
       </p>

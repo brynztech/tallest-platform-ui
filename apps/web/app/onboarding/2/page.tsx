@@ -2,14 +2,8 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
-import { Progress } from '@brynzit/ui/components/ui/progress'
-import { Textarea } from '@brynzit/ui/components/ui/textarea'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { RemovableChip } from '../../_components/removable-chip'
-import { FIELD, PANEL, PRIMARY_BTN, SECONDARY_BTN, TEXTAREA } from '../../_lib/ui-classes'
 import type { CandidateProfile } from '../../_lib/candidate-types'
 
 type OnboardingProfile = {
@@ -76,106 +70,93 @@ export default function OnboardingProfilePage() {
   if (!isLoggedIn) return null
 
   return (
-    <main className="mx-auto max-w-[560px] px-4 py-10">
-      <div className={PANEL}>
-        <div className="mb-6 space-y-2">
-          <p className="text-[14px] leading-5 text-muted-foreground">Step 2 of 3</p>
-          <Progress value={66} className="h-1.5" />
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Confirm your profile</h1>
-          <p className="text-[14px] leading-5 text-muted-foreground">
-            Review what we parsed and make any corrections before setting your preferences.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="first_name">First name</Label>
-              <Input
-                id="first_name"
-                className={FIELD}
-                value={values.first_name ?? ''}
-                onChange={(event) => setValues({ ...values, first_name: event.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="last_name">Last name</Label>
-              <Input
-                id="last_name"
-                className={FIELD}
-                value={values.last_name ?? ''}
-                onChange={(event) => setValues({ ...values, last_name: event.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="headline">Headline</Label>
-            <Input
-              id="headline"
-              className={FIELD}
-              placeholder="Senior Frontend Engineer"
-              value={values.headline ?? ''}
-              onChange={(event) => setValues({ ...values, headline: event.target.value })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="experience_summary">Experience summary</Label>
-            <Textarea
-              id="experience_summary"
-              rows={4}
-              className={TEXTAREA}
-              placeholder="Summarize your recent work and strongest projects."
-              value={values.experience_summary ?? ''}
-              onChange={(event) => setValues({ ...values, experience_summary: event.target.value })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="skill">Skills</Label>
-            <div className="flex gap-2">
-              <Input
-                id="skill"
-                className={FIELD}
-                value={skillInput}
-                onChange={(event) => setSkillInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    addSkill()
-                  }
-                }}
-                placeholder="TypeScript"
-              />
-              <Button type="button" variant="outline" className={SECONDARY_BTN} onClick={addSkill}>
-                Add
-              </Button>
-            </div>
-            {(values.skills?.length ?? 0) > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {values.skills?.map((skill) => (
-                  <RemovableChip
-                    key={skill}
-                    label={skill}
-                    removeLabel={`Remove ${skill}`}
-                    onRemove={() => removeSkill(skill)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <Button type="submit" className={`${PRIMARY_BTN} w-full`}>
-            Save & continue
-          </Button>
-        </form>
+    <main className="wrap page narrow">
+      <div className="page-head">
+        <div className="steps" aria-label="Step 2 of 3"><i className="on" /><i className="on" /><i /></div>
+        <h1 className="d2">Confirm your <em>profile</em></h1>
+        <p className="lede">Review what we parsed and make any corrections before setting your preferences.</p>
       </div>
+
+      <form onSubmit={handleSubmit} className="panel">
+        <div className="row2">
+          <div className="field">
+            <label htmlFor="first_name">First name</label>
+            <input
+              id="first_name"
+              value={values.first_name ?? ''}
+              onChange={(event) => setValues({ ...values, first_name: event.target.value })}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="last_name">Last name</label>
+            <input
+              id="last_name"
+              value={values.last_name ?? ''}
+              onChange={(event) => setValues({ ...values, last_name: event.target.value })}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="headline">Headline</label>
+          <input
+            id="headline"
+            placeholder="Senior Frontend Engineer"
+            value={values.headline ?? ''}
+            onChange={(event) => setValues({ ...values, headline: event.target.value })}
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="experience_summary">Experience summary</label>
+          <textarea
+            id="experience_summary"
+            rows={4}
+            placeholder="Summarize your recent work and strongest projects."
+            value={values.experience_summary ?? ''}
+            onChange={(event) => setValues({ ...values, experience_summary: event.target.value })}
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="skill">Skills</label>
+          <div className="flex gap-2">
+            <input
+              id="skill"
+              value={skillInput}
+              onChange={(event) => setSkillInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  addSkill()
+                }
+              }}
+              placeholder="TypeScript"
+            />
+            <button type="button" className="btn btn-ghost" onClick={addSkill}>
+              Add
+            </button>
+          </div>
+          {(values.skills?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {values.skills?.map((skill) => (
+                <RemovableChip
+                  key={skill}
+                  label={skill}
+                  removeLabel={`Remove ${skill}`}
+                  onRemove={() => removeSkill(skill)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button type="submit" className="btn btn-primary btn-block">
+          Save & continue
+        </button>
+      </form>
     </main>
   )
 }

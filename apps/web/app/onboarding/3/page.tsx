@@ -2,21 +2,9 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@brynzit/ui/components/ui/button'
-import { Input } from '@brynzit/ui/components/ui/input'
-import { Label } from '@brynzit/ui/components/ui/label'
-import { Progress } from '@brynzit/ui/components/ui/progress'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@brynzit/ui/components/ui/select'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfileUpdate } from '../../_lib/candidate-types'
-import { FIELD, PANEL, PRIMARY_BTN, SELECT } from '../../_lib/ui-classes'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -89,96 +77,83 @@ export default function OnboardingPreferencesPage() {
   if (!isLoggedIn) return null
 
   return (
-    <main className="mx-auto max-w-[560px] px-4 py-10">
-      <div className={PANEL}>
-        <div className="mb-6 space-y-2">
-          <p className="text-[14px] leading-5 text-muted-foreground">Step 3 of 3</p>
-          <Progress value={100} className="h-1.5" />
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-[24px] leading-[30px] font-semibold tracking-[-0.02em] text-foreground">Set your preferences</h1>
-          <p className="text-[14px] leading-5 text-muted-foreground">
-            Tell us what kind of roles you want so Brynz can rank matches better.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              className={FIELD}
-              placeholder="San Francisco, CA"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Remote preference</Label>
-              <Select value={remotePreference} onValueChange={(value) => setRemotePreference(value as typeof remotePreference)}>
-                <SelectTrigger className={SELECT}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="flexible">Flexible</SelectItem>
-                  <SelectItem value="remote_only">Remote only</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
-                  <SelectItem value="onsite">Onsite</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Seniority</Label>
-              <Select value={seniority} onValueChange={(value) => setSeniority(value as typeof seniority)}>
-                <SelectTrigger className={SELECT}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="junior">Junior</SelectItem>
-                  <SelectItem value="mid">Mid</SelectItem>
-                  <SelectItem value="senior">Senior</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="principal">Principal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="linkedin">LinkedIn</Label>
-            <Input
-              id="linkedin"
-              type="url"
-              className={FIELD}
-              placeholder="https://linkedin.com/in/you"
-              value={linkedinUrl}
-              onChange={(event) => setLinkedinUrl(event.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="github">GitHub</Label>
-            <Input
-              id="github"
-              type="url"
-              className={FIELD}
-              placeholder="https://github.com/you"
-              value={githubUrl}
-              onChange={(event) => setGithubUrl(event.target.value)}
-            />
-          </div>
-
-          {error && <p className="text-[14px] leading-5 text-destructive">{error}</p>}
-
-          <Button type="submit" className={`${PRIMARY_BTN} w-full`} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Complete profile'}
-          </Button>
-        </form>
+    <main className="wrap page narrow">
+      <div className="page-head">
+        <div className="steps" aria-label="Step 3 of 3"><i className="on" /><i className="on" /><i className="on" /></div>
+        <h1 className="d2">Set your <em>preferences</em></h1>
+        <p className="lede">Tell us what kind of roles you want so Brynz can rank matches better.</p>
       </div>
+
+      <form onSubmit={handleSubmit} className="panel">
+        <div className="field">
+          <label htmlFor="location">Location</label>
+          <input
+            id="location"
+            placeholder="San Francisco, CA"
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+          />
+        </div>
+
+        <div className="row2">
+          <div className="field">
+            <label htmlFor="remote_preference">Remote preference</label>
+            <select
+              id="remote_preference"
+              value={remotePreference}
+              onChange={(event) => setRemotePreference(event.target.value as typeof remotePreference)}
+            >
+              <option value="flexible">Flexible</option>
+              <option value="remote_only">Remote only</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="onsite">Onsite</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label htmlFor="seniority">Seniority</label>
+            <select
+              id="seniority"
+              value={seniority}
+              onChange={(event) => setSeniority(event.target.value as typeof seniority)}
+            >
+              <option value="junior">Junior</option>
+              <option value="mid">Mid</option>
+              <option value="senior">Senior</option>
+              <option value="staff">Staff</option>
+              <option value="principal">Principal</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="linkedin">LinkedIn</label>
+          <input
+            id="linkedin"
+            type="url"
+            placeholder="https://linkedin.com/in/you"
+            value={linkedinUrl}
+            onChange={(event) => setLinkedinUrl(event.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="github">GitHub</label>
+          <input
+            id="github"
+            type="url"
+            placeholder="https://github.com/you"
+            value={githubUrl}
+            onChange={(event) => setGithubUrl(event.target.value)}
+          />
+        </div>
+
+        {error && <p className="notice err">{error}</p>}
+
+        <button type="submit" className="btn btn-primary btn-block" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Complete profile'}
+        </button>
+      </form>
     </main>
   )
 }
