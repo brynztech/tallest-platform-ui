@@ -10,3 +10,15 @@ export function candidateJsonHeaders(): HeadersInit {
     ...candidateAuthHeaders(),
   }
 }
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+/** Record an Apply press for analytics and the dashboard. Fire and forget:
+ *  `keepalive` lets it finish while the browser opens the employer's site. */
+export function recordApplyClick(jobId: string): void {
+  fetch(`${API_BASE}/api/v1/public/jobs/${jobId}/apply-click`, {
+    method: 'POST',
+    headers: candidateAuthHeaders(),
+    keepalive: true,
+  }).catch(() => {})
+}

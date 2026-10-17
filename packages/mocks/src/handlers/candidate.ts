@@ -21,6 +21,7 @@ type PublicJobItem = {
   skills: string[]
   date_posted: string
   description_summary: string | null
+  description?: string | null
   compensation_min: number | null
   compensation_max: number | null
   match_strength: 'strong' | 'partial' | 'none' | null
@@ -56,6 +57,8 @@ const MOCK_JOBS: PublicJobItem[] = [
     date_posted: '2026-06-01',
     description_summary:
       'Join our product team to build the next generation of our customer-facing web application. You will work closely with design and backend teams.',
+    description:
+      'Join our product team to build the next generation of our customer-facing web application.\n\nWhat you will do\n• Ship features end to end with design and backend\n• Own the performance of our React front end\n• Mentor two engineers\n\nWhat you bring\n• 5+ years with React and TypeScript\n• Experience with GraphQL',
     compensation_min: 160000,
     compensation_max: 220000,
     match_strength: 'strong',
@@ -287,6 +290,9 @@ function computeMockScore(
 }
 
 export const candidateHandlers: HttpHandler[] = [
+  // POST /public/jobs/:id/apply-click — fire-and-forget analytics
+  http.post(`${API_BASE}/api/v1/public/jobs/:id/apply-click`, () => new HttpResponse(null, { status: 204 })),
+
   // GET /public/jobs/:id — must come BEFORE GET /public/jobs (more specific)
   http.get(`${API_BASE}/api/v1/public/jobs/:id`, ({ params }) => {
     const job = MOCK_JOBS.find((j) => j.id === params.id)

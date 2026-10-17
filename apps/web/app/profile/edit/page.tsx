@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,6 +20,8 @@ import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { RemovableChip } from '../../_components/removable-chip'
 import { candidateAuthHeaders, candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfile, CandidateProfileUpdate } from '../../_lib/candidate-types'
+import { useResumeUpload } from '../../_lib/use-resume-upload'
+import { ResumeDropzone } from '../../onboarding/_components/resume-dropzone'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -160,6 +162,18 @@ export default function ProfileEditPage() {
     onError: () => toast.error("Couldn't save profile. Try again."),
   })
 
+  // A new resume re-parses the profile, so skills and match suggestions follow it.
+  // Saved jobs live apart from the profile and are not touched.
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const onResumeParsed = useCallback(() => {
+    setResumeFile(null)
+    queryClient.invalidateQueries({ queryKey: ['candidate-profile'] })
+    queryClient.invalidateQueries({ queryKey: ['public-jobs'] })
+    toast('Resume updated. Your profile and job matches now use it.')
+  }, [queryClient])
+  const resume = useResumeUpload(onResumeParsed)
+  const resumeBusy = resume.status === 'uploading' || resume.status === 'processing'
+
   function toggleSkill(skill: string) {
     setSkills(prev =>
       prev.includes(skill)
@@ -200,6 +214,22 @@ export default function ProfileEditPage() {
           </div>
         )}
       </div>
+
+      <section className="panel">
+        <h2 className="d3">Resume</h2>
+        <p className="small">Upload a newer resume to refresh your profile and job matches. Your saved jobs stay as they are.</p>
+        <ResumeDropzone file={resumeFile} status={resume.status} disabled={resumeBusy} onChange={setResumeFile} />
+        {resume.status === 'processing' && <p className="notice">Reading your resume…</p>}
+        {resume.error && <p className="notice err">{resume.error}</p>}
+        <button
+          type="button"
+          className="btn btn-ghost justify-self-start"
+          disabled={!resumeFile || resumeBusy}
+          onClick={() => resumeFile && resume.upload(resumeFile)}
+        >
+          {resumeBusy ? 'Working…' : 'Upload new resume'}
+        </button>
+      </section>
 
       {isLoading ? (
         <div className="job skeleton" aria-hidden="true" />

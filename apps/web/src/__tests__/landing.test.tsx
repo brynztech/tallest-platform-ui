@@ -89,7 +89,7 @@ describe('SiteNav', () => {
 
   it('renders Log in and Hire talent when logged out', () => {
     expect(src).toContain('href="/login"')
-    expect(src).toContain('href="/startups#brief"')
+    expect(src).toContain("DEFAULT_CTA = { href: '/startups#brief', label: 'Hire talent' }")
   })
 
   it('links every audience page', () => {

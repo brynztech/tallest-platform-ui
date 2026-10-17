@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Progress } from '@brynzit/ui/components/ui/progress'
-import { candidateJsonHeaders } from '../../../_lib/candidate-api'
+import { candidateJsonHeaders, recordApplyClick } from '../../../_lib/candidate-api'
 import { SaveJobButton } from '../../_components/save-job-button'
 import type { CandidateApplication } from '../../../_lib/candidate-types'
 
@@ -86,7 +86,10 @@ export function ApplySection({ jobId, isLoggedIn, completenessScore }: ApplySect
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => applyMutation.mutate()}
+            onClick={() => {
+              recordApplyClick(jobId)
+              applyMutation.mutate()
+            }}
             disabled={applyMutation.isPending || note.length > 200}
           >
             {applyMutation.isPending ? 'Submitting…' : 'Apply now'}

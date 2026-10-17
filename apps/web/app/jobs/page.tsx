@@ -96,13 +96,13 @@ export default function JobsPage() {
     if (!el) return
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage()
+        if (entries[0].isIntersecting && isLoggedIn && hasNextPage && !isFetchingNextPage) fetchNextPage()
       },
       { threshold: 0.1 },
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [isLoggedIn, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
     <main>
@@ -232,7 +232,8 @@ export default function JobsPage() {
         )}
 
         <div ref={loadMoreRef} style={{ height: 16 }} />
-        {hasNextPage && (
+        {/* Anonymous visitors see one page of previews; more needs an account. */}
+        {isLoggedIn && hasNextPage && (
           <div className="more">
             <button className="btn btn-ghost" type="button" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
               {isFetchingNextPage ? 'Loading…' : 'Show more roles'}

@@ -8,6 +8,9 @@ import { ACTION_ROW, ApplySection } from './apply-section'
 import { SaveJobButton } from '../../_components/save-job-button'
 import { logoColor } from '../../_components/job-card'
 import type { PublicJobItem, CandidateProfile } from '../../../_lib/candidate-types'
+import { endAtSentence } from '../../../_lib/end-at-sentence'
+import { recordApplyClick } from '../../../_lib/candidate-api'
+import { JobDescription } from './job-description'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -197,7 +200,13 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
             applyHref ? (
               <div className="grid gap-4">
                 <div className={ACTION_ROW}>
-                  <a className="btn btn-primary" href={applyHref} target="_blank" rel="noopener noreferrer">
+                  <a
+                    className="btn btn-primary"
+                    href={applyHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => recordApplyClick(job.id)}
+                  >
                     Apply on {job.company_name ?? 'company site'}
                     <ArrowUpRight className="size-4" strokeWidth={1.8} />
                   </a>
@@ -226,10 +235,14 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
         </div>
 
         {/* T-05-02: JD rendered as plain text with whitespace-pre-wrap — no innerHTML usage */}
-        {job.description_summary && (
+        {(job.description || job.description_summary) && (
           <section className="panel">
             <h2 className="d3">Job description</h2>
-            <p className="whitespace-pre-wrap">{job.description_summary}</p>
+            {job.description ? (
+              <JobDescription text={job.description} />
+            ) : (
+              <p>{endAtSentence(job.description_summary ?? '')}</p>
+            )}
           </section>
         )}
 

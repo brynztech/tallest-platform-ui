@@ -1,4 +1,5 @@
-import { describe, it } from 'vitest'
+import { describe, it, expect } from 'vitest'
+import { endAtSentence } from '../../app/_lib/end-at-sentence'
 
 describe('Job detail page (JOB-02)', () => {
   it.todo('renders job title, company, location, full JD from useQuery')
@@ -20,4 +21,16 @@ describe('Apply flow (JOB-04)', () => {
   it.todo('optional note textarea with 200 char limit and counter shown when apply is available')
   it.todo('POST /candidate/applications called on Apply now click')
   it.todo('Application submitted toast shown on success')
+})
+
+describe('Job summary never stops mid-sentence', () => {
+  it('keeps a summary that already ends a sentence', () => {
+    expect(endAtSentence('We build agents. You ship them.')).toBe('We build agents. You ship them.')
+  })
+  it('cuts back to the last full sentence', () => {
+    expect(endAtSentence('We build agents for banks. You will own the eval harness and the rel')).toBe('We build agents for banks.')
+  })
+  it('falls back to the last whole word with an ellipsis', () => {
+    expect(endAtSentence('Own the inference platform across regions and the rel')).toBe('Own the inference platform across regions and the…')
+  })
 })

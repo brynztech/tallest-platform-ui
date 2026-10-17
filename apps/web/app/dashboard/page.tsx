@@ -1,11 +1,13 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
 import { candidateAuthHeaders } from '../_lib/candidate-api'
-import type { CandidateApplication, CandidateApplicationsResponse } from '../_lib/candidate-types'
+import type { CandidateApplication, CandidateApplicationsResponse, PublicJobItem } from '../_lib/candidate-types'
+import { readSavedJobs } from '../_lib/saved-jobs'
+import { JobCard } from '../jobs/_components/job-card'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -46,6 +48,24 @@ export default function DashboardPage() {
       return response.json() as Promise<CandidateApplicationsResponse>
     },
     enabled: isLoggedIn,
+  })
+
+  // Saved jobs live in this browser only (saved-jobs.ts), so read the ids here and
+  // fetch each job. A job that closed since it was saved simply drops out.
+  const [savedIds, setSavedIds] = useState<string[]>([])
+  useEffect(() => setSavedIds(readSavedJobs()), [])
+  const saved = useQuery({
+    queryKey: ['saved-jobs', savedIds],
+    queryFn: async () => {
+      const jobs = await Promise.all(
+        savedIds.map(async id => {
+          const res = await fetch(`${API_BASE}/api/v1/public/jobs/${id}`, { headers: candidateAuthHeaders() })
+          return res.ok ? ((await res.json()) as PublicJobItem) : null
+        }),
+      )
+      return jobs.filter((job): job is PublicJobItem => job !== null)
+    },
+    enabled: isLoggedIn && savedIds.length > 0,
   })
 
   if (!isLoggedIn) return null
@@ -105,6 +125,27 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      <section className="grid gap-4" aria-labelledby="saved-heading">
+        <h2 id="saved-heading" className="d3">
+          Saved jobs
+        </h2>
+        {savedIds.length === 0 ? (
+          <p className="small">Tap the heart on any job to keep it here for later.</p>
+        ) : saved.isLoading ? (
+          <div className="jobs">
+            <div className="job skeleton" aria-hidden="true" />
+          </div>
+        ) : (saved.data?.length ?? 0) === 0 ? (
+          <p className="small">The jobs you saved are no longer open.</p>
+        ) : (
+          <div className="jobs">
+            {saved.data?.map((job, index) => (
+              <JobCard key={job.id} job={job} index={index} isLoggedIn />
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   )
 }

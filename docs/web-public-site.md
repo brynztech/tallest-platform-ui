@@ -125,6 +125,29 @@ call" link (`BOOKING_URL` in `app/_lib/site.ts`). No backend endpoint takes thes
   placeholder, `.taglinks` categories (click again to clear), `.toolbar` with the count and native
   filter selects, then the `.jobs` grid, "How Brynz works" and the profile call to action.
 - The toolbar is mounted once, so typing never remounts it.
+- QA fixes (2026-10-17, from the Brynz-Talent-app-observations sheet):
+  - The whole job card opens the job (the title link stretches over the card). The heart and
+    Apply sit above it, and the locked overlay lets clicks through outside its panel.
+  - Saving while logged out goes to `/signup?redirect=<this page>` (`useSavedJob`).
+  - Anonymous visitors get one page of previews: no auto-loading and no "Show more roles".
+  - Sign out also ends the Clerk session. Before, only localStorage was cleared and the Clerk
+    bridge signed the candidate back in on the next load.
+  - The job summary ends at its last full sentence (`app/_lib/end-at-sentence.ts`). The backend
+    cuts `description_summary` at a fixed length, the full text is not in the public API.
+  - Fields turn red (border and label) once touched or submitted while invalid (`:user-invalid`).
+- Second QA round (2026-10-17, backend side in `../talent-platform/docs/job-discovery-spec.md` §15):
+  - Job page shows the full description (`description`, detail endpoint only) as paragraphs and
+    bullet lists (`job-description.tsx`); a line right above a list reads as its heading. Jobs
+    without it fall back to the summary cut at its last sentence.
+  - Apply presses are recorded: "Apply on {company}" and "Apply now" call `recordApplyClick`
+    (`POST /public/jobs/{id}/apply-click`, fire and forget).
+  - Dashboard lists saved jobs under the applications, fetched one by one from the ids in this
+    browser. Closed jobs drop out.
+  - Profile edit has a Resume panel: upload a newer resume, the profile and job matches refresh,
+    saved jobs are untouched. Upload and polling live in `app/_lib/use-resume-upload.ts`, shared
+    with onboarding step 1.
+  - Search matches each word, the feed shows tech roles only, and signed-in ranking puts the
+    candidate's city first, then their country. All three are backend changes.
 - Search calls the backend `q`, which matches job title and company name only
   (`talent-platform/candidate/feed.py`). It does not match skills, so the placeholder says
   "roles or companies". The old Skills input is gone: 0 of 432 jobs had skills on 2026-09-24.

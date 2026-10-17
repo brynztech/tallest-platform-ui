@@ -1,6 +1,6 @@
 'use client'
 import { useAuth, useUser } from '@clerk/nextjs'
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 type CandidateAuth = {
   isLoggedIn: boolean
@@ -80,8 +80,9 @@ function ClerkCandidateSessionBridge({
   signIn: CandidateAuth['signIn']
   signOut: CandidateAuth['signOut']
 }) {
-  const { isLoaded, isSignedIn, userId, getToken } = useAuth()
+  const { isLoaded, isSignedIn, userId, getToken, signOut: endClerkSession } = useAuth()
   const { user } = useUser()
+  const auth = useContext(CandidateAuthContext)
 
   useEffect(() => {
     if (!isLoaded) return
@@ -104,7 +105,13 @@ function ClerkCandidateSessionBridge({
     }
   }, [getToken, isLoaded, isSignedIn, signIn, signOut, user, userId])
 
-  return children
+  // Signing out must end the Clerk session too: clearing only localStorage let this
+  // bridge sign the candidate straight back in on the next page load.
+  const value = useMemo(
+    () => ({ ...auth, signOut: () => { signOut(); void endClerkSession() } }),
+    [auth, signOut, endClerkSession],
+  )
+  return <CandidateAuthContext.Provider value={value}>{children}</CandidateAuthContext.Provider>
 }
 
 export function useCandidateAuth() {

@@ -42,6 +42,8 @@ export type PublicJobItem = {
   skills: string[]
   date_posted: string
   description_summary: string | null
+  /** Full posting text with line breaks; "• " starts a list item. Job detail only (the feed sends null). */
+  description?: string | null
   compensation_min: number | null
   compensation_max: number | null
   match_strength: 'strong' | 'partial' | 'none' | null

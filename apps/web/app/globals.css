@@ -1029,6 +1029,9 @@
   .jobs-wrap { position: relative; }
   .locked-overlay { position: absolute; inset: auto 0 0 0; display: grid; place-items: end center; padding: 120px 16px 32px; background: linear-gradient(to bottom, transparent, var(--bg) 55%); }
   .locked-overlay .note-form { max-width: 480px; text-align: center; justify-items: center; }
+  /* Its faded top overlaps the open cards above it: let clicks through everywhere but the panel. */
+  .locked-overlay { pointer-events: none; }
+  .locked-overlay .note-form { pointer-events: auto; }
   .locked-overlay p, .empty p { color: var(--ink-2); }
 
   /* Account screens: page frame, panel, notice */
@@ -1054,4 +1057,18 @@
   .chip-x:hover { background: var(--surface); color: var(--ink); }
   .chip-x svg { width: 14px; height: 14px; }
   .file-drop.over { border-color: var(--blue); background: var(--tint-a); }
+  /* The whole job card opens the job: the title link stretches over the card, the save heart and Apply sit above it. */
+  .job { position: relative; }
+  .job .job-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+  .job .heart, .job-foot .btn { position: relative; z-index: 1; }
+  /* A required or malformed field turns red once the visitor has touched it or tried to submit. */
+  .field:has(:user-invalid) label { color: var(--err); }
+  .field :is(input, select, textarea):user-invalid { border-color: var(--err); }
+  /* Full job description: paragraphs and bullet lists from the backend's plain text. */
+  .job-desc { display: grid; gap: 14px; color: var(--ink-2); max-width: 70ch; }
+  .job-desc ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; list-style: disc; }
+  .job-desc li::marker { color: var(--muted); }
+  /* A line right above a list is almost always its heading ("What you will do"). */
+  .job-desc p:has(+ ul) { color: var(--ink); font-weight: 600; }
+  .job-desc p + ul { margin-top: -6px; }
 }

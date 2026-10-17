@@ -1,89 +1,38 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
-import { candidateAuthHeaders } from '../../_lib/candidate-api'
-import type { ResumeParseStatus } from '../../_lib/candidate-types'
+import { useResumeUpload } from '../../_lib/use-resume-upload'
+import type { CandidateProfile } from '../../_lib/candidate-types'
 import { ResumeDropzone } from '../_components/resume-dropzone'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 export default function OnboardingResumePage() {
   const router = useRouter()
   const { isLoggedIn } = useCandidateAuth()
   const [file, setFile] = useState<File | null>(null)
-  const [parseId, setParseId] = useState<string | null>(null)
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'failed'>('idle')
-  const [error, setError] = useState<string | null>(null)
   const [isResumeScanIntent, setIsResumeScanIntent] = useState(false)
+  const onParsed = useCallback(
+    (snapshot: Partial<CandidateProfile> | undefined) => {
+      if (snapshot) localStorage.setItem('candidate_profile_snapshot', JSON.stringify(snapshot))
+      router.push('/onboarding/2')
+    },
+    [router],
+  )
+  const { status, error, setError, upload } = useResumeUpload(onParsed)
 
   useEffect(() => {
     if (!isLoggedIn) router.replace('/signup')
     setIsResumeScanIntent(localStorage.getItem('candidate_onboarding_intent') === 'resume_scan')
   }, [isLoggedIn, router])
 
-  useEffect(() => {
-    if (!parseId) return
-
-    const timer = window.setInterval(async () => {
-      const response = await fetch(`${API_BASE}/api/v1/candidate/profile/resume/status/${parseId}`, {
-        headers: candidateAuthHeaders(),
-      })
-      if (!response.ok) {
-        setStatus('failed')
-        setError('Resume parsing failed. You can continue manually.')
-        window.clearInterval(timer)
-        return
-      }
-
-      const data = (await response.json()) as ResumeParseStatus
-      if (data.status === 'complete') {
-        if (data.profile_snapshot) {
-          localStorage.setItem('candidate_profile_snapshot', JSON.stringify(data.profile_snapshot))
-        }
-        window.clearInterval(timer)
-        router.push('/onboarding/2')
-      } else if (data.status === 'failed') {
-        setStatus('failed')
-        setError('Resume parsing failed. You can continue manually.')
-        window.clearInterval(timer)
-      } else {
-        setStatus('processing')
-      }
-    }, 800)
-
-    return () => window.clearInterval(timer)
-  }, [parseId, router])
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!file) {
       setError('Choose a resume file first.')
       return
     }
-
-    setError(null)
-    setStatus('uploading')
-
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch(`${API_BASE}/api/v1/candidate/profile/resume`, {
-      method: 'POST',
-      headers: candidateAuthHeaders(),
-      body: formData,
-    })
-
-    if (!response.ok) {
-      setStatus('failed')
-      setError('Resume upload failed. You can continue manually.')
-      return
-    }
-
-    const data = (await response.json()) as { parse_id: string }
-    setParseId(data.parse_id)
-    setStatus('processing')
+    void upload(file)
   }
 
   if (!isLoggedIn) return null
