@@ -17,7 +17,7 @@ type OnboardingProfile = {
 
 export default function OnboardingProfilePage() {
   const router = useRouter()
-  const { isLoggedIn } = useCandidateAuth()
+  const { isLoggedIn, isReady } = useCandidateAuth()
   const [values, setValues] = useState<OnboardingProfile>({
     first_name: '',
     last_name: '',
@@ -28,8 +28,8 @@ export default function OnboardingProfilePage() {
   const [skillInput, setSkillInput] = useState('')
 
   useEffect(() => {
-    if (!isLoggedIn) router.replace('/signup')
-  }, [isLoggedIn, router])
+    if (isReady && !isLoggedIn) router.replace('/signup')
+  }, [isReady, isLoggedIn, router])
 
   useEffect(() => {
     const signupProfile = readJson<OnboardingProfile>('candidate_onboarding_profile')

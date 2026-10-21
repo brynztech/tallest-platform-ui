@@ -35,12 +35,46 @@ describe('Talent app QA fixes', () => {
 
   it('the dashboard lists saved jobs', () => {
     const dashboard = read('dashboard/page.tsx')
-    expect(dashboard).toContain('readSavedJobs()')
+    expect(dashboard).toContain('useSavedJobs()')
     expect(dashboard).toContain('Saved jobs')
   })
 
   it('the profile page can replace the resume through the shared upload hook', () => {
     expect(read('profile/edit/page.tsx')).toContain('useResumeUpload(onResumeParsed)')
     expect(read('onboarding/1/page.tsx')).toContain('useResumeUpload(onParsed)')
+  })
+})
+
+describe('Talent app QA fixes, round 2', () => {
+  it('protected pages wait for the auth state before redirecting (refresh stays signed in)', () => {
+    expect(read('_components/candidate-auth-context.tsx')).toContain('isReady: storageRead && (!!candidate || clerkLoaded)')
+    for (const page of ['dashboard/page.tsx', 'profile/edit/page.tsx', 'onboarding/1/page.tsx', 'onboarding/2/page.tsx', 'onboarding/3/page.tsx']) {
+      expect(read(page)).toContain('if (isReady && !isLoggedIn) router.replace(')
+    }
+  })
+
+  it('a signed-in candidate sees only candidate navigation and a slim footer', () => {
+    const nav = read('_components/site-nav.tsx')
+    expect(nav).toContain('const navItems = isLoggedIn ? CANDIDATE_NAV_ITEMS : NAV_ITEMS')
+    expect(nav).toContain('{!isLoggedIn && (')
+    expect(read('_components/site-footer.tsx')).toContain('if (isLoggedIn) {')
+  })
+
+  it('the signed-in jobs page has For you and All jobs, and drops the marketing sections', () => {
+    const page = read('jobs/page.tsx')
+    expect(page).toContain("setView('for-you')")
+    expect(page).toContain("params.set('sort', 'recent')")
+    expect(page).toContain('{!isLoggedIn && <TalentSections />}')
+  })
+
+  it('location is chosen from the list, never typed', () => {
+    const field = read('_components/location-field.tsx')
+    expect(field).toContain('/api/v1/public/locations')
+    expect(read('onboarding/3/page.tsx')).toContain('<LocationField')
+    expect(read('profile/edit/page.tsx')).toContain('<LocationField')
+  })
+
+  it('the dashboard shows roles opened to apply', () => {
+    expect(read('dashboard/page.tsx')).toContain('/api/v1/candidate/apply-clicks')
   })
 })

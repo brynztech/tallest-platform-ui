@@ -289,7 +289,28 @@ function computeMockScore(
   return Math.min(100, updatedFields.filter(Boolean).length * 10)
 }
 
+const savedJobIds = new Set<string>()
+const MOCK_LOCATIONS = ['Bengaluru, India', 'Hyderabad, India', 'Pune, India', 'San Francisco, CA', 'New York, NY', 'Remote / other']
+
 export const candidateHandlers: HttpHandler[] = [
+  // Saved jobs and apply history live on the server, per account.
+  http.get(`${API_BASE}/api/v1/candidate/saved-jobs`, () =>
+    HttpResponse.json({ items: MOCK_JOBS.filter((job) => savedJobIds.has(job.id)) }),
+  ),
+  http.put(`${API_BASE}/api/v1/candidate/saved-jobs/:id`, ({ params }) => {
+    savedJobIds.add(String(params.id))
+    return new HttpResponse(null, { status: 204 })
+  }),
+  http.delete(`${API_BASE}/api/v1/candidate/saved-jobs/:id`, ({ params }) => {
+    savedJobIds.delete(String(params.id))
+    return new HttpResponse(null, { status: 204 })
+  }),
+  http.get(`${API_BASE}/api/v1/candidate/apply-clicks`, () => HttpResponse.json({ items: [] })),
+  http.get(`${API_BASE}/api/v1/public/locations`, ({ request }) => {
+    const q = (new URL(request.url).searchParams.get('q') ?? '').toLowerCase()
+    return HttpResponse.json({ items: MOCK_LOCATIONS.filter((label) => label.toLowerCase().includes(q)) })
+  }),
+
   // POST /public/jobs/:id/apply-click — fire-and-forget analytics
   http.post(`${API_BASE}/api/v1/public/jobs/:id/apply-click`, () => new HttpResponse(null, { status: 204 })),
 

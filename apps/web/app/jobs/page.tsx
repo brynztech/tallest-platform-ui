@@ -35,6 +35,8 @@ export default function JobsPage() {
   const [searchText, setSearchText] = useState(initialQuery)
   const [debouncedSearch, setDebouncedSearch] = useState(initialQuery)
   const [filters, setFilters] = useState<JobFilters>(EMPTY_FILTERS)
+  // Signed-in candidates choose between their ranked list and everything, newest first.
+  const [view, setView] = useState<'for-you' | 'all'>('for-you')
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
   // 350ms debounce for text search (D-08)
@@ -44,7 +46,7 @@ export default function JobsPage() {
   }, [searchText])
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
-    queryKey: ['public-jobs', debouncedSearch, filters, isLoggedIn],
+    queryKey: ['public-jobs', debouncedSearch, filters, isLoggedIn, view],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams()
       if (pageParam) params.set('cursor', pageParam as string)
@@ -59,6 +61,7 @@ export default function JobsPage() {
       if (filters.posted_within_days) params.set('posted_within_days', filters.posted_within_days)
       if (filters.has_compensation) params.set('has_compensation', 'true')
       if (filters.match_only) params.set('match_only', 'true')
+      if (isLoggedIn && view === 'all') params.set('sort', 'recent')
 
       // Sending the session token personalizes the feed: the same endpoint
       // serves anonymous visitors (recency order, no match badges) and signed-in
@@ -104,22 +107,9 @@ export default function JobsPage() {
     return () => observer.disconnect()
   }, [isLoggedIn, hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  return (
-    <main>
-      <section className="wrap search-hero">
-        <Link className="trust rise" href="/signup">
-          Trusted by founders from <span className="yc" aria-hidden="true">Y</span>
-          <b>Combinator</b>
-        </Link>
-        <h1 className="d1 rise r1">
-          Find the right jobs.
-          <br />
-          Straight from the <em>company</em>.
-        </h1>
-        <p className="lede rise r2" style={{ maxWidth: '34em' }}>
-          Brynz AI agents find jobs that match your profile, the day they go live.
-        </p>
-        <form
+  const searchBlock = (
+    <>
+      <form
           className="searchbar"
           role="search"
           onSubmit={e => {
@@ -159,7 +149,55 @@ export default function JobsPage() {
             </button>
           ))}
         </div>
-      </section>
+    </>
+  )
+
+  return (
+    <main>
+      {isLoggedIn ? (
+        <section className="wrap search-hero app-hero">
+          <h1 className="d2">
+            Your <em>jobs</em>
+          </h1>
+          <div className="tabs" role="tablist" aria-label="Job list">
+            <button
+              className="tab"
+              type="button"
+              role="tab"
+              aria-selected={view === 'for-you'}
+              onClick={() => setView('for-you')}
+            >
+              For you
+            </button>
+            <button
+              className="tab"
+              type="button"
+              role="tab"
+              aria-selected={view === 'all'}
+              onClick={() => setView('all')}
+            >
+              All jobs
+            </button>
+          </div>
+          {searchBlock}
+        </section>
+      ) : (
+        <section className="wrap search-hero">
+          <Link className="trust rise" href="/signup">
+            Trusted by founders from <span className="yc" aria-hidden="true">Y</span>
+            <b>Combinator</b>
+          </Link>
+          <h1 className="d1 rise r1">
+            Find the right jobs.
+            <br />
+            Straight from the <em>company</em>.
+          </h1>
+          <p className="lede rise r2" style={{ maxWidth: '34em' }}>
+            Brynz AI agents find jobs that match your profile, the day they go live.
+          </p>
+          {searchBlock}
+        </section>
+      )}
 
       <section className="wrap section-tight" id="results" style={{ scrollMarginTop: 90 }}>
         <div className="toolbar">
@@ -172,7 +210,7 @@ export default function JobsPage() {
                 </b>{' '}
                 {total === 1 ? 'role' : 'roles'}
                 {isFiltered ? ' match your search' : ' open now'}
-                {isPersonalized && ', ranked for you'}
+                {isLoggedIn && (view === 'all' ? ', newest first' : isPersonalized ? ', ranked for you' : '')}
               </>
             )}
           </div>
@@ -242,7 +280,8 @@ export default function JobsPage() {
         )}
       </section>
 
-      <TalentSections />
+      {/* Marketing sections are for visitors; a signed-in candidate has already joined. */}
+      {!isLoggedIn && <TalentSections />}
     </main>
   )
 }

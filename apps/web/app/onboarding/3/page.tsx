@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
+import { LocationField } from '../../_components/location-field'
 import { candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfileUpdate } from '../../_lib/candidate-types'
 
@@ -21,7 +22,7 @@ type OnboardingProfile = CandidateProfileUpdate & {
 
 export default function OnboardingPreferencesPage() {
   const router = useRouter()
-  const { isLoggedIn } = useCandidateAuth()
+  const { isLoggedIn, isReady } = useCandidateAuth()
   const [location, setLocation] = useState('')
   const [remotePreference, setRemotePreference] =
     useState<NonNullable<CandidateProfileUpdate['remote_preference']>>('flexible')
@@ -33,8 +34,8 @@ export default function OnboardingPreferencesPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isLoggedIn) router.replace('/signup')
-  }, [isLoggedIn, router])
+    if (isReady && !isLoggedIn) router.replace('/signup')
+  }, [isReady, isLoggedIn, router])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -85,15 +86,7 @@ export default function OnboardingPreferencesPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="panel">
-        <div className="field">
-          <label htmlFor="location">Location</label>
-          <input
-            id="location"
-            placeholder="San Francisco, CA"
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-          />
-        </div>
+        <LocationField id="location" value={location} onChange={setLocation} />
 
         <div className="row2">
           <div className="field">

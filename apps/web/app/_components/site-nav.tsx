@@ -11,6 +11,12 @@ import {
 import { BrynzLogo } from './brynz-logo'
 import { useCandidateAuth } from './candidate-auth-context'
 
+// A signed-in candidate sees only what is theirs: the company pages stay for visitors.
+const CANDIDATE_NAV_ITEMS = [
+  { href: '/jobs', label: 'Jobs' },
+  { href: '/dashboard', label: 'Dashboard' },
+]
+
 const NAV_ITEMS = [
   { href: '/jobs', label: 'For Talent' },
   { href: '/startups', label: 'Startups' },
@@ -45,7 +51,8 @@ export function SiteNav() {
   // A route change closes the phone menu.
   useEffect(() => setMenuOpen(false), [pathname])
 
-  const cta = (pathname === '/jobs' && isLoggedIn ? null : PAGE_CTA[pathname]) ?? DEFAULT_CTA
+  const cta = PAGE_CTA[pathname] ?? DEFAULT_CTA
+  const navItems = isLoggedIn ? CANDIDATE_NAV_ITEMS : NAV_ITEMS
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   return (
@@ -53,7 +60,7 @@ export function SiteNav() {
       <div className="wrap nav-in">
         <BrynzLogo />
         <nav className="nav-links" aria-label="Main">
-          {NAV_ITEMS.map(item => (
+          {navItems.map(item => (
             <Link key={item.href} href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
               {item.label}
             </Link>
@@ -62,9 +69,6 @@ export function SiteNav() {
         <div className="nav-cta">
           {isLoggedIn ? (
             <>
-              <Link className="text-link" href="/dashboard" aria-current={isActive('/dashboard') ? 'page' : undefined}>
-                Dashboard
-              </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="avatar-btn" aria-label="Account menu">
@@ -86,9 +90,11 @@ export function SiteNav() {
               Log in
             </Link>
           )}
-          <Link className="btn btn-primary btn-sm" href={cta.href}>
-            {cta.label}
-          </Link>
+          {!isLoggedIn && (
+            <Link className="btn btn-primary btn-sm" href={cta.href}>
+              {cta.label}
+            </Link>
+          )}
           <button
             className="menu-btn"
             type="button"
@@ -102,26 +108,27 @@ export function SiteNav() {
         </div>
       </div>
       <div className="mobile-menu wrap" id="mobile-menu" hidden={!menuOpen}>
-        {NAV_ITEMS.map(item => (
+        {navItems.map(item => (
           <Link key={item.href} href={item.href}>
             {item.label}
           </Link>
         ))}
-        <Link href="/contact">Contact</Link>
+        {!isLoggedIn && <Link href="/contact">Contact</Link>}
         {isLoggedIn ? (
           <>
-            <Link href="/dashboard">Dashboard</Link>
             <Link href="/profile/edit">My Profile</Link>
             <button type="button" className="mobile-menu-link" onClick={signOut}>
               Sign out
             </button>
           </>
         ) : (
-          <Link href="/login">Log in</Link>
+          <>
+            <Link href="/login">Log in</Link>
+            <Link className="btn btn-primary" href={cta.href}>
+              {cta.label}
+            </Link>
+          </>
         )}
-        <Link className="btn btn-primary" href={cta.href}>
-          {cta.label}
-        </Link>
       </div>
     </header>
   )

@@ -1071,4 +1071,13 @@
   /* A line right above a list is almost always its heading ("What you will do"). */
   .job-desc p:has(+ ul) { color: var(--ink); font-weight: 600; }
   .job-desc p + ul { margin-top: -6px; }
+  /* Signed-in jobs page: a working view, not a landing page. */
+  .app-hero { padding-block: clamp(20px, 3vw, 36px) 8px; gap: 12px; }
+  .app-hero .tabs { margin-bottom: 4px; justify-content: center; }
+  /* Location search box: a listbox under the input. */
+  .combo { position: relative; }
+  .combo-list { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; margin: 4px 0 0; padding: 6px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); max-height: 260px; overflow-y: auto; }
+  .combo-list li { padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: .95rem; }
+  .combo-list li.on, .combo-list li:hover { background: var(--field); }
+  .combo-empty { color: var(--muted); cursor: default; }
 }

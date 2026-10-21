@@ -175,19 +175,20 @@ describe('LockedJobsOverlay component', () => {
   })
 })
 
-describe('Saved jobs (browser-only until an API exists)', () => {
+describe('Saved jobs (server side, per account)', () => {
   const store = readFile('_lib/saved-jobs.ts')
 
-  it('guards the stored JSON.parse against corrupt localStorage', () => {
-    const parse = store.indexOf('JSON.parse(')
-    expect(parse).toBeGreaterThan(-1)
-    const tryIndex = store.lastIndexOf('try {', parse)
-    expect(tryIndex).toBeGreaterThan(-1)
-    expect(store.indexOf('catch', tryIndex)).toBeGreaterThan(parse)
+  it('lists and toggles through the candidate API, not browser storage', () => {
+    expect(store).toContain('/api/v1/candidate/saved-jobs')
+    expect(store).toContain("method: next ? 'PUT' : 'DELETE'")
+    expect(store).not.toContain("localStorage.setItem")
   })
 
-  it('the card heart and the detail Save button share one hook and one key', () => {
-    expect(store).toContain("'brynz_saved_jobs'")
+  it('keys the list by candidate id so another login never sees it', () => {
+    expect(store).toContain("queryKey: ['saved-jobs', candidate?.id]")
+  })
+
+  it('the card heart and the detail Save button share one hook', () => {
     expect(readFile('jobs/_components/job-card.tsx')).toContain('useSavedJob')
     expect(readFile('jobs/_components/save-job-button.tsx')).toContain('useSavedJob')
   })

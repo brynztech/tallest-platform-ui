@@ -109,7 +109,7 @@ describe('Jobs feed page — personalization and filters', () => {
   it('re-queries when auth state changes so badges appear after sign-in', () => {
     // [\s\S] instead of the /s dotAll flag: this package's tsconfig target
     // predates es2018, where /s is unavailable.
-    expect(src).toMatch(/queryKey: \['public-jobs'[\s\S]*isLoggedIn\]/)
+    expect(src).toMatch(/queryKey: \['public-jobs'[\s\S]*isLoggedIn, view\]/)
   })
 })
 

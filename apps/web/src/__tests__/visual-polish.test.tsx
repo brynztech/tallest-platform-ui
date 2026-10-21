@@ -93,7 +93,8 @@ describe('Standardisation guards', () => {
     '%s has exactly one display headline',
     file => {
       const src = readFile(file)
-      expect(src.match(/<h1/g)?.length).toBe(1)
+      // /jobs has one headline per state: visitor hero (d1) and the signed-in view (d2).
+      expect(src.match(/<h1/g)?.length).toBe(file === 'jobs/page.tsx' ? 2 : 1)
       expect(src).toContain('className="d1')
     },
   )

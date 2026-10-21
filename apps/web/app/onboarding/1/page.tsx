@@ -9,7 +9,7 @@ import { ResumeDropzone } from '../_components/resume-dropzone'
 
 export default function OnboardingResumePage() {
   const router = useRouter()
-  const { isLoggedIn } = useCandidateAuth()
+  const { isLoggedIn, isReady } = useCandidateAuth()
   const [file, setFile] = useState<File | null>(null)
   const [isResumeScanIntent, setIsResumeScanIntent] = useState(false)
   const onParsed = useCallback(
@@ -22,9 +22,9 @@ export default function OnboardingResumePage() {
   const { status, error, setError, upload } = useResumeUpload(onParsed)
 
   useEffect(() => {
-    if (!isLoggedIn) router.replace('/signup')
+    if (isReady && !isLoggedIn) router.replace('/signup')
     setIsResumeScanIntent(localStorage.getItem('candidate_onboarding_intent') === 'resume_scan')
-  }, [isLoggedIn, router])
+  }, [isReady, isLoggedIn, router])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

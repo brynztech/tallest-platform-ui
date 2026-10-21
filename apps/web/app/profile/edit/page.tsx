@@ -17,6 +17,7 @@ import {
   CommandList,
 } from '@brynzit/ui/components/ui/command'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
+import { LocationField } from '../../_components/location-field'
 import { RemovableChip } from '../../_components/removable-chip'
 import { candidateAuthHeaders, candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfile, CandidateProfileUpdate } from '../../_lib/candidate-types'
@@ -81,14 +82,14 @@ type ProfileEditValues = z.infer<typeof profileEditSchema>
 export default function ProfileEditPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { isLoggedIn } = useCandidateAuth()
+  const { isLoggedIn, isReady } = useCandidateAuth()
   const [skills, setSkills] = useState<string[]>([])
   const [skillsOpen, setSkillsOpen] = useState(false)
 
   // Protected route — redirect to /login when not logged in
   useEffect(() => {
-    if (!isLoggedIn) router.replace('/login')
-  }, [isLoggedIn, router])
+    if (isReady && !isLoggedIn) router.replace('/login')
+  }, [isReady, isLoggedIn, router])
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['candidate-profile'],
@@ -303,8 +304,11 @@ export default function ProfileEditPage() {
           <section className="grid gap-4">
             <h2 className="d3">Preferences</h2>
             <div className="field">
-              <label htmlFor="location">Location</label>
-              <input id="location" placeholder="City, Country" {...form.register('location')} />
+              <LocationField
+                id="location"
+                value={form.watch('location') ?? ''}
+                onChange={value => form.setValue('location', value, { shouldDirty: true })}
+              />
             </div>
             <div className="row2">
               <div className="field">

@@ -148,6 +148,23 @@ call" link (`BOOKING_URL` in `app/_lib/site.ts`). No backend endpoint takes thes
     with onboarding step 1.
   - Search matches each word, the feed shows tech roles only, and signed-in ranking puts the
     candidate's city first, then their country. All three are backend changes.
+- Third QA round (2026-10-21, sheet `Brynz-Talent-ap-observations.xlsx`; backend in `../talent-platform/docs/job-discovery-spec.md` §16):
+  - **Refresh keeps the session** (#21). `useCandidateAuth()` has `isReady`: browser storage read, and with
+    Clerk, Clerk loaded (or a stored candidate exists). Protected pages (dashboard, profile, onboarding 1-3) redirect
+    only when `isReady && !isLoggedIn`. Before, child effects ran before the provider read storage, so every refresh
+    bounced a signed-in candidate to login.
+  - **Saved jobs are per account and on the server** (#13, #20). `app/_lib/saved-jobs.ts` talks to
+    `GET/PUT/DELETE /candidate/saved-jobs`; the query key carries the candidate id, so another login never sees them. The old
+    browser-wide key `brynz_saved_jobs` is deleted on first load (it belonged to nobody).
+  - **Signed-in header, footer and /jobs** (#22, #23, #12). Candidates see Jobs and Dashboard only, no Startups,
+    Enterprises, Frontier AI, IIT Talent or "Hire talent"; a one-line footer; and `/jobs` is a working view (title "Your jobs",
+    tabs **For you** and **All jobs** = `sort=recent`, no hero, how-it-works or call-to-action band). Visitors see the unchanged
+    landing page. On the two-host setup, "signed in" exists only on talent.trybrynz.com (localStorage is per origin).
+  - **Location is picked, not typed** (#10). `LocationField` (`app/_components/location-field.tsx`) searches
+    `GET /public/locations?q=`; typing never changes the value, only choosing a listed place, and leaving the box restores the last
+    choice. Used on onboarding step 3 and profile edit. The backend also rejects unlisted values (422).
+  - **Opened to apply** (#14): the dashboard lists roles the candidate pressed Apply on (`GET /candidate/apply-clicks`).
+  - Mock API (`packages/mocks`) has the new endpoints, so `NEXT_PUBLIC_API_MOCKING=enabled` keeps working.
 - Search calls the backend `q`, which matches job title and company name only
   (`talent-platform/candidate/feed.py`). It does not match skills, so the placeholder says
   "roles or companies". The old Skills input is gone: 0 of 432 jobs had skills on 2026-09-24.

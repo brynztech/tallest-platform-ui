@@ -1,12 +1,12 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useCandidateAuth } from '../_components/candidate-auth-context'
 import { candidateAuthHeaders } from '../_lib/candidate-api'
 import type { CandidateApplication, CandidateApplicationsResponse, PublicJobItem } from '../_lib/candidate-types'
-import { readSavedJobs } from '../_lib/saved-jobs'
+import { useSavedJobs } from '../_lib/saved-jobs'
 import { JobCard } from '../jobs/_components/job-card'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -32,11 +32,11 @@ const STATUS_TONE: Record<CandidateApplication['status'], number> = {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isLoggedIn } = useCandidateAuth()
+  const { isLoggedIn, isReady } = useCandidateAuth()
 
   useEffect(() => {
-    if (!isLoggedIn) router.replace('/login?redirect=/dashboard')
-  }, [isLoggedIn, router])
+    if (isReady && !isLoggedIn) router.replace('/login?redirect=/dashboard')
+  }, [isReady, isLoggedIn, router])
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['candidate-applications'],
@@ -50,22 +50,16 @@ export default function DashboardPage() {
     enabled: isLoggedIn,
   })
 
-  // Saved jobs live in this browser only (saved-jobs.ts), so read the ids here and
-  // fetch each job. A job that closed since it was saved simply drops out.
-  const [savedIds, setSavedIds] = useState<string[]>([])
-  useEffect(() => setSavedIds(readSavedJobs()), [])
-  const saved = useQuery({
-    queryKey: ['saved-jobs', savedIds],
+  const saved = useSavedJobs()
+  // Roles they pressed Apply on: most are finished on the employer's site, out of our sight.
+  const opened = useQuery({
+    queryKey: ['apply-clicks'],
     queryFn: async () => {
-      const jobs = await Promise.all(
-        savedIds.map(async id => {
-          const res = await fetch(`${API_BASE}/api/v1/public/jobs/${id}`, { headers: candidateAuthHeaders() })
-          return res.ok ? ((await res.json()) as PublicJobItem) : null
-        }),
-      )
-      return jobs.filter((job): job is PublicJobItem => job !== null)
+      const response = await fetch(`${API_BASE}/api/v1/candidate/apply-clicks`, { headers: candidateAuthHeaders() })
+      if (!response.ok) throw new Error(`Apply history fetch failed: ${response.status}`)
+      return ((await response.json()) as { items: { job: PublicJobItem; clicked_at: string }[] }).items
     },
-    enabled: isLoggedIn && savedIds.length > 0,
+    enabled: isLoggedIn,
   })
 
   if (!isLoggedIn) return null
@@ -126,18 +120,36 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {(opened.data?.length ?? 0) > 0 && (
+        <section className="grid gap-4" aria-labelledby="opened-heading">
+          <h2 id="opened-heading" className="d3">
+            Opened to apply
+          </h2>
+          <p className="small">Roles where you pressed Apply. You finish these on the employer&apos;s site, so we can&apos;t show their status.</p>
+          <div className="grid gap-3">
+            {opened.data?.map(({ job, clicked_at }) => (
+              <div key={job.id} className="panel">
+                <Link href={`/jobs/${job.id}`} className="h4 job-link">
+                  {job.title}
+                </Link>
+                {job.company_name && <p className="small">{job.company_name}</p>}
+                <p className="small">Opened {new Date(clicked_at).toLocaleDateString()}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-4" aria-labelledby="saved-heading">
         <h2 id="saved-heading" className="d3">
           Saved jobs
         </h2>
-        {savedIds.length === 0 ? (
-          <p className="small">Tap the heart on any job to keep it here for later.</p>
-        ) : saved.isLoading ? (
+        {saved.isLoading ? (
           <div className="jobs">
             <div className="job skeleton" aria-hidden="true" />
           </div>
         ) : (saved.data?.length ?? 0) === 0 ? (
-          <p className="small">The jobs you saved are no longer open.</p>
+          <p className="small">Tap the heart on any job to keep it here for later.</p>
         ) : (
           <div className="jobs">
             {saved.data?.map((job, index) => (

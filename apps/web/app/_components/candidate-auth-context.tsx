@@ -4,6 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 type CandidateAuth = {
   isLoggedIn: boolean
+  /** False until we know whether a session exists (browser storage read and, with Clerk,
+   *  Clerk loaded). Pages must wait for this before treating "not logged in" as final,
+   *  or a refresh bounces a signed-in candidate to the login page. */
+  isReady: boolean
   candidate: CandidateIdentity | null
   /** Session bearer token, exposed so callers can personalize API reads (the
    *  public job feed ranks against the caller's profile when it is sent).
@@ -31,6 +35,8 @@ export function CandidateAuthProvider({
 }) {
   const [candidate, setCandidate] = useState<CandidateIdentity | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [storageRead, setStorageRead] = useState(false)
+  const [clerkLoaded, setClerkLoaded] = useState(!enableClerk)
 
   useEffect(() => {
     // T-05-03: try/catch guards against prototype pollution via corrupt localStorage
@@ -42,6 +48,7 @@ export function CandidateAuthProvider({
         setToken(stored_token)
       } catch { /* corrupt — ignore per T-05-03 */ }
     }
+    setStorageRead(true)
   }, [])
 
   const signIn = useCallback((next_token: string, data: CandidateIdentity) => {
@@ -51,6 +58,8 @@ export function CandidateAuthProvider({
     setToken(next_token)
   }, [])
 
+  const markClerkLoaded = useCallback(() => setClerkLoaded(true), [])
+
   const signOut = useCallback(() => {
     localStorage.removeItem('candidate_access_token')
     localStorage.removeItem('candidate_data')
@@ -59,9 +68,11 @@ export function CandidateAuthProvider({
   }, [])
 
   return (
-    <CandidateAuthContext.Provider value={{ isLoggedIn: !!candidate, candidate, token, signIn, signOut }}>
+    <CandidateAuthContext.Provider
+      value={{ isLoggedIn: !!candidate, isReady: storageRead && (!!candidate || clerkLoaded), candidate, token, signIn, signOut }}
+    >
       {enableClerk ? (
-        <ClerkCandidateSessionBridge signIn={signIn} signOut={signOut}>
+        <ClerkCandidateSessionBridge signIn={signIn} signOut={signOut} onLoaded={markClerkLoaded}>
           {children}
         </ClerkCandidateSessionBridge>
       ) : (
@@ -75,10 +86,12 @@ function ClerkCandidateSessionBridge({
   children,
   signIn,
   signOut,
+  onLoaded,
 }: {
   children: React.ReactNode
   signIn: CandidateAuth['signIn']
   signOut: CandidateAuth['signOut']
+  onLoaded: () => void
 }) {
   const { isLoaded, isSignedIn, userId, getToken, signOut: endClerkSession } = useAuth()
   const { user } = useUser()
@@ -86,6 +99,7 @@ function ClerkCandidateSessionBridge({
 
   useEffect(() => {
     if (!isLoaded) return
+    onLoaded()
     if (!isSignedIn || !userId) {
       signOut()
       return
@@ -103,7 +117,7 @@ function ClerkCandidateSessionBridge({
     return () => {
       cancelled = true
     }
-  }, [getToken, isLoaded, isSignedIn, signIn, signOut, user, userId])
+  }, [getToken, isLoaded, isSignedIn, onLoaded, signIn, signOut, user, userId])
 
   // Signing out must end the Clerk session too: clearing only localStorage let this
   // bridge sign the candidate straight back in on the next page load.

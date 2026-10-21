@@ -1,8 +1,28 @@
+'use client'
 import Link from 'next/link'
 import { BrynzLogo } from './brynz-logo'
 import { BOOKING_URL } from '../_lib/site'
+import { useCandidateAuth } from './candidate-auth-context'
 
 export function SiteFooter() {
+  const { isLoggedIn } = useCandidateAuth()
+
+  // A signed-in candidate has no use for the company-side columns.
+  if (isLoggedIn) {
+    return (
+      <footer className="footer">
+        <div className="wrap">
+          <div className="footer-bottom" style={{ marginTop: 0 }}>
+            <span>&copy; {new Date().getFullYear()} Brynz. All rights reserved.</span>
+            <span>
+              <Link href="/jobs">Jobs</Link> &nbsp; <Link href="/dashboard">Dashboard</Link> &nbsp; <Link href="/profile/edit">Profile</Link>
+            </span>
+          </div>
+        </div>
+      </footer>
+    )
+  }
+
   return (
     <footer className="footer">
       <div className="wrap">
