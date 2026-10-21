@@ -1,11 +1,12 @@
 import type React from 'react'
 import type { Metadata } from 'next'
+import { HOME_URL } from '../_lib/site'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: { absolute: "IIT Talent by Brynz" },
   description: "From an IIT or another premium institute, or doing top 1% work you can prove? Brynz puts you in front of startup founders directly.",
-  alternates: { canonical: '/iit-talent' },
+  alternates: { canonical: `${HOME_URL}/iit-talent` },
 }
 
 export default function IitTalentPage() {

@@ -1,11 +1,12 @@
 import type React from 'react'
 import type { Metadata } from 'next'
+import { HOME_URL } from '../_lib/site'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: { absolute: "Brynz for Startups" },
   description: "Hiring tech talent for high-growth startups. Engineers who ship fast and solve hard problems.",
-  alternates: { canonical: '/startups' },
+  alternates: { canonical: `${HOME_URL}/startups` },
 }
 
 export default function StartupsPage() {

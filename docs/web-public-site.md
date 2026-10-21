@@ -293,3 +293,9 @@ behaviour test with mocks (`use-finish-auth`).
   logo were deleted, not overridden. Every account page moved off shadcn Button/Input onto Brynz
   classes. Dropped from the design: the navy palette picker and dark mode (one light palette).
   Company forms have no endpoint yet, they hand off to `BOOKING_URL`.
+- 2026-10-21: Two hosts, one app. `trybrynz.com` serves the homepage and the company pages
+  (`/startups`, `/enterprises`, `/frontier-ai`, `/iit-talent`, `/contact`, listed in
+  `app/_lib/site.ts`). `talent.trybrynz.com` serves everything else and opens on `/jobs`.
+  `proxy.ts` redirects a page asked of the wrong host, so plain `href="/jobs"` links keep working.
+  Company pages' canonical links, robots.txt and the sitemap point at the host that serves them.
+  Test: `src/__tests__/host-routing.test.ts`.

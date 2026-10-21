@@ -19,6 +19,7 @@ Planned EC2 hosts:
 
 Dev domains (2026-09-26, A records at Hostinger for `trybrynz.com`, HTTPS from Let's Encrypt; plain http on these names redirects to https):
 
+- Homepage: `https://trybrynz.com` (frontend EIP, same app as the talent site; `www` redirects to it)
 - Public candidate site: `https://talent.trybrynz.com` (frontend EIP)
 - Internal console: `https://hire.trybrynz.com` (frontend EIP)
 - Backend API/docs: `https://api.trybrynz.com/docs` (backend EIP)
@@ -289,9 +290,21 @@ Done on 2026-09-26:
    `development`) and the frontend redeployed. The job page canonical link is now
    `https://talent.trybrynz.com/jobs/<id>`.
 
+Done on 2026-10-21:
+
+7. Homepage on `trybrynz.com`. Same Next.js app as `talent.`: `apps/web/proxy.ts` sends
+   talent pages (jobs, login, signup, account) asked of `trybrynz.com` to `talent.`, company
+   pages asked of `talent.` to `trybrynz.com`, `talent.` root to `/jobs`, and `www` to the bare
+   domain. An IP or localhost gets no redirects. Its own certificate (`trybrynz-home`) and
+   nginx file (`infra/nginx/web-home-tls.conf`, installed as `brynzit-tls/home.conf`). The deploy
+   requests that certificate only when `trybrynz.com` and `www` resolve to this host alone (no
+   other A or AAAA record), else it logs a warning and carries on.
+
 Remaining:
 
-7. Once nothing uses them, close `3000` and `8000` to the internet.
+7a. At Hostinger, `trybrynz.com` must have only the A record for the frontend EIP: no parking
+   A record and no AAAA record. The next frontend deploy then gets the certificate.
+7b. Once nothing uses them, close `3000` and `8000` to the internet.
 8. Add an email for Let's Encrypt expiry notices on each host:
    `sudo certbot update_account --email <address>`.
 9. A Clerk production instance for `trybrynz.com` (Clerk shows its own DNS records, which are

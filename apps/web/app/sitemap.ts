@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
-import { SITE_URL } from './_lib/site'
+import { headers } from 'next/headers'
+import { HOME_PAGES, HOME_URL, SITE_URL, siteForHost } from './_lib/site'
 import type { PublicJobsResponse } from './_lib/candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -9,6 +10,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // The homepage host lists its own pages; every other host lists the talent site.
+  if (siteForHost((await headers()).get('host')) === 'home') {
+    return [{ url: HOME_URL }, ...HOME_PAGES.map((page) => ({ url: `${HOME_URL}${page}` }))]
+  }
+
   const jobs: MetadataRoute.Sitemap = []
   // ponytail: walks the public feed, which ranks at most 2,000 jobs. Add a
   // backend endpoint listing every visible job id once inventory passes that.
@@ -25,5 +31,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     cursor = page.next_cursor
   } while (cursor)
 
-  return [{ url: SITE_URL }, { url: `${SITE_URL}/jobs` }, ...jobs]
+  return [{ url: `${SITE_URL}/jobs` }, ...jobs]
 }

@@ -1,10 +1,11 @@
 import type React from 'react'
 import type { Metadata } from 'next'
+import { HOME_URL } from '../_lib/site'
 
 export const metadata: Metadata = {
   title: { absolute: "Contact Brynz" },
   description: "Talk to Brynz about hiring engineers, enterprise delivery or your next role.",
-  alternates: { canonical: '/contact' },
+  alternates: { canonical: `${HOME_URL}/contact` },
 }
 
 export default function ContactPage() {

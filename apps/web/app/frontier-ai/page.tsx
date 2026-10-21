@@ -1,11 +1,12 @@
 import type React from 'react'
 import type { Metadata } from 'next'
+import { HOME_URL } from '../_lib/site'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: { absolute: "Brynz Frontier AI" },
   description: "Humans for frontier AI. Selective talent for the most ambitious AI labs and research teams.",
-  alternates: { canonical: '/frontier-ai' },
+  alternates: { canonical: `${HOME_URL}/frontier-ai` },
 }
 
 export default function FrontierAiPage() {

@@ -250,4 +250,42 @@ jobs:
             sleep 1
           done
           echo "MARKER: https proxy passed"
+
+          # trybrynz.com (homepage) and www get their own certificate, requested only
+          # once both names resolve to this host and nothing else (a stray AAAA
+          # record wins Let's Encrypt's check). Until then the deploy carries on and
+          # the homepage stays on plain http via the default server.
+          MY_IP="$(curl -fsS https://checkip.amazonaws.com || true)"
+          home_dns_ok() {
+            for name in trybrynz.com www.trybrynz.com; do
+              [ "$(getent ahostsv4 "$name" | awk '{print $1}' | sort -u | tr -d '\n')" = "$MY_IP" ] || return 1
+              getent ahostsv6 "$name" | awk '{print $1}' | grep -qv '^::ffff:' && return 1
+            done
+            return 0
+          }
+          if [ -n "$MY_IP" ] && home_dns_ok; then
+            sudo certbot certonly --webroot -w /var/www/certbot --cert-name trybrynz-home \
+              -d trybrynz.com -d www.trybrynz.com \
+              --non-interactive --agree-tos --register-unsafely-without-email \
+              --keep-until-expiring --deploy-hook 'systemctl reload nginx'
+          else
+            echo "WARNING: trybrynz.com or www does not resolve only to $MY_IP yet; skipping its certificate"
+          fi
+          if sudo test -d /etc/letsencrypt/live/trybrynz-home; then
+            sudo install -m 644 "$APP_DIR/infra/nginx/web-home-tls.conf" /etc/nginx/brynzit-tls/home.conf
+            sudo nginx -t
+            sudo systemctl reload nginx
+            for attempt in $(seq 1 15); do
+              HOME_PAGE="$(curl -fsS --resolve trybrynz.com:443:127.0.0.1 https://trybrynz.com/ || true)"
+              if [[ "$HOME_PAGE" == *"/_next/"* ]]; then
+                break
+              fi
+              if [ "$attempt" -eq 15 ]; then
+                echo "::error::nginx is not serving https for trybrynz.com"
+                exit 1
+              fi
+              sleep 1
+            done
+            echo "MARKER: home https passed"
+          fi
           REMOTE
