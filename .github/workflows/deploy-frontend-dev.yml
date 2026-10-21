@@ -238,7 +238,7 @@ jobs:
           sudo nginx -t
           sudo systemctl reload nginx
           for attempt in $(seq 1 15); do
-            SITE="$(curl -fsS --resolve talent.trybrynz.com:443:127.0.0.1 https://talent.trybrynz.com/ || true)"
+            SITE="$(curl -fsS --resolve talent.trybrynz.com:443:127.0.0.1 https://talent.trybrynz.com/jobs || true)"  # / redirects to /jobs (apps/web/proxy.ts)
             CONSOLE="$(curl -fsS --resolve hire.trybrynz.com:443:127.0.0.1 https://hire.trybrynz.com/ || true)"
             if [[ "$SITE" == *"/_next/"* && "$CONSOLE" == *"/_next/"* ]]; then
               break
