@@ -78,3 +78,31 @@ describe('Talent app QA fixes, round 2', () => {
     expect(read('dashboard/page.tsx')).toContain('/api/v1/candidate/apply-clicks')
   })
 })
+
+describe('Talent app QA fixes, round 4 (2026-10-30)', () => {
+  it('the experience summary is loaded, sent and allowed up to 2,000 characters', () => {
+    const page = read('profile/edit/page.tsx')
+    expect(page).toContain("experience_summary: profile.experience_summary ?? ''")
+    expect(page).toContain("experience_summary: values.experience_summary ?? ''")
+    expect(page).toContain('.max(2000')
+    expect(page).toContain('errors.experience_summary')
+  })
+
+  it('skills are unlimited, with up to 10 starred as top skills', () => {
+    const page = read('profile/edit/page.tsx')
+    expect(page).not.toContain('prev.length >= 10')
+    expect(page).toContain('topSkills.length < 10')
+    expect(page).toContain('top_skills: topSkills')
+  })
+
+  it('the profile shows the resume on file with an icon and a View link', () => {
+    const page = read('profile/edit/page.tsx')
+    expect(page).toContain('className="resume-card"')
+    expect(page).toContain('/api/v1/candidate/profile/resume/file')
+    expect(read('onboarding/_components/resume-dropzone.tsx')).toContain('up to 5 MB')
+  })
+
+  it('cleaned descriptions render as Markdown, the original as text', () => {
+    expect(read('jobs/[id]/_components/job-detail.tsx')).toContain("job.description_format === 'markdown'")
+  })
+})

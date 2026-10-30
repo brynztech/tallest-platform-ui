@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, FileText, Star } from 'lucide-react'
 import { Progress } from '@brynzit/ui/components/ui/progress'
 import { Popover, PopoverContent, PopoverTrigger } from '@brynzit/ui/components/ui/popover'
 import {
@@ -18,7 +18,6 @@ import {
 } from '@brynzit/ui/components/ui/command'
 import { useCandidateAuth } from '../../_components/candidate-auth-context'
 import { LocationField } from '../../_components/location-field'
-import { RemovableChip } from '../../_components/removable-chip'
 import { candidateAuthHeaders, candidateJsonHeaders } from '../../_lib/candidate-api'
 import type { CandidateProfile, CandidateProfileUpdate } from '../../_lib/candidate-types'
 import { useResumeUpload } from '../../_lib/use-resume-upload'
@@ -65,7 +64,7 @@ const profileEditSchema = z.object({
   first_name: z.string().min(1, 'First name required'),
   last_name: z.string().min(1, 'Last name required'),
   headline: z.string().optional(),
-  experience_summary: z.string().max(500).optional(),
+  experience_summary: z.string().max(2000, 'Keep it under 2,000 characters').optional(),
   location: z.string().optional(),
   remote_preference: z
     .enum(['remote_only', 'hybrid', 'onsite', 'flexible'])
@@ -84,6 +83,7 @@ export default function ProfileEditPage() {
   const queryClient = useQueryClient()
   const { isLoggedIn, isReady } = useCandidateAuth()
   const [skills, setSkills] = useState<string[]>([])
+  const [topSkills, setTopSkills] = useState<string[]>([])
   const [skillsOpen, setSkillsOpen] = useState(false)
 
   // Protected route — redirect to /login when not logged in
@@ -123,7 +123,7 @@ export default function ProfileEditPage() {
         first_name: profile.first_name ?? '',
         last_name: profile.last_name ?? '',
         headline: profile.headline ?? '',
-        experience_summary: '',
+        experience_summary: profile.experience_summary ?? '',
         location: profile.location ?? '',
         remote_preference: profile.remote_preference ?? undefined,
         seniority: profile.seniority ?? undefined,
@@ -132,6 +132,7 @@ export default function ProfileEditPage() {
         linkedin_url: safeHref(profile.linkedin_url) ?? '',
       })
       setSkills(profile.skills ?? [])
+      setTopSkills(profile.top_skills ?? [])
     }
   }, [profile, form])
 
@@ -145,6 +146,9 @@ export default function ProfileEditPage() {
         remote_preference: values.remote_preference,
         seniority: values.seniority,
         skills,
+        top_skills: topSkills,
+        // '' clears it; the backend stores only what is sent.
+        experience_summary: values.experience_summary ?? '',
         github_url: values.github_url || undefined,
         linkedin_url: values.linkedin_url || undefined,
       }
@@ -175,14 +179,31 @@ export default function ProfileEditPage() {
   const resume = useResumeUpload(onResumeParsed)
   const resumeBusy = resume.status === 'uploading' || resume.status === 'processing'
 
+  // Any number of skills; up to 10 of them are starred as top skills and shown first.
   function toggleSkill(skill: string) {
-    setSkills(prev =>
-      prev.includes(skill)
-        ? prev.filter(s => s !== skill)
-        : prev.length >= 10
-          ? prev
-          : [...prev, skill],
-    )
+    if (skills.includes(skill)) {
+      setSkills(skills.filter(s => s !== skill))
+      setTopSkills(topSkills.filter(s => s !== skill))
+    } else {
+      setSkills([...skills, skill])
+    }
+  }
+
+  function toggleTop(skill: string) {
+    if (topSkills.includes(skill)) setTopSkills(topSkills.filter(s => s !== skill))
+    else if (topSkills.length < 10) setTopSkills([...topSkills, skill])
+    else toast('You can star up to 10 top skills. Unstar one first.')
+  }
+
+  async function openResume() {
+    // Opened before the request so the browser does not treat it as a pop-up.
+    const tab = window.open('', '_blank')
+    const res = await fetch(`${API_BASE}/api/v1/candidate/profile/resume/file`, { headers: candidateAuthHeaders() })
+    if (res.ok && tab) tab.location.href = ((await res.json()) as { url: string }).url
+    else {
+      tab?.close()
+      toast.error("Couldn't open your resume. Try again.")
+    }
   }
 
   // Prevent rendering protected content before redirect
@@ -218,7 +239,30 @@ export default function ProfileEditPage() {
 
       <section className="panel">
         <h2 className="d3">Resume</h2>
-        <p className="small">Upload a newer resume to refresh your profile and job matches. Your saved jobs stay as they are.</p>
+        {profile?.resume_file_name ? (
+          <div className="resume-card">
+            <FileText aria-hidden="true" />
+            <div className="min-w-0">
+              <b>{profile.resume_file_name}</b>
+              <p className="small">
+                {profile.resume_uploaded_at
+                  ? `Uploaded ${new Date(profile.resume_uploaded_at).toLocaleDateString()}`
+                  : 'On file'}
+              </p>
+            </div>
+            {profile.has_resume_file && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={openResume}>
+                View
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="notice">No resume yet. Upload one to fill your profile and get matched.</p>
+        )}
+        <p className="small">
+          {profile?.resume_file_name ? 'Replace it with a newer resume' : 'Upload a resume'} to refresh your profile and job
+          matches. Your saved jobs stay as they are.
+        </p>
         <ResumeDropzone file={resumeFile} status={resume.status} disabled={resumeBusy} onChange={setResumeFile} />
         {resume.status === 'processing' && <p className="notice">Reading your resume…</p>}
         {resume.error && <p className="notice err">{resume.error}</p>}
@@ -228,7 +272,7 @@ export default function ProfileEditPage() {
           disabled={!resumeFile || resumeBusy}
           onClick={() => resumeFile && resume.upload(resumeFile)}
         >
-          {resumeBusy ? 'Working…' : 'Upload new resume'}
+          {resumeBusy ? 'Working…' : profile?.resume_file_name ? 'Replace resume' : 'Upload resume'}
         </button>
       </section>
 
@@ -259,7 +303,9 @@ export default function ProfileEditPage() {
               <label htmlFor="experience_summary">
                 Experience summary <span className="opt">(optional)</span>
               </label>
-              <textarea id="experience_summary" rows={4} {...form.register('experience_summary')} />
+              <textarea id="experience_summary" rows={6} maxLength={2000} {...form.register('experience_summary')} />
+              <span className="small text-right">{(form.watch('experience_summary') ?? '').length} / 2,000</span>
+              {errors.experience_summary && <span className="err">{errors.experience_summary.message}</span>}
             </div>
           </section>
 
@@ -287,16 +333,33 @@ export default function ProfileEditPage() {
               </PopoverContent>
             </Popover>
             {skills.length > 0 && (
-              <div className="chips">
-                {skills.map(skill => (
-                  <RemovableChip
-                    key={skill}
-                    label={skill}
-                    removeLabel={`Remove ${skill}`}
-                    onRemove={() => toggleSkill(skill)}
-                  />
-                ))}
-              </div>
+              <>
+                <p className="small">
+                  Star up to 10 top skills ({topSkills.length}/10). They show first and stand out to recruiters.
+                </p>
+                <div className="chips">
+                  {[...topSkills, ...skills.filter(s => !topSkills.includes(s))].map(skill => {
+                    const top = topSkills.includes(skill)
+                    return (
+                      <span key={skill} className={top ? 'chip removable on' : 'chip removable'}>
+                        <button
+                          type="button"
+                          className="chip-x"
+                          aria-pressed={top}
+                          aria-label={top ? `Unstar ${skill}` : `Star ${skill} as a top skill`}
+                          onClick={() => toggleTop(skill)}
+                        >
+                          <Star fill={top ? 'currentColor' : 'none'} strokeWidth={1.8} aria-hidden="true" />
+                        </button>
+                        {skill}
+                        <button type="button" className="chip-x" aria-label={`Remove ${skill}`} onClick={() => toggleSkill(skill)}>
+                          ×
+                        </button>
+                      </span>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </section>
 

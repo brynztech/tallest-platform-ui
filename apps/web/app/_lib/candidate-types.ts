@@ -44,6 +44,8 @@ export type PublicJobItem = {
   description_summary: string | null
   /** Full posting text with line breaks; "• " starts a list item. Job detail only (the feed sends null). */
   description?: string | null
+  /** 'markdown' when `description` is the cleaned version, else the original text. */
+  description_format?: 'markdown' | 'text'
   compensation_min: number | null
   compensation_max: number | null
   match_strength: 'strong' | 'partial' | 'none' | null
@@ -102,15 +104,25 @@ export type CandidateProfile = {
   remote_preference: 'remote_only' | 'hybrid' | 'onsite' | 'flexible' | null
   seniority: 'junior' | 'mid' | 'senior' | 'staff' | 'principal' | null
   skills: string[]
+  /** Up to 10 of `skills` the candidate marked as their strongest. */
+  top_skills: string[]
+  experience_summary: string | null
   github_url: string | null
   linkedin_url: string | null
   resume_url: string | null
+  resume_file_name: string | null
+  resume_uploaded_at: string | null
+  /** True when the file is stored and can be opened. */
+  has_resume_file: boolean
   completeness_score: number | null
   enrichment_status: 'pending' | 'enriched' | 'failed' | null
 }
 
 export type CandidateProfileUpdate = Partial<
-  Omit<CandidateProfile, 'id' | 'email' | 'enrichment_status' | 'completeness_score'>
+  Omit<
+    CandidateProfile,
+    'id' | 'email' | 'enrichment_status' | 'completeness_score' | 'resume_url' | 'resume_file_name' | 'resume_uploaded_at' | 'has_resume_file'
+  >
 >
 
 export type CandidateAuthResponse = {

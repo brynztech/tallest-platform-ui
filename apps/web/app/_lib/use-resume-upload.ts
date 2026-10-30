@@ -5,6 +5,9 @@ import type { CandidateProfile, ResumeParseStatus } from './candidate-types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
+/** Matches the backend limit (candidate/router.py MAX_RESUME_BYTES). */
+export const MAX_RESUME_BYTES = 5 * 1024 * 1024
+
 export type ResumeUploadStatus = 'idle' | 'uploading' | 'processing' | 'failed'
 
 /** Uploads a resume, then polls the parse until it completes or fails.
@@ -40,6 +43,11 @@ export function useResumeUpload(onComplete: (snapshot: Partial<CandidateProfile>
   }, [parseId, onComplete])
 
   async function upload(file: File) {
+    if (file.size > MAX_RESUME_BYTES) {
+      setStatus('failed')
+      setError('That file is over 5 MB. Upload a smaller PDF, DOC or DOCX.')
+      return
+    }
     setError(null)
     setStatus('uploading')
     const formData = new FormData()

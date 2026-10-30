@@ -48,6 +48,7 @@ export default function OnboardingPreferencesPage() {
       last_name: profile.last_name,
       headline: profile.headline,
       skills: profile.skills,
+      experience_summary: profile.experience_summary || undefined,
       location,
       remote_preference: remotePreference,
       seniority,

@@ -10,9 +10,9 @@ function readFile(relPath: string): string {
 describe('Profile edit + site nav polish (POL-06)', () => {
   const profile = readFile('profile/edit/page.tsx')
   const nav = readFile('_components/site-nav.tsx')
-  it('profile skills are removable chips with a labelled × button', () => {
-    expect(profile).toContain('RemovableChip')
-    expect(readFile('_components/removable-chip.tsx')).toContain('className="chip-x"')
+  it('profile skills are chips with a labelled star (top skill) and remove button', () => {
+    expect(profile).toContain('aria-label={`Remove ${skill}`}')
+    expect(profile).toContain('aria-pressed={top}')
   })
   it('site nav marks the current page for screen readers', () => {
     expect(nav).toContain("aria-current={isActive(item.href) ? 'page' : undefined}")

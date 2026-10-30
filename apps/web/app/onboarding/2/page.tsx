@@ -40,7 +40,7 @@ export default function OnboardingProfilePage() {
       email: signupProfile?.email ?? '',
       headline: snapshot?.headline ?? '',
       skills: snapshot?.skills ?? [],
-      experience_summary: '',
+      experience_summary: snapshot?.experience_summary ?? '',
     })
   }, [])
 

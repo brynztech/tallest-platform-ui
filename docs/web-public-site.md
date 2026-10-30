@@ -165,6 +165,18 @@ call" link (`BOOKING_URL` in `app/_lib/site.ts`). No backend endpoint takes thes
     choice. Used on onboarding step 3 and profile edit. The backend also rejects unlisted values (422).
   - **Opened to apply** (#14): the dashboard lists roles the candidate pressed Apply on (`GET /candidate/apply-clicks`).
   - Mock API (`packages/mocks`) has the new endpoints, so `NEXT_PUBLIC_API_MOCKING=enabled` keeps working.
+- Fourth round (2026-10-30, user feedback; backend in `../talent-platform/docs/job-discovery-spec.md` §17):
+  - **Clean job descriptions.** When the job page gets `description_format: "markdown"` it renders `JobMarkdown`
+    (`app/_lib/markdown.ts` parses headings, lists, paragraphs, `**bold**` and https links into data, never HTML; links open
+    in a new tab). Otherwise the original text renders as before.
+  - **Resume on file.** Profile edit shows a card with a file icon, the file name, the upload date and View (a short-lived
+    link from `GET /candidate/profile/resume/file`), or "No resume yet". The button reads "Replace resume" once one exists.
+    Files over 5 MB are refused in the browser and by the API; the drop box says so.
+  - **Experience summary saves.** It was never sent and had nowhere to go in the backend, and a hidden 500-character
+    limit blocked the whole Save. Now it loads, saves (up to 2,000 characters, with a counter and visible error) and is
+    prefilled from the resume. Onboarding step 2 passes it through.
+  - **Top skills.** Any number of skills; up to 10 starred as top skills, shown first and stored as `top_skills`.
+    Matching still uses every skill.
 - Search calls the backend `q`, which matches job title and company name only
   (`talent-platform/candidate/feed.py`). It does not match skills, so the placeholder says
   "roles or companies". The old Skills input is gone: 0 of 432 jobs had skills on 2026-09-24.

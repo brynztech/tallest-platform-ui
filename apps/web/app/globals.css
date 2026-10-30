@@ -1080,4 +1080,14 @@
   .combo-list li { padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: .95rem; }
   .combo-list li.on, .combo-list li:hover { background: var(--field); }
   .combo-empty { color: var(--muted); cursor: default; }
+  /* Cleaned (Markdown) job descriptions: section headings over paragraphs and lists. */
+  .job-md h3 { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin-top: 6px; }
+  .job-md h3:first-child { margin-top: 0; }
+  .job-md strong { color: var(--ink); font-weight: 600; }
+  .job-md p:has(+ ul) { font-weight: 400; color: var(--ink-2); }
+  /* The resume on file: icon, name and date, with a View action. */
+  .resume-card { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+  .resume-card svg { width: 32px; height: 32px; color: var(--brand); }
+  .resume-card b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.removable { padding-left: 4px; }
 }

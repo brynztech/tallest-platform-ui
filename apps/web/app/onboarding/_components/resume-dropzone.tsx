@@ -22,7 +22,7 @@ export function ResumeDropzone({ file, status, disabled, onChange }: ResumeDropz
 
   function getSubtext() {
     if (isBusy) return 'Reading your resume…'
-    return 'PDF, DOC, DOCX up to mock limit'
+    return 'PDF, DOC or DOCX, up to 5 MB'
   }
 
   return (
