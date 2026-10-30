@@ -24,4 +24,10 @@ describe('description Markdown', () => {
       { kind: 'paragraph', lines: [[{ kind: 'text', text: '<img src=x onerror=alert(1)>' }]] },
     ])
   })
+
+  it('reads an uncleaned posting: indented dash bullets with blank lines between them are one list', () => {
+    const blocks = parseMarkdown('In this role, you will:\n\n - Drive engagements.\n\n - Assess readiness.\n\nAbout you')
+    expect(blocks.map(b => b.kind)).toEqual(['paragraph', 'list', 'paragraph'])
+    expect(blocks[1]).toMatchObject({ kind: 'list', items: [[{ text: 'Drive engagements.' }], [{ text: 'Assess readiness.' }]] })
+  })
 })

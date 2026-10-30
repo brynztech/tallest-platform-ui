@@ -2,6 +2,7 @@
 // job_board/services/description_cleaning.py): "## " headings, "- " lists,
 // paragraphs, **bold** and [label](https://...) links. Anything else stays plain
 // text. Returns data, never HTML, so a posting cannot inject markup (T-05-02).
+// Also reads an uncleaned posting's plain text, where "- ", "* " and "• " lines are lists.
 
 export type Inline = { kind: 'text' | 'bold'; text: string } | { kind: 'link'; text: string; href: string }
 export type Block =
@@ -31,7 +32,9 @@ export function parseMarkdown(md: string): Block[] {
     const line = raw.trim()
     const prev = blocks[blocks.length - 1]
     if (!line) {
-      blocks.push({ kind: 'paragraph', lines: [] }) // a blank line ends the paragraph
+      // A blank line ends a paragraph. Inside a list it is ignored: raw postings often
+      // put a blank line between bullets, which must still read as one list.
+      if (prev?.kind !== 'list') blocks.push({ kind: 'paragraph', lines: [] })
       continue
     }
     const heading = /^#{1,6}\s+(.*)$/.exec(line)

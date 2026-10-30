@@ -23,7 +23,7 @@ describe('Talent app QA fixes', () => {
 
   it('the job page shows the full description, falling back to the trimmed summary', () => {
     const detail = read('jobs/[id]/_components/job-detail.tsx')
-    expect(detail).toContain('<JobDescription text={job.description} />')
+    expect(detail).toContain('<JobMarkdown markdown={job.description} />')
     expect(detail).toContain('endAtSentence(job.description_summary')
     expect(read('jobs/[id]/_components/job-description.tsx')).not.toContain('dangerouslySetInnerHTML')
   })
@@ -103,6 +103,6 @@ describe('Talent app QA fixes, round 4 (2026-10-30)', () => {
   })
 
   it('cleaned descriptions render as Markdown, the original as text', () => {
-    expect(read('jobs/[id]/_components/job-detail.tsx')).toContain("job.description_format === 'markdown'")
+    expect(read('jobs/[id]/_components/job-detail.tsx')).toContain('<JobMarkdown markdown={job.description} />')
   })
 })

@@ -10,7 +10,7 @@ import { logoColor } from '../../_components/job-card'
 import type { PublicJobItem, CandidateProfile } from '../../../_lib/candidate-types'
 import { endAtSentence } from '../../../_lib/end-at-sentence'
 import { recordApplyClick } from '../../../_lib/candidate-api'
-import { JobDescription, JobMarkdown } from './job-description'
+import { JobMarkdown } from './job-description'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
@@ -238,10 +238,8 @@ export function JobDetail({ id, initialJob }: { id: string; initialJob?: PublicJ
         {(job.description || job.description_summary) && (
           <section className="panel">
             <h2 className="d3">Job description</h2>
-            {job.description && job.description_format === 'markdown' ? (
+            {job.description ? (
               <JobMarkdown markdown={job.description} />
-            ) : job.description ? (
-              <JobDescription text={job.description} />
             ) : (
               <p>{endAtSentence(job.description_summary ?? '')}</p>
             )}

@@ -168,7 +168,8 @@ call" link (`BOOKING_URL` in `app/_lib/site.ts`). No backend endpoint takes thes
 - Fourth round (2026-10-30, user feedback; backend in `../talent-platform/docs/job-discovery-spec.md` §17):
   - **Clean job descriptions.** When the job page gets `description_format: "markdown"` it renders `JobMarkdown`
     (`app/_lib/markdown.ts` parses headings, lists, paragraphs, `**bold**` and https links into data, never HTML; links open
-    in a new tab). Otherwise the original text renders as before.
+    in a new tab). The original text of a job not cleaned yet goes through the same reader, so its "- ", "* " and
+    "• " lines show as one list even with blank lines between them.
   - **Resume on file.** Profile edit shows a card with a file icon, the file name, the upload date and View (a short-lived
     link from `GET /candidate/profile/resume/file`), or "No resume yet". The button reads "Replace resume" once one exists.
     Files over 5 MB are refused in the browser and by the API; the drop box says so.
