@@ -243,7 +243,8 @@ export default function ProfileEditPage() {
           <div className="resume-card">
             <FileText aria-hidden="true" />
             <div className="min-w-0">
-              <b>{profile.resume_file_name}</b>
+              {/* Older uploads stored the parser's temp file name ("tmpo1leeoih.pdf"); don't show it. */}
+              <b>{/^tmp\w*\.(pdf|docx?)$/i.test(profile.resume_file_name) ? 'Your resume' : profile.resume_file_name}</b>
               <p className="small">
                 {profile.resume_uploaded_at
                   ? `Uploaded ${new Date(profile.resume_uploaded_at).toLocaleDateString()}`
